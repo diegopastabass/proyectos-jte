@@ -1,0 +1,19 @@
+# Archivos de entorno
+.env
+.env*
+
+# Dependencias de Node.js
+node_modules/
+
+# Dependencias de Python
+__pycache__/
+*.pyc
+.venv/
+
+# Archivos de logs
+*.log
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+

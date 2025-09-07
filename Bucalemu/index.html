@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Bucalemu</title>
+    <style>
+      :root {
+        --bg: #121212;
+        --fg: #e0e0e0;
+        --card: #1e1e1e;
+        --accent: #444;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background-color: var(--bg);
+        color: var(--fg);
+        font-family: 'Segoe UI', sans-serif;
+        padding: 2rem;
+      }
+
+      h1 {
+        text-align: center;
+        margin-bottom: 2rem;
+        font-size: 2rem;
+        color: var(--fg);
+      }
+
+      ul {
+        max-width: 500px;
+        margin: auto;
+        padding: 1rem;
+        list-style: none;
+        background-color: var(--card);
+        border-radius: 0.5rem;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.05);
+      }
+
+      li {
+        padding: 1rem;
+        border-bottom: 1px solid var(--accent);
+      }
+
+      li:last-child {
+        border-bottom: none;
+      }
+
+      strong {
+        color: #ccc;
+      }
+    </style>
+  </head>
+  <body>
+    <br /><br />
+    <h1>SSR Bucalemu</h1>
+
+    <ul>
+      <li><strong>Última Actualización:</strong> <br /><span id="lastUpdate">Cargando...</span></li>
+    </ul>
+
+    <br /><br />
+
+    <ul>
+      <li><strong>Nivel Bucalemu Bajo:</strong> <span id="bucalemuBajoNivel">Cargando...</span> m</li>
+      <li><strong>Temperatura Bucalemu Bajo:</strong> <span id="bucalemuBajoTemp">Cargando...</span> °C</li>
+    </ul>
+
+    <br /><br />
+
+    <ul>
+      <li><strong>Nivel Nilahue:</strong> <span id="nilahueNivel">Cargando...</span> m</li>
+      <li><strong>Temperatura Nilahue:</strong> <span id="nilahueTemp">Cargando...</span> °C</li>
+    </ul>
+
+    <script>
+      async function fetchData() {
+        try {
+          const response = await fetch('http://api.jteanalytics.cl:3001/metrics/latest');
+          const data = await response.json();
+
+          const BucalemuBajoTemp = typeof data.ssr_bucalemu_bajo_temperatura === 'number' ? data.ssr_bucalemu_bajo_temperatura.toFixed(2) : 'N/A';
+          const BucalemuBajoNivel = typeof data.ssr_bucalemu_bajo_nivel === 'number' ? data.ssr_bucalemu_bajo_nivel.toFixed(2) : 'N/A';
+          const NilahueTemp = typeof data.ssr_nilahue_temperatura === 'number' ? data.ssr_nilahue_temperatura.toFixed(2) : 'N/A';
+          const NilahueNivel = typeof data.ssr_nilahue_nivel === 'number' ? data.ssr_nilahue_nivel.toFixed(2) : 'N/A';
+
+          document.getElementById('bucalemuBajoNivel').textContent = BucalemuBajoNivel;
+          document.getElementById('bucalemuBajoTemp').textContent = BucalemuBajoTemp;
+          document.getElementById('nilahueNivel').textContent = NilahueNivel;
+          document.getElementById('nilahueTemp').textContent = NilahueTemp;
+
+          const responseUpdate = await fetch('http://api.jteanalytics.cl:3001/metrics/update');
+          const dataUpdate = await responseUpdate.json();
+          const isoString = dataUpdate;
+          const lastUpdate = isoString
+            ? new Date(isoString).toLocaleString('es-CL', {
+                dateStyle: 'short',
+                timeStyle: 'short',
+                timeZone: 'America/Santiago',
+              })
+            : 'N/A';
+
+          document.getElementById('lastUpdate').textContent = lastUpdate;
+
+        } catch (error) {
+          console.error('Error fetching data:', error);
+          document.getElementById('lastUpdate').textContent = 'Error al cargar';
+          document.getElementById('bucalemuBajoNivel').textContent = 'Error';
+          document.getElementById('bucalemuBajoTemp').textContent = 'Error';
+          document.getElementById('nilahueNivel').textContent = 'Error';
+          document.getElementById('nilahueTemp').textContent = 'Error';
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', fetchData);
+
+      setInterval(fetchData, 300000); 
+    </script>
+  </body>
+</html>

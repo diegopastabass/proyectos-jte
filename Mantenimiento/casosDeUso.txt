@@ -1,0 +1,29 @@
+##### Casos de Uso App Mantenimiento Equipos #####
+
+1.- Registrar Nuevo Mantenimiento
+
+El usuario administrador agenda una nueva sesión de mantenimiento 
+luego de una solicitud realizada por un cliente, para ello debe 
+elegir al usuario mantenedor que hara la mantención, además del 
+día x en el que se realizará dicha mantención, luego podrá preparar
+una lista de equipos a mantener, cada equipo debe tener una serie 
+de específicaciones técnicas, como modelo, marca, etc. y dentro de 
+cada equipo una lista infinita de tareas a realizar, además se 
+podrán agregar otros aspectos referentes a la mantención, como 
+mediciones registradas por los equipos, esta sección debe ser 
+totalmente personalizable, luego de editar la información del 
+registro de mantención, esta se almacena en la base de datos.
+
+
+2.- Registrar Mantenimiento Realizado
+
+El usuario mantenedor, luego de iniciar sesión, tendrá una lista 
+donde aparecerán en ella las mantenciones que le fueron asignadas 
+por el usuario administrador, luego puede seleccionar una de ellas
+donde se encontrará con una lista de equipos a mantener y las 
+tareas a realizar para cada equipo, donde podrá marcar como completada
+cada tarea luego de su realización, además tendrá a disposición
+una sección donde ingresar como texto las mediciones si corresponden
+para dicha mantención, por último podrá registrar las observaciones
+de la mantención y dejar registro visual con fotografías del trabajo
+realizado. 

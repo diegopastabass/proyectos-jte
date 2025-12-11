@@ -19,41 +19,8 @@ body {
   border-color: #dee2e6;
 }
 
-/* Dark theme */
-body.dark-theme {
-  background-color: #121212;
-  color: #f8f9fa;
-}
-
-body.dark-theme .navbar {
-  background-color: #222222 !important;
-  color: #f8f9fa !important;
-}
-
-body.dark-theme .navbar-brand {
-  color: #f8f9fa !important;
-}
-
-body.dark-theme .card {
-  background-color: #383838;
-  color: #f8f9fa;
-  border-color: #333333;
-}
-
-body.dark-theme .alert-success {
-  color: #f8f9fa;
-  background-color: #383838;
-  border-color: #333333;
-}
-
 .translate-transition {
-  transition: transform 0.3s ease-in-out;
-}
-
-html,
-body {
-  height: 100%;
-  margin: 0;
+  transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .toggle-btn {
@@ -65,7 +32,7 @@ body {
   margin-top: 10px;
   border: none;
   background: transparent;
-  transition: color 0.2s ease, transform 0.2s ease;
+  transition: color 0.25s ease, transform 0.25s ease;
 }
 
 .toggle-btn:hover {
@@ -73,30 +40,34 @@ body {
   transform: translateY(-2px);
 }
 
+/* Transición más suave y natural para abrir/cerrar */
 .collapse-card {
   max-height: 0;
   overflow: hidden;
   opacity: 0;
-  padding: 0 0;
-  transition: max-height 0.4s ease, opacity 0.4s ease, padding 0.3s ease;
+  padding: 0;
+  transition: max-height 0.35s cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 0.35s ease, padding 0.3s ease;
+  will-change: max-height, opacity;
 }
 
+/* Al abrir */
 .collapse-card.show {
-  max-height: 600px; /* suficientemente grande para cualquier contenido */
+  max-height: 650px;
   opacity: 1;
   padding: 10px 0;
   margin-bottom: 15px;
 }
 
+/* Suavizar aparición del contenido */
 .collapse-card.show > .card {
-  animation: slideFadeIn 0.4s ease forwards;
+  animation: slideFadeIn 0.35s cubic-bezier(0.33, 1, 0.68, 1) forwards;
 }
 
-/* Animación de entrada del contenido */
 @keyframes slideFadeIn {
   from {
     opacity: 0;
-    transform: translateY(-8px);
+    transform: translateY(-6px);
   }
   to {
     opacity: 1;
@@ -105,11 +76,7 @@ body {
 }
 
 @media (max-width: 768px) {
-  .col-12 {
-    margin-bottom: 20px;
-  }
-
   .collapse-card.show {
-    max-height: 800px;
+    max-height: 850px;
   }
 }

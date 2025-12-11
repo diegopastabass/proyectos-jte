@@ -1,3 +1,5 @@
+import logo from "../assets/logoJte.png";
+
 const Loading = () => {
   return (
     <div className="d-flex flex-column justify-content-center align-items-center vh-100">
@@ -8,7 +10,7 @@ const Loading = () => {
       <p className="mt-3 fs-5 fw-semibold">Cargando...</p>
       <img
         className="mb-5"
-        src="/src/assets/logoJte.png"
+        src={logo}
         alt="logo"
         width={45}
         height={30}

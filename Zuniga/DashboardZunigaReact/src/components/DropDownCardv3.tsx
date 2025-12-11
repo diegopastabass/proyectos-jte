@@ -20,14 +20,17 @@ ChartJS.register(
   Title
 );
 
+interface Metric {
+  value: number;
+  time: string;
+}
+
 interface DropdownCardProps {
   isOpen: boolean;
   title: string;
   chartLabel: string;
-  data: {
-    key: string;
-    value: number;
-  }[];
+  data: Metric[];
+  date?: string;
 }
 
 function DropdownCardv3({
@@ -35,8 +38,9 @@ function DropdownCardv3({
   title,
   data,
   chartLabel,
+  date,
 }: DropdownCardProps) {
-  const labels = data.map((d) => new Date(d.key).toISOString().split("T")[0]);
+  const labels = data.map((d) => new Date(d.time).toISOString().split("T")[0]);
   const values = data.map((d) => d.value);
 
   const chartData = {
@@ -83,10 +87,14 @@ function DropdownCardv3({
   };
 
   return (
-    <div className={`collapse-card ${isOpen ? "show" : ""}`}>
+    <div
+      className={`mt-2 mb-2 mt-lg-0 mb-lg-0 ${
+        isOpen ? "show" : "collapse-card"
+      }`}
+    >
       <Card>
-        <CardBody title={`Detalle ${title}`} />
-        <div style={{ height: "250px" }}>
+        <CardBody title={`Detalle ${title}`} date={date} />
+        <div style={{ height: "230px" }}>
           <Bar data={chartData} options={options} />
         </div>
       </Card>

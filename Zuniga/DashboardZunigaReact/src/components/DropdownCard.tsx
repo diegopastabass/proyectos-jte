@@ -11,7 +11,6 @@ import {
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 
-// Registrar componentes de Chart.js
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -22,17 +21,31 @@ ChartJS.register(
   Title
 );
 
+interface Metric {
+  value: number;
+  time: string;
+}
+
 interface DropdownCardProps {
   isOpen: boolean;
   title: string;
   chartLabel: string;
-  data: {
-    value: number;
-    time: string;
-  }[];
+  data: Metric[];
+  className?: string;
+  date?: string;
+  nivelMax?: number; // si no viene, usar 3
+  nivelAlarma?: number; // opcional
 }
 
-function DropdownCard({ isOpen, title, data, chartLabel }: DropdownCardProps) {
+function DropdownCard({
+  isOpen,
+  title,
+  data,
+  chartLabel,
+  date,
+  nivelMax = 3,
+  nivelAlarma,
+}: DropdownCardProps) {
   const labels = data.map((d) =>
     new Date(d.time).toLocaleTimeString("es-CL", {
       hour: "2-digit",
@@ -40,7 +53,22 @@ function DropdownCard({ isOpen, title, data, chartLabel }: DropdownCardProps) {
     })
   );
 
-  const values = data.map((d) => d.value);
+  // Divisor solo para Estanque Nuevo
+  const divisor = title === "Estanque Nuevo" ? 100 : 1;
+  const values = data.map((d) => d.value / divisor);
+
+  // Línea horizontal de alarma SOLO si viene el valor
+  const alarmaDataset =
+    nivelAlarma !== undefined
+      ? {
+          label: "Nivel de alarma",
+          data: Array(values.length).fill(nivelAlarma / divisor),
+          borderColor: "rgba(255, 0, 0, 0.7)",
+          borderWidth: 1.5,
+          pointRadius: 0,
+          borderDash: [4, 4],
+        }
+      : null;
 
   const chartData = {
     labels,
@@ -48,13 +76,15 @@ function DropdownCard({ isOpen, title, data, chartLabel }: DropdownCardProps) {
       {
         label: chartLabel,
         data: values,
+        backgroundColor: "rgba(13, 110, 253, 0.6)",
         borderColor: "rgba(13, 110, 253, 1)",
-        backgroundColor: "rgba(13, 110, 253, 0.2)",
-        tension: 0.3,
-        fill: true,
+        borderWidth: 2,
+        tension: 0.5,
         pointRadius: 3,
-        pointBackgroundColor: "rgba(13, 110, 253, 1)",
+        pointBackgroundColor: "transparent",
+        pointBorderColor: "transparent",
       },
+      ...(alarmaDataset ? [alarmaDataset] : []),
     ],
   };
 
@@ -80,6 +110,8 @@ function DropdownCard({ isOpen, title, data, chartLabel }: DropdownCardProps) {
       },
       y: {
         beginAtZero: true,
+        min: 0, // nivel mínimo fijo
+        max: nivelMax / divisor, // máximo dinámico o default 3
         ticks: {
           color: "#555",
         },
@@ -88,10 +120,14 @@ function DropdownCard({ isOpen, title, data, chartLabel }: DropdownCardProps) {
   };
 
   return (
-    <div className={`collapse-card ${isOpen ? "show" : ""}`}>
+    <div
+      className={`mt-lg-0 mb-lg-0 mt-2 mb-2 ${
+        isOpen ? "show" : "collapse-card"
+      }`}
+    >
       <Card>
-        <CardBody title={`Detalle ${title}`}></CardBody>
-        <div style={{ height: "250px" }}>
+        <CardBody title={`Detalle ${title}`} date={date}></CardBody>
+        <div style={{ height: "230px" }}>
           <Line data={chartData} options={options} />
         </div>
       </Card>

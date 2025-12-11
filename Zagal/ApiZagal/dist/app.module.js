@@ -9,9 +9,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
-const database_config_1 = require("./config/database.config");
-const metrics_controller_1 = require("./controllers/metrics.controller");
-const metrics_service_1 = require("./services/metrics.service");
+const database_module_1 = require("./config/database.module");
+const parc57_module_1 = require("./57/parc57.module");
+const parc18_module_1 = require("./18/parc18.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -20,11 +20,12 @@ exports.AppModule = AppModule = __decorate([
         imports: [
             config_1.ConfigModule.forRoot({
                 isGlobal: true,
-                envFilePath: '.env',
+                envFilePath: ".env",
             }),
+            database_module_1.DatabaseModule,
+            parc57_module_1.Parc57Module,
+            parc18_module_1.Parc18Module,
         ],
-        controllers: [metrics_controller_1.MetricsController],
-        providers: [database_config_1.DatabaseConfig, metrics_service_1.MetricsService],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

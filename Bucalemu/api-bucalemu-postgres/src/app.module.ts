@@ -20,7 +20,7 @@ import { Metric } from './models/metric.entity';
         password: config.get<string>('database.password'),
         database: config.get<string>('database.database'),
         entities: [Metric],
-        synchronize: true, // ⚠️ Solo en dev
+        synchronize: false,
         ssl: {
           rejectUnauthorized: false,
         },

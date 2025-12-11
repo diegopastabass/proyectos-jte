@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<Document id="15ym8oakYgh7myDk5HRhm9_-lgN1R3i4S">
+	<name>zagal 57</name>
+	<gx:CascadingStyle kml:id="__managed_style_0C99E77E4C3AB252D47F">
+		<Style>
+			<IconStyle>
+				<scale>1.2</scale>
+				<Icon>
+					<href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+				</Icon>
+				<hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels"/>
+			</IconStyle>
+			<LabelStyle>
+			</LabelStyle>
+			<LineStyle>
+				<color>ff2dc0fb</color>
+				<width>4.8</width>
+			</LineStyle>
+			<PolyStyle>
+				<color>40ffffff</color>
+			</PolyStyle>
+			<BalloonStyle>
+			</BalloonStyle>
+		</Style>
+	</gx:CascadingStyle>
+	<gx:CascadingStyle kml:id="__managed_style_1FCBEC99753AB252D47E">
+		<Style>
+			<IconStyle>
+				<Icon>
+					<href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+				</Icon>
+				<hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels"/>
+			</IconStyle>
+			<LabelStyle>
+			</LabelStyle>
+			<LineStyle>
+				<color>ff2dc0fb</color>
+				<width>3.2</width>
+			</LineStyle>
+			<PolyStyle>
+				<color>40ffffff</color>
+			</PolyStyle>
+			<BalloonStyle>
+			</BalloonStyle>
+		</Style>
+	</gx:CascadingStyle>
+	<StyleMap id="__managed_style_04568F31093AB252D47E">
+		<Pair>
+			<key>normal</key>
+			<styleUrl>#__managed_style_1FCBEC99753AB252D47E</styleUrl>
+		</Pair>
+		<Pair>
+			<key>highlight</key>
+			<styleUrl>#__managed_style_0C99E77E4C3AB252D47F</styleUrl>
+		</Pair>
+	</StyleMap>
+	<gx:CascadingStyle kml:id="__managed_style_2A57A5F2193AB252D483">
+		<Style>
+			<IconStyle>
+				<scale>1.2</scale>
+				<Icon>
+					<href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+				</Icon>
+				<hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels"/>
+			</IconStyle>
+			<LabelStyle>
+			</LabelStyle>
+			<LineStyle>
+				<color>ff2f2fd3</color>
+				<width>2.4</width>
+			</LineStyle>
+			<PolyStyle>
+				<color>40ffffff</color>
+			</PolyStyle>
+			<BalloonStyle>
+			</BalloonStyle>
+		</Style>
+	</gx:CascadingStyle>
+	<gx:CascadingStyle kml:id="__managed_style_10FF8511AD3AB252D483">
+		<Style>
+			<IconStyle>
+				<Icon>
+					<href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+				</Icon>
+				<hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels"/>
+			</IconStyle>
+			<LabelStyle>
+			</LabelStyle>
+			<LineStyle>
+				<color>ff2f2fd3</color>
+				<width>1.6</width>
+			</LineStyle>
+			<PolyStyle>
+				<color>40ffffff</color>
+			</PolyStyle>
+			<BalloonStyle>
+			</BalloonStyle>
+		</Style>
+	</gx:CascadingStyle>
+	<StyleMap id="__managed_style_0D2865D5B53AB252D483">
+		<Pair>
+			<key>normal</key>
+			<styleUrl>#__managed_style_10FF8511AD3AB252D483</styleUrl>
+		</Pair>
+		<Pair>
+			<key>highlight</key>
+			<styleUrl>#__managed_style_2A57A5F2193AB252D483</styleUrl>
+		</Pair>
+	</StyleMap>
+	<Placemark id="059164C6633A63D4E13C">
+		<name>303 SUR</name>
+		<LookAt>
+			<longitude>-70.98177031311877</longitude>
+			<latitude>-34.46424823680133</latitude>
+			<altitude>248.8931630709232</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>2223.64924069494</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_0D2865D5B53AB252D483</styleUrl>
+		<Polygon>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						-70.97549620588519,-34.46475160499381,0 -70.97643794321694,-34.46598423675123,0 -70.97474929836721,-34.46677704925867,0 -70.97445508707592,-34.4663443223906,0 -70.97410564162678,-34.46649367780446,0 -70.97350018248356,-34.4656485612857,0 -70.97549620588519,-34.46475160499381,0 
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+	</Placemark>
+	<Placemark id="08632043B83A63D581D4">
+		<name>CASETA DE RIEGO</name>
+		<LookAt>
+			<longitude>-70.97606997896671</longitude>
+			<latitude>-34.46431748464335</latitude>
+			<altitude>247.9174216611128</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>174.2672705142468</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_04568F31093AB252D47E</styleUrl>
+		<Point>
+			<coordinates>-70.97543150728679,-34.4645013294097,248.8829001985528</coordinates>
+		</Point>
+	</Placemark>
+	<Placemark id="0601076AEA3AB255FC5C">
+		<name>303 NORTE</name>
+		<LookAt>
+			<longitude>-70.97552107366309</longitude>
+			<latitude>-34.4641594628516</latitude>
+			<altitude>248.30787935547</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>30.00000002548282</gx:fovy>
+			<range>763.9724278441281</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_04568F31093AB252D47E</styleUrl>
+		<Polygon>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						-70.974334353849,-34.46353999390907,0 -70.97453394245034,-34.463450495967,0 -70.97550057763958,-34.46474984471935,0 -70.97351285824193,-34.46568006513331,0 -70.97245674379877,-34.46433973653441,0 -70.97422581776239,-34.46341254573713,0 -70.974334353849,-34.46353999390907,0 
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+	</Placemark>
+	<Placemark id="00FAF7A9B13AB25C12F9">
+		<name>NEC 4</name>
+		<LookAt>
+			<longitude>-70.97822701871942</longitude>
+			<latitude>-34.46384554949393</latitude>
+			<altitude>249.8898318540572</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>30.00000002548282</gx:fovy>
+			<range>1240.713303468801</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_04568F31093AB252D47E</styleUrl>
+		<Polygon>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						-70.9749312970545,-34.46208268251049,0 -70.97749502086455,-34.46548976445711,0 -70.97716216546509,-34.46566142970519,0 -70.97686982282706,-34.46529230388563,0 -70.97648773196643,-34.46550422570834,0 -70.97675516476546,-34.46584574227793,0 -70.97646516310616,-34.46600214197411,0 -70.97396311347694,-34.46260186001299,0 -70.9749312970545,-34.46208268251049,0 
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+	</Placemark>
+	<Placemark id="0B8484696F3AB25DB053">
+		<name>RICH LADY</name>
+		<LookAt>
+			<longitude>-70.97300749361911</longitude>
+			<latitude>-34.46042790170656</latitude>
+			<altitude>247.2414142478945</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>30.00000002548282</gx:fovy>
+			<range>1159.489446141233</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_04568F31093AB252D47E</styleUrl>
+		<Polygon>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						-70.9749291452606,-34.46206194948382,0 -70.97394932652564,-34.4625889724901,0 -70.97155388307431,-34.45943923501343,0 -70.97182649873646,-34.45910017506711,0 -70.97200526881599,-34.45891787650923,0 -70.97222286410671,-34.45882576878,0 -70.97239384020644,-34.45879307996157,0 -70.97251809168618,-34.45887623965987,0 -70.9749291452606,-34.46206194948382,0 
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+	</Placemark>
+	<Placemark id="0269BE89553AB2606678">
+		<name>PARC 54 SUR</name>
+		<LookAt>
+			<longitude>-70.97267250874239</longitude>
+			<latitude>-34.46524965552746</latitude>
+			<altitude>251.2733434423005</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>30.00000002548282</gx:fovy>
+			<range>1219.104549454496</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_04568F31093AB252D47E</styleUrl>
+		<Polygon>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						-70.97390746062416,-34.46662349652673,0 -70.97134045690632,-34.46789577461944,0 -70.96863694965946,-34.46387110834175,0 -70.97016529784838,-34.46382930622245,0 -70.97094339519982,-34.46383584154898,0 -70.97118080857339,-34.46383562038165,0 -70.97143462479951,-34.46388263486548,0 -70.97166445145569,-34.4639776243775,0 -70.97190219305746,-34.4641128730773,0 -70.97220547770041,-34.46433598982534,0 -70.97238578865932,-34.46459281930769,0 -70.97390746062416,-34.46662349652673,0 
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+	</Placemark>
+	<Placemark id="014D24B13C3AB2616601">
+		<name>PARC 54 NORTE</name>
+		<LookAt>
+			<longitude>-70.9706426668145</longitude>
+			<latitude>-34.4611126801423</latitude>
+			<altitude>249.4190532359585</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>30.00000002548282</gx:fovy>
+			<range>1220.958850113675</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_04568F31093AB252D47E</styleUrl>
+		<Polygon>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						-70.97152806417984,-34.46375379151996,0 -70.97104445297153,-34.46365883564025,0 -70.97051998886292,-34.46362498843995,0 -70.96956961380212,-34.46363828849746,0 -70.96884236342134,-34.46363704188762,0 -70.96884098331341,-34.46300980779193,0 -70.96875812917891,-34.46261824747689,0 -70.96861882332595,-34.46242906271632,0 -70.96818407211597,-34.46205742076713,0 -70.96797779638172,-34.46189509456504,0 -70.96779679534568,-34.46167189164382,0 -70.96770642061652,-34.46144194936461,0 -70.96788566541341,-34.46105608435387,0 -70.9680168893061,-34.46077194776456,0 -70.96837667179257,-34.46042045081524,0 -70.96871244962497,-34.46016279562815,0 -70.96899975951384,-34.46001369016177,0 -70.96958557247271,-34.46077991808214,0 -70.96992149776969,-34.46119207094445,0 -70.97037218942201,-34.4618340801926,0 -70.97093777118386,-34.46259789127708,0 -70.97138839296183,-34.46320908257893,0 -70.97162606525242,-34.46344879414895,0 -70.97173292072358,-34.46368602525765,0 -70.97152806417984,-34.46375379151996,0 
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+	</Placemark>
+	<Placemark id="0857D5BFA93AB26483A4">
+		<name>PARC 52</name>
+		<LookAt>
+			<longitude>-70.97002455662687</longitude>
+			<latitude>-34.46677541284366</latitude>
+			<altitude>253.5095958361422</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>30.00000002548282</gx:fovy>
+			<range>2161.815670281358</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_04568F31093AB252D47E</styleUrl>
+		<Polygon>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						-70.97219607331671,-34.47073417798229,0 -70.97187659432558,-34.47090324137177,0 -70.97124910153701,-34.46998774034567,0 -70.97002323350182,-34.47054934807151,0 -70.96937419092251,-34.46964026057863,0 -70.97053841467627,-34.46906284768774,0 -70.96888620068727,-34.46676549699861,0 -70.96798947026198,-34.46540613589138,0 -70.96865914227965,-34.46430532614588,0 -70.96897838409696,-34.46462803310922,0 -70.96992288827973,-34.46601801228929,0 -70.97122958801035,-34.46794543541954,0 -70.97302730597617,-34.47041988985596,0 -70.97261493158911,-34.47056133706764,0 -70.97229616503328,-34.47015507098059,0 -70.97190333239647,-34.47030899130606,0 -70.97219607331671,-34.47073417798229,0 
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+	</Placemark>
+</Document>
+</kml>

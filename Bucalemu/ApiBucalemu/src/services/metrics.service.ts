@@ -118,29 +118,37 @@ export class MetricsService {
 
   async estimateEmptyingTimes(): Promise<{ [key: string]: string }> {
     try {
-      const [rows] = await this.dbConfig.pool.query(
-        `SELECT t.mt_name, t.mt_value, t.mt_time_2
-       FROM (
-         SELECT 
-           mt_name,
-           mt_value,
-           mt_time_2,
-           ROW_NUMBER() OVER (PARTITION BY mt_name ORDER BY mt_time_2 DESC) AS rn
-         FROM ssr_bucalemu
-         WHERE mt_name LIKE '%nivel'
-       ) t
-       WHERE t.rn <= 2
-       ORDER BY t.mt_name, t.rn`
-      );
+      const rawQuery = `
+      SELECT *
+      FROM (
+        SELECT 
+          "mt_name",
+          "mt_value",
+          "mt_time_2",
+          ROW_NUMBER() OVER (PARTITION BY "mt_name" ORDER BY "mt_time_2" DESC) AS rn
+        FROM "ssr_bucalemu"
+        WHERE "mt_name" LIKE '%nivel'
+      ) t
+      WHERE t.rn <= 2
+      ORDER BY t."mt_name", t.rn;
+    `;
 
-      const grouped: {
-        [key: string]: { value: number; time: string }[];
-      } = {};
+      type MeasurementRow = {
+        mt_name: string;
+        mt_value: number | string;
+        mt_time_2: string | Date;
+        rn: number;
+      };
 
-      (rows as Metric[]).forEach((row) => {
+      const rows = (await this.metricRepository.query(
+        rawQuery
+      )) as MeasurementRow[];
+
+      const grouped: Record<string, { value: number; time: string }[]> = {};
+      rows.forEach((row) => {
         if (!grouped[row.mt_name]) grouped[row.mt_name] = [];
         grouped[row.mt_name].push({
-          value: row.mt_value,
+          value: Number(row.mt_value),
           time: new Date(row.mt_time_2).toISOString(),
         });
       });

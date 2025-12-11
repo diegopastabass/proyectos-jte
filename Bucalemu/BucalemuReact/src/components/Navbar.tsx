@@ -1,3 +1,6 @@
+import logo from "../assets/logoJte.png";
+import logo2 from "../assets/logo.png";
+
 interface NavbarProps {
   text?: string;
 }
@@ -42,12 +45,12 @@ function Navbar(props: NavbarProps) {
           href="#"
         >
           <img
-            src="/src/assets/logoJte.png"
+            src={logo}
             alt="logo"
             width={40}
             height={24}
           />
-          <img src="/src/assets/logo.png" alt="logo" width={40} height={40} />
+          <img src={logo2} alt="logo" width={40} height={40} />
           <span className="h5 mb-0">SSR Bucalemu</span>
         </a>
 

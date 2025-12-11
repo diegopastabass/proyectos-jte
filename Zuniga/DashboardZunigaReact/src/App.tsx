@@ -4,7 +4,7 @@ import Home from "./pages/Home";
 function App() {
   return (
     <Routes>
-      <Route path="/zunigamovil/" element={<Home />} />
+      <Route path="/zuniga/" element={<Home />} />
     </Routes>
   );
 }

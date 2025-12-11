@@ -1,13 +1,40 @@
-// metrics.service.ts
 import {
   Injectable,
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Metric } from '../models/metric.entity';
+import { Repository, ViewEntity, Column, Raw } from 'typeorm';
 import { CreateMetricDto } from '../models/dto/create-metric.dto';
+import { DateRangeDto } from '../models/dto/date-range.dto';
+
+@ViewEntity({
+  name: 'ssr_bucalemu',
+  expression: `SELECT * FROM ssr_bucalemu`,
+})
+export class Metric {
+  @Column({ name: 'mt_id' })
+  mt_id: number;
+
+  @Column({ name: 'mt_name' })
+  mt_name: string;
+
+  @Column({ name: 'mt_value' })
+  mt_value: number;
+
+  @Column({ name: 'mt_time_2' })
+  mt_time_2: Date;
+}
+
+export class Total {
+  time: string;
+  value: number;
+}
+
+interface DailyQueryResult {
+  day: Date;
+  daily_value: number;
+}
 
 @Injectable()
 export class MetricsService {
@@ -18,100 +45,168 @@ export class MetricsService {
     private readonly metricRepository: Repository<Metric>,
   ) {}
 
-  async createMetric(dto: CreateMetricDto) {
+  // Create Metric
+  async createMetric(
+    dto: CreateMetricDto,
+  ): Promise<{ success: boolean; insertedId: number }> {
     try {
       const metric = this.metricRepository.create(dto);
       const result = await this.metricRepository.save(metric);
       this.logger.log(`Inserted metric with id ${result.mt_id}`);
       return { success: true, insertedId: result.mt_id };
     } catch (error) {
-      throw new InternalServerErrorException('Error creating metric');
+      this.logger.error('Error inserting metric', error);
+      throw new InternalServerErrorException('Error inserting metric');
     }
   }
 
-  async getMetrics(limit: number) {
-    try {
-      return this.metricRepository.find({
-        order: { mt_time_2: 'DESC' },
-        take: limit,
-      });
-    } catch (error) {
-      throw new InternalServerErrorException('Error fetching latest metrics');
-    }
+  // Find Latest Metrics
+  async findLatestMetrics(limit: number): Promise<Metric[]> {
+    return this.metricRepository.find({
+      order: { mt_time_2: 'DESC' },
+      take: limit,
+    });
   }
 
-  async findLatestByName(name: string): Promise<Metric | null> {
-    try {
-      return this.metricRepository.findOne({
-        where: { mt_name: name },
-        order: { mt_time_2: 'DESC' },
-      });
-    } catch (error) {
-      throw new InternalServerErrorException(
-        'Error fetching latest metric by name',
-      );
-    }
+  // Find Latest Metric By Name
+  async findLatestMetricByName(name: string): Promise<Metric | null> {
+    return this.metricRepository.findOne({
+      where: { mt_name: name },
+      order: { mt_time_2: 'DESC' },
+    });
   }
 
-  async findLatestForEachName(): Promise<{
-    [key: string]: { value: number; time: string };
-  }> {
-    try {
-      const query = `
-        SELECT DISTINCT ON (mt_name) mt_name, mt_value, mt_time_2
-        FROM ssr_bucalemu
-        ORDER BY mt_name, mt_time_2 DESC;
-      `;
-      const rows = await this.metricRepository.query(query);
+  // Find Latest For Each Name (Remapeado y corrección valor Casuto)
+  async findLatestForEachName(): Promise<
+    Record<string, { value: number; time: Date }>
+  > {
+    const metrics = await this.metricRepository
+      .createQueryBuilder('metric')
+      .distinctOn(['metric.mt_name'])
+      .orderBy('metric.mt_name')
+      .addOrderBy('metric.mt_time_2', 'DESC')
+      .getMany();
 
-      const result: { [key: string]: { value: number; time: string } } = {};
-      rows.forEach((row: any) => {
-        result[row.mt_name] = {
-          value: parseFloat(row.mt_value),
-          time: new Date(row.mt_time_2).toISOString(),
-        };
-      });
-      return result;
-    } catch (error) {
-      throw new InternalServerErrorException(
-        'Error fetching latest metrics for all names',
-      );
-    }
+    const result: Record<string, { value: number; time: Date }> = {};
+    metrics.forEach((metric) => {
+      let finalName = metric.mt_name;
+      let finalValue = Number(metric.mt_value);
+
+      if (metric.mt_name === 'CASUTO--slave.AI12') {
+        finalName = 'ssr_casuto_nivel';
+        finalValue = finalValue / 100;
+      } else if (metric.mt_name === 'CASUTO--slave.AI32') {
+        finalName = 'ssr_casuto_bateria';
+      }
+
+      result[finalName] = {
+        value: finalValue,
+        time: metric.mt_time_2,
+      };
+    });
+
+    return result;
   }
 
+  // Find Last Update Time
   async findLastUpdateTime(): Promise<Date | null> {
-    try {
-      const query = `SELECT MAX(mt_time_2) AS last_update FROM ssr_bucalemu;`;
-      const result = await this.metricRepository.query(query);
-      return result[0]?.last_update ? new Date(result[0].last_update) : null;
-    } catch (error) {
-      throw new InternalServerErrorException('Error fetching last update time');
-    }
+    const result = await this.metricRepository
+      .createQueryBuilder('metric')
+      .select('MAX(metric.mt_time_2)', 'lastUpdateTime')
+      .getRawOne<{ lastUpdateTime: Date }>();
+
+    return result?.lastUpdateTime ?? null;
   }
 
+  // Find All Measurements (Incluye Casuto y corrección valor)
+  async findAllMeasurements(): Promise<
+    Record<string, { mt_value: number; mt_time_2: Date }[]>
+  > {
+    const rawQuery = `
+      SELECT subquery.*
+      FROM (
+        SELECT
+          *,
+          ROW_NUMBER() OVER (PARTITION BY "mt_name" ORDER BY "mt_time_2" DESC) as rn
+        FROM "ssr_bucalemu"
+      ) as subquery
+      WHERE subquery.rn <= 100
+      AND (subquery."mt_name" LIKE '%nivel' OR subquery."mt_name" = 'CASUTO--slave.AI12')
+      ORDER BY subquery."mt_name", subquery.rn DESC;
+    `;
+
+    type MeasurementRow = {
+      mt_name: string;
+      mt_value: number | string;
+      mt_time_2: string | Date;
+      [key: string]: unknown;
+    };
+
+    const rows = (await this.metricRepository.query(
+      rawQuery,
+    )) as MeasurementRow[];
+
+    const grouped: Record<string, { mt_value: number; mt_time_2: Date }[]> = {};
+    rows.forEach((row) => {
+      let name = row.mt_name;
+      let value = Number(row.mt_value);
+
+      if (name === 'CASUTO--slave.AI12') {
+        name = 'ssr_casuto_nivel';
+        value = value / 100;
+      }
+
+      if (!grouped[name]) {
+        grouped[name] = [];
+      }
+      grouped[name].push({
+        mt_value: value,
+        mt_time_2: new Date(row.mt_time_2),
+      });
+    });
+
+    return grouped;
+  }
+
+  // Estimate Emptying Times (Incluye Casuto y corrección valor)
   async estimateEmptyingTimes(): Promise<{ [key: string]: string }> {
     try {
-      const query = `
-        SELECT t.mt_name, t.mt_value, t.mt_time_2
-        FROM (
-          SELECT 
-            mt_name,
-            mt_value,
-            mt_time_2,
-            ROW_NUMBER() OVER (PARTITION BY mt_name ORDER BY mt_time_2 DESC) AS rn
-          FROM ssr_bucalemu
-          WHERE mt_name LIKE '%nivel'
-        ) t
-        WHERE t.rn <= 2
-        ORDER BY t.mt_name, t.rn;
-      `;
-      const rows = await this.metricRepository.query(query);
+      const rawQuery = `
+      SELECT *
+      FROM (
+        SELECT 
+          "mt_name",
+          "mt_value",
+          "mt_time_2",
+          ROW_NUMBER() OVER (PARTITION BY "mt_name" ORDER BY "mt_time_2" DESC) AS rn
+        FROM "ssr_bucalemu"
+        WHERE "mt_name" LIKE '%nivel' OR "mt_name" = 'CASUTO--slave.AI12'
+      ) t
+      WHERE t.rn <= 2
+      ORDER BY t."mt_name", t.rn;
+    `;
 
-      const grouped: { [key: string]: { value: number; time: string }[] } = {};
-      rows.forEach((row: any) => {
+      type MeasurementRow = {
+        mt_name: string;
+        mt_value: number | string;
+        mt_time_2: string | Date;
+        rn: number;
+      };
+
+      const rows = (await this.metricRepository.query(
+        rawQuery,
+      )) as MeasurementRow[];
+
+      const grouped: Record<string, { value: number; time: string }[]> = {};
+      rows.forEach((row) => {
+        let value = Number(row.mt_value);
+        if (row.mt_name === 'CASUTO--slave.AI12') {
+          value = value / 100;
+        }
+
         if (!grouped[row.mt_name]) grouped[row.mt_name] = [];
         grouped[row.mt_name].push({
-          value: parseFloat(row.mt_value),
+          value: value,
           time: new Date(row.mt_time_2).toISOString(),
         });
       });
@@ -133,7 +228,13 @@ export class MetricsService {
           timestamp2,
         );
 
-        const key = `t_vaciado_${name.replace(/^ssr_/, '')}`;
+        let key: string;
+        if (name === 'CASUTO--slave.AI12') {
+          key = 't_vaciado_casuto_nivel';
+        } else {
+          key = `t_vaciado_${name.replace(/^ssr_/, '')}`;
+        }
+
         result[key] = isNaN(segundos)
           ? 'NaN'
           : this.formatSecondsToDuration(Math.round(segundos));
@@ -141,10 +242,12 @@ export class MetricsService {
 
       return result;
     } catch (error) {
+      this.logger.error('Error estimating emptying times', error);
       throw new InternalServerErrorException('Error estimating emptying times');
     }
   }
 
+  // Helper Estimate Calculation
   private estimateEmptyingTime(
     level1: number,
     timestamp1: string,
@@ -173,11 +276,95 @@ export class MetricsService {
     return level1 / lossRate;
   }
 
+  // Get Totalizador
+  async getTotalizador(dto: DateRangeDto): Promise<Total[]> {
+    const { start, end } = dto;
+    if (!start || !end) throw new Error('Se requiere rango de fechas válido.');
+
+    const isoStart = start.toISOString().split('T')[0];
+    const isoEnd = end.toISOString().split('T')[0];
+
+    const queryStart = `${isoStart} 00:00:00`;
+    const queryEnd = `${isoEnd} 23:59:59`;
+
+    const results: DailyQueryResult[] = await this.metricRepository.query(
+      `
+        WITH bounds AS (
+          SELECT mt_time_2::DATE AS day, MIN(mt_time_2) AS first_ts, MAX(mt_time_2) AS last_ts
+          FROM ssr_bucalemu
+          WHERE mt_name = 'ssr_nilahue_totalizador'
+          AND mt_time_2 BETWEEN $1 AND $2
+          GROUP BY mt_time_2::DATE
+        )
+        SELECT b.day,
+          (MAX(CAST(s_last.mt_value AS NUMERIC(30,6))) - MIN(CAST(s_first.mt_value AS NUMERIC(30,6)))) AS daily_value
+        FROM bounds b
+        LEFT JOIN ssr_bucalemu s_first
+          ON s_first.mt_name = 'ssr_nilahue_totalizador' AND s_first.mt_time_2 = b.first_ts
+        LEFT JOIN ssr_bucalemu s_last
+          ON s_last.mt_name = 'ssr_nilahue_totalizador' AND s_last.mt_time_2 = b.last_ts
+        GROUP BY b.day
+        ORDER BY b.day ASC
+      `,
+      [queryStart, queryEnd],
+    );
+
+    return results.map((row) => ({
+      time:
+        typeof row.day === 'string'
+          ? row.day
+          : row.day.toISOString().split('T')[0],
+      value: Number(row.daily_value),
+    }));
+  }
+
+  // Format Date Helper
+  private formatDate(date: Date): string {
+    const d = new Date(date);
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getDate())}-${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  // Get Caudal
+  async getCaudal(
+    dto: DateRangeDto,
+  ): Promise<{ time: string; value: number }[]> {
+    const { start, end } = dto || {};
+    let results;
+
+    if (!start || !end) {
+      results = await this.metricRepository.find({
+        where: { mt_name: 'ssr_nilahue_caudal' },
+        order: { mt_time_2: 'DESC' },
+        take: 100,
+      });
+      results.reverse();
+    } else {
+      results = await this.metricRepository.find({
+        where: {
+          mt_name: 'ssr_nilahue_caudal',
+          mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
+            start,
+            end,
+          }),
+        },
+        order: { mt_time_2: 'ASC' },
+      });
+    }
+
+    return results.map((row) => ({
+      time: this.formatDate(row.mt_time_2),
+      value: Number(row.mt_value),
+    }));
+  }
+
+  // Format Seconds Helper
   private formatSecondsToDuration(seconds: number): string {
+    if (seconds < 0) return 'NaN';
     const days = Math.floor(seconds / 86400);
     const hours = Math.floor((seconds % 86400) / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
+    const secs = Math.floor(seconds % 60);
 
     let result = '';
     if (days > 0) result += `${days}d `;
@@ -186,62 +373,5 @@ export class MetricsService {
     if (secs > 0 || result === '') result += `${secs}s`;
 
     return result.trim();
-  }
-
-  async findAllMeasurements() {
-    try {
-      const query = `
-        SELECT mt_name, mt_value, mt_time_2
-        FROM (
-          SELECT 
-            mt_name,
-            mt_value,
-            mt_time_2,
-            ROW_NUMBER() OVER (PARTITION BY mt_name ORDER BY mt_time_2 DESC) as row_num
-          FROM ssr_bucalemu
-          WHERE mt_name LIKE $1
-        ) t
-        WHERE row_num <= 100
-        ORDER BY mt_name, mt_time_2 ASC;
-      `;
-      const results = await this.metricRepository.query(query, ['%nivel%']);
-
-      const grouped: Record<string, { mt_value: number; mt_time_2: string }[]> =
-        {};
-
-      for (const row of results) {
-        const { mt_name, mt_value, mt_time_2 } = row;
-
-        if (!grouped[mt_name]) {
-          grouped[mt_name] = [];
-        }
-
-        grouped[mt_name].push({
-          mt_value: parseFloat(mt_value),
-          mt_time_2: this.formatDate(new Date(mt_time_2)),
-        });
-      }
-
-      return grouped;
-    } catch (error) {
-      throw new InternalServerErrorException('Error fetching all measurements');
-    }
-  }
-
-  private formatDate(date: Date): string {
-    const pad = (n: number) => (n < 10 ? '0' + n : n);
-    return (
-      date.getFullYear() +
-      '-' +
-      pad(date.getMonth() + 1) +
-      '-' +
-      pad(date.getDate()) +
-      ' ' +
-      pad(date.getHours()) +
-      ':' +
-      pad(date.getMinutes()) +
-      ':' +
-      pad(date.getSeconds())
-    );
   }
 }

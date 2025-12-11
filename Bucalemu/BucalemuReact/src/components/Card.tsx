@@ -6,16 +6,16 @@ function Card(props: CardProps) {
   const { children } = props;
   return (
     <div
-      className="card h-lg-100 h-sm-50 w-100 w-lg-50"
+      className="card w-100"
       style={{
         width: "100%",
-        maxWidth: "350px",
+        maxWidth: "600px",
         marginBottom: "5px",
-        minHeight: "50px",
-        maxHeight: "430px",
       }}
     >
-      <div className="card-body">{children}</div>
+      <div className="card-body d-flex flex-column justify-content-between">
+        {children}
+      </div>
     </div>
   );
 }
@@ -62,19 +62,21 @@ export function CardBody(props: CardBodyProps) {
 
   return (
     <>
-      <div className="d-flex flex-column align-items-center text-lg-start flex-grow-1 order-2 order-lg-0">
+      <div className="d-flex flex-column align-items-center text-lg-start w-100">
         <span className={`badge rounded-pill ${freshnessClass}`}>
           {formattedDate}
         </span>
       </div>
       <br />
-      <h5 className="card-title">{title + "  "}</h5>
+      <div className="flex-grow-1">
+        <h5 className="card-title">{title + "  "}</h5>
 
-      {text1 && <p className="card-text">{text1}</p>}
-      {text2 && <p className="card-text">{text2}</p>}
-      {text3 && <p className="card-text">{text3}</p>}
-      {text4 && <p className="card-text">{text4}</p>}
-      {text5 && <p className="card-text">{text5}</p>}
+        {text1 && <p className="card-text">{text1}</p>}
+        {text2 && <p className="card-text">{text2}</p>}
+        {text3 && <p className="card-text">{text3}</p>}
+        {text4 && <p className="card-text">{text4}</p>}
+        {text5 && <p className="card-text">{text5}</p>}
+      </div>
     </>
   );
 }

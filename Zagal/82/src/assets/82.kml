@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<Document>
+	<name>Mapa sin nombre</name>
+	<gx:CascadingStyle kml:id="__managed_style_21F06715B13BB8DAF027">
+		<Style>
+			<IconStyle>
+				<scale>1.2</scale>
+				<Icon>
+					<href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+				</Icon>
+				<hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels"/>
+			</IconStyle>
+			<LabelStyle>
+			</LabelStyle>
+			<LineStyle>
+				<color>ff2dc0fb</color>
+				<width>4.8</width>
+			</LineStyle>
+			<PolyStyle>
+				<color>40ffffff</color>
+			</PolyStyle>
+			<BalloonStyle>
+				<displayMode>hide</displayMode>
+			</BalloonStyle>
+		</Style>
+	</gx:CascadingStyle>
+	<gx:CascadingStyle kml:id="__managed_style_1022A7619C3BB8DAF027">
+		<Style>
+			<IconStyle>
+				<Icon>
+					<href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+				</Icon>
+				<hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels"/>
+			</IconStyle>
+			<LabelStyle>
+			</LabelStyle>
+			<LineStyle>
+				<color>ff2dc0fb</color>
+				<width>3.2</width>
+			</LineStyle>
+			<PolyStyle>
+				<color>40ffffff</color>
+			</PolyStyle>
+			<BalloonStyle>
+				<displayMode>hide</displayMode>
+			</BalloonStyle>
+		</Style>
+	</gx:CascadingStyle>
+	<StyleMap id="__managed_style_0EE8B4903D3BB8DAF027">
+		<Pair>
+			<key>normal</key>
+			<styleUrl>#__managed_style_1022A7619C3BB8DAF027</styleUrl>
+		</Pair>
+		<Pair>
+			<key>highlight</key>
+			<styleUrl>#__managed_style_21F06715B13BB8DAF027</styleUrl>
+		</Pair>
+	</StyleMap>
+	<Placemark id="05ED16F7103BB8DAF010">
+		<name>Caseta de Riego</name>
+		<LookAt>
+			<longitude>-70.98752001604016</longitude>
+			<latitude>-34.47371323556862</latitude>
+			<altitude>254.0671798617015</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>328.943188440062</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_0EE8B4903D3BB8DAF027</styleUrl>
+		<Point>
+			<coordinates>-70.98724441314738,-34.47372770344382,254.175192150131</coordinates>
+		</Point>
+	</Placemark>
+	<Placemark id="07A2181A513BB8DD215C">
+		<name>S1 Parron</name>
+		<LookAt>
+			<longitude>-70.98791855392514</longitude>
+			<latitude>-34.47172514643728</latitude>
+			<altitude>253.4438362844672</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>749.680517461311</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_0EE8B4903D3BB8DAF027</styleUrl>
+		<Polygon>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						-70.98832457940101,-34.47273384161704,0 -70.9875794335739,-34.47311905173252,0 -70.98727259731773,-34.47275768137743,0 -70.98688437742435,-34.47295510450683,0 -70.98658593597342,-34.47259303848735,0 -70.98662726952101,-34.47253452599908,0 -70.98655591873863,-34.47244188779919,0 -70.98647299011043,-34.47246141636046,0 -70.98571702949374,-34.47158203428547,0 -70.98680789910686,-34.47099434519316,0 -70.98689720696187,-34.47105814274487,0 -70.9875750879726,-34.47188014867816,0 -70.98832457940101,-34.47273384161704,0 
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+	</Placemark>
+	<Placemark id="0CB9BD53423BB8DDF61E">
+		<name>S2 BL 82</name>
+		<LookAt>
+			<longitude>-70.98718358156033</longitude>
+			<latitude>-34.47255486159177</latitude>
+			<altitude>254.0058398187466</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>977.5254511419917</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_0EE8B4903D3BB8DAF027</styleUrl>
+		<Polygon>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						-70.98697510415528,-34.47384544266682,0 -70.98619622202668,-34.47425113771598,0 -70.98451719807655,-34.47214546299108,0 -70.9855742651532,-34.47159010023901,0 -70.9856823905384,-34.47167290927961,0 -70.98687473001539,-34.47312615429524,0 -70.98652726849278,-34.47336167220227,0 -70.98697510415528,-34.47384544266682,0 
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+	</Placemark>
+	<Placemark id="03C4546B5D3BB8E03B23">
+		<name>S3 SB72</name>
+		<LookAt>
+			<longitude>-70.98747275274926</longitude>
+			<latitude>-34.46509189878917</latitude>
+			<altitude>247.5388938480669</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>2008.439668015635</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_0EE8B4903D3BB8DAF027</styleUrl>
+		<Polygon>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						-70.98657730564528,-34.46879521156205,0 -70.98547685275786,-34.46924149525299,0 -70.98403238993681,-34.46767662611413,0 -70.98507787700548,-34.46719382244477,0 -70.98657730564528,-34.46879521156205,0 
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+	</Placemark>
+	<Placemark id="069F9838B23BB8E0D1D4">
+		<name>S4 SB72</name>
+		<LookAt>
+			<longitude>-70.98747275264648</longitude>
+			<latitude>-34.46509189878917</latitude>
+			<altitude>247.5388938480669</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>2008.43985343643</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_0EE8B4903D3BB8DAF027</styleUrl>
+		<Polygon>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						-70.98507810613157,-34.46723284315124,0 -70.98398472233613,-34.46766363092753,0 -70.98246308968835,-34.46602246256612,0 -70.98352720538136,-34.46557584609612,0 -70.98507810613157,-34.46723284315124,0 
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+	</Placemark>
+	<Placemark id="0F8799D19D3BB8E1E9D9">
+		<name>S5 SB72</name>
+		<LookAt>
+			<longitude>-70.98310323700274</longitude>
+			<latitude>-34.46392383296548</latitude>
+			<altitude>248.3248381519824</altitude>
+			<heading>0.3581128249801903</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>1692.361182922614</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_0EE8B4903D3BB8DAF027</styleUrl>
+		<Polygon>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						-70.98349706130158,-34.46555866170404,0 -70.98246367875917,-34.46596329443238,0 -70.98106302912268,-34.46443827386368,0 -70.98199427243073,-34.46400394064019,0 -70.98349706130158,-34.46555866170404,0 
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+	</Placemark>
+	<Placemark id="0AF4A53F2F3BB8E2AB07">
+		<name>S6 SEPTEMBER</name>
+		<LookAt>
+			<longitude>-70.98479653323456</longitude>
+			<latitude>-34.47643661154212</latitude>
+			<altitude>257.429407322124</altitude>
+			<heading>0.3581128235105683</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>1530.977876340476</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_0EE8B4903D3BB8DAF027</styleUrl>
+		<Polygon>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						-70.98667857378659,-34.47736178530707,0 -70.98573816259602,-34.47778537534143,0 -70.9854816154041,-34.47744772183734,0 -70.9846414923903,-34.47514756469418,0 -70.98558315668765,-34.47474245870277,0 -70.98667857378659,-34.47736178530707,0 
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+	</Placemark>
+	<Placemark id="07B51E60C93BB8E33C67">
+		<name>S12 SB ANDINO</name>
+		<LookAt>
+			<longitude>-70.98488956226976</longitude>
+			<latitude>-34.47709222793071</latitude>
+			<altitude>257.9296262927262</altitude>
+			<heading>0.3581128234739295</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>994.0171474800445</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_0EE8B4903D3BB8DAF027</styleUrl>
+		<Polygon>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						-70.98671282219924,-34.47737444042868,0 -70.98813170984323,-34.48080291765252,0 -70.98695623788723,-34.48127311412127,0 -70.98570334510475,-34.47798772038274,0 -70.98596164759138,-34.47787450246798,0 -70.98591410004279,-34.47772489763576,0 -70.98671282219924,-34.47737444042868,0 
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+	</Placemark>
+	<Placemark id="00D46C383B3BB8E4E854">
+		<name>S8 VIVEROS</name>
+		<LookAt>
+			<longitude>-70.98919811695099</longitude>
+			<latitude>-34.47558883119534</latitude>
+			<altitude>256.1433435270961</altitude>
+			<heading>0.3581128214730454</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>2347.843903683533</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_0EE8B4903D3BB8DAF027</styleUrl>
+		<Polygon>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						-70.99246918291146,-34.47921969150506,0 -70.99120188576912,-34.47973802072967,0 -70.9904445888595,-34.47845442090532,0 -70.98974794047291,-34.47709728105291,0 -70.99080329831014,-34.47669407660594,0 -70.99246918291146,-34.47921969150506,0 
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+	</Placemark>
+	<Placemark id="0415B083B03BB8E759B3">
+		<name>S9 RED PEARL SUR TOSCANA</name>
+		<LookAt>
+			<longitude>-70.99431907348733</longitude>
+			<latitude>-34.47503802476912</latitude>
+			<altitude>251.2009059905188</altitude>
+			<heading>3.973723770925364</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35.00000000000001</gx:fovy>
+			<range>2192.042597420805</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_0EE8B4903D3BB8DAF027</styleUrl>
+		<Polygon>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						-70.99120513875771,-34.47972122030489,0 -70.98970128684174,-34.48021890875609,0 -70.98820460495588,-34.4773271078209,0 -70.98938146540461,-34.47671754179941,0 -70.99120513875771,-34.47972122030489,0 
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+	</Placemark>
+	<Placemark id="0AA49604953BB8E80DEF">
+		<name>S10 RED PEARL GALPON</name>
+		<LookAt>
+			<longitude>-70.99431907348733</longitude>
+			<latitude>-34.47503802476912</latitude>
+			<altitude>251.2009059905188</altitude>
+			<heading>3.973723770925272</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35.00000000000001</gx:fovy>
+			<range>2192.042597420805</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_0EE8B4903D3BB8DAF027</styleUrl>
+		<Polygon>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						-70.9908343994603,-34.47667718128711,0 -70.98967377682135,-34.47710093726389,0 -70.98822138959596,-34.47448303245356,0 -70.98910293140035,-34.47407453765751,0 -70.9908343994603,-34.47667718128711,0 
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+	</Placemark>
+	<Placemark id="036A622F7F3BB8E89E47">
+		<name>S11 MAGUEQUE</name>
+		<LookAt>
+			<longitude>-70.99431907348733</longitude>
+			<latitude>-34.47503802476912</latitude>
+			<altitude>251.2009059905188</altitude>
+			<heading>3.973723770925272</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35.00000000000001</gx:fovy>
+			<range>2192.042597420805</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_0EE8B4903D3BB8DAF027</styleUrl>
+		<Polygon>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						-70.98942723423984,-34.47664347189931,0 -70.98822269289977,-34.47734046989004,0 -70.98664457421165,-34.47427328757324,0 -70.98777464231193,-34.47373614002489,0 -70.98942723423984,-34.47664347189931,0 
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+	</Placemark>
+</Document>
+</kml>

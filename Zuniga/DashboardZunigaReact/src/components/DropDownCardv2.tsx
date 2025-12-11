@@ -9,7 +9,6 @@ import {
   Title,
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
-
 // Registrar componentes de Chart.js
 ChartJS.register(
   CategoryScale,
@@ -20,17 +19,19 @@ ChartJS.register(
   Title
 );
 
+interface Metric {
+  value: number;
+  time: string;
+}
+
 interface DropdownCardProps {
   isOpen: boolean;
   title: string;
   chartLabel: string;
-  data: {
-    key: string; // fecha u otro identificador
-    value: number; // minutos
-  }[];
+  data: Metric[];
+  date?: string;
 }
 
-// Función utilitaria para convertir minutos a HH:MM
 const minutesToHHMM = (mins: number): string => {
   const hours = Math.floor(mins / 60);
   const minutes = mins % 60;
@@ -45,8 +46,9 @@ function DropdownCardv2({
   title,
   data,
   chartLabel,
+  date,
 }: DropdownCardProps) {
-  const labels = data.map((d) => new Date(d.key).toISOString().split("T")[0]);
+  const labels = data.map((d) => new Date(d.time).toISOString().split("T")[0]);
   const values = data.map((d) => d.value);
 
   const chartData = {
@@ -54,10 +56,14 @@ function DropdownCardv2({
     datasets: [
       {
         label: chartLabel,
-        data: values, // siguen en minutos
+        data: values,
         backgroundColor: "rgba(13, 110, 253, 0.6)",
         borderColor: "rgba(13, 110, 253, 1)",
         borderWidth: 1,
+        tension: 0.5,
+        pointRadius: 3,
+        pointBackgroundColor: "transparent",
+        pointBorderColor: "transparent",
       },
     ],
   };
@@ -104,10 +110,14 @@ function DropdownCardv2({
   };
 
   return (
-    <div className={`collapse-card ${isOpen ? "show" : ""}`}>
+    <div
+      className={`mt-2 mb-2 mt-lg-0 mb-lg-0 ${
+        isOpen ? "show" : "collapse-card"
+      }`}
+    >
       <Card>
-        <CardBody title={`Detalle ${title}`} />
-        <div style={{ height: "250px" }}>
+        <CardBody title={`Detalle ${title}`} date={date} />
+        <div style={{ height: "230px" }}>
           <Bar data={chartData} options={options} />
         </div>
       </Card>

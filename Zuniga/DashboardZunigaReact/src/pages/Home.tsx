@@ -10,72 +10,55 @@ import DropdownCard from "../components/DropdownCard";
 import Error from "./Error";
 import DropdownCardv2 from "../components/DropDownCardv2";
 import DropdownCardv3 from "../components/DropDownCardv3";
+import ScadaDiagram from "../components/ScadaDiagram";
+import ExportModal from "../components/ExportModal";
+import lgoJte from "../assets/logoJte.png";
+
+interface Metric {
+  value: number;
+  time: string;
+}
+
+interface Snapshot {
+  falla: Metric;
+  bomba: Metric;
+  automatico: Metric;
+  estanque: Metric;
+  estanque_2: Metric;
+  caudal: Metric;
+  freatico: Metric;
+  presion: Metric;
+  horometro: Metric;
+  totalizador: Metric;
+}
 
 interface Datos {
-  falla: string;
-  bomba: string;
-  automatico: string;
-  estanque: number;
-  estanque_2: number;
-  caudal: number;
-  freatico: number;
-  presion: number;
-  horometro_total: number;
-  horometro_diario: number;
-  totalizador_total: number;
-  totalizador_diario: number;
-  lastUpdate: string;
-}
-
-interface Vaciado {
-  tiempoVaciadoSegundo: number;
-  tiempoVaciado: string;
-}
-
-interface ChartDataEstanque1 {
-  value: number;
-  time: string;
-}
-
-interface ChartDataEstanque2 {
-  value: number;
-  time: string;
-}
-
-interface ChartDataCaudal {
-  value: number;
-  time: string;
-}
-
-interface ChartDataHorometro {
-  key: string;
-  value: number;
-}
-
-interface ChartDataTotalizador {
-  key: string;
-  value: number;
+  snapshot: Snapshot;
+  tiempo_vaciado: number;
+  tiempo_vaciado_formatted: string;
 }
 
 function App() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<Datos | null>(null);
-  const [vaciado, setTiempoVaciado] = useState<Vaciado | null>(null);
-  const [nivelEstanque1, setNivelEstanque1] = useState<ChartDataEstanque1[]>(
-    []
-  );
-  const [nivelEstanque2, setNivelEstanque2] = useState<ChartDataEstanque2[]>(
-    []
-  );
-  const [caudal, setCaudal] = useState<ChartDataCaudal[]>([]);
-  const [horometro, setHorometro] = useState<ChartDataHorometro[]>([]);
-  const [totalizador, setTotalizador] = useState<ChartDataTotalizador[]>([]);
 
-  const [isOpenEstanque, setIsOpenEstanque] = useState(false);
-  const [isOpenEstanque2, setIsOpenEstanque2] = useState(false);
-  const [isOpenBomba, setIsOpenBomba] = useState(false);
+  const [nivelEstanque1, setNivelEstanque1] = useState<Metric[]>([]);
+  const [nivelEstanque2, setNivelEstanque2] = useState<Metric[]>([]);
+  const [caudal, setCaudal] = useState<Metric[]>([]);
+  const [horometro, setHorometro] = useState<Metric[]>([]);
+  const [totalizador, setTotalizador] = useState<Metric[]>([]);
+
+  const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 992);
+
+  const [isOpenEstanque, setIsOpenEstanque] = useState(isLargeScreen);
+  const [isOpenEstanque2, setIsOpenEstanque2] = useState(isLargeScreen);
+  const [isOpenBomba, setIsOpenBomba] = useState(isLargeScreen);
+  const [isOpenExport, setIsOpenExport] = useState(false);
 
   useEffect(() => {
+    const handleResize = () => setIsLargeScreen(window.innerWidth >= 992);
+    window.addEventListener("resize", handleResize);
+
     const formatter = new Intl.DateTimeFormat("en-CA", {
       timeZone: "America/Santiago",
       year: "numeric",
@@ -85,17 +68,14 @@ function App() {
 
     const now = new Date();
     const date = formatter.format(now);
-
     const fiveDaysAgo = new Date(now);
-    fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
-
+    fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 14);
     const oldDate = formatter.format(fiveDaysAgo);
 
     const fetchData = async () => {
       try {
         const [
           snapshotRes,
-          estanqueRes,
           nivelEstanque1Res,
           nivelEstanque2Res,
           caudalRes,
@@ -103,43 +83,31 @@ function App() {
           totalizadorRes,
         ] = await Promise.all([
           fetch("https://app.jteanalytics.cl/zuniga/snapshot"),
-          fetch("https://app.jteanalytics.cl/zuniga/estanque"),
           fetch(
-            `https://app.jteanalytics.cl/zuniga/nivelestanque1?fechaInicio=${date}&fechaFin=${date}`
+            `https://app.jteanalytics.cl/zuniga/nivel?start=${date}&end=${date}`
           ),
           fetch(
-            `https://app.jteanalytics.cl/zuniga/nivelestanque2?fechaInicio=${date}&fechaFin=${date}`
+            `https://app.jteanalytics.cl/zuniga/nivel2?start=${date}&end=${date}`
           ),
           fetch(
-            `https://app.jteanalytics.cl/zuniga/caudal?fechaInicio=${date}&fechaFin=${date}`
+            `https://app.jteanalytics.cl/zuniga/caudal?start=${date}&end=${date}`
           ),
           fetch(
-            `https://app.jteanalytics.cl/zuniga/horometro?fechaInicio=${oldDate}&fechaFin=${date}`
+            `https://app.jteanalytics.cl/zuniga/horometro?start=${oldDate}&end=${date}`
           ),
           fetch(
-            `https://app.jteanalytics.cl/zuniga/totalizador?fechaInicio=${oldDate}&fechaFin=${date}`
+            `https://app.jteanalytics.cl/zuniga/totalizador?start=${oldDate}&end=${date}`
           ),
         ]);
 
         const snapshotData: Datos = await snapshotRes.json();
-        const estanqueData = await estanqueRes.json();
-
-        const nivelEstanque1Data = await nivelEstanque1Res.json();
-        const nivelEstanque2Data = await nivelEstanque2Res.json();
-
-        const caudalData = await caudalRes.json();
-
-        const horometroData = await horometroRes.json();
-
-        const totalizadorData = await totalizadorRes.json();
 
         setData(snapshotData);
-        setTiempoVaciado(estanqueData);
-        setNivelEstanque1(nivelEstanque1Data);
-        setNivelEstanque2(nivelEstanque2Data);
-        setCaudal(caudalData);
-        setHorometro(horometroData);
-        setTotalizador(totalizadorData);
+        setNivelEstanque1(await nivelEstanque1Res.json());
+        setNivelEstanque2(await nivelEstanque2Res.json());
+        setCaudal(await caudalRes.json());
+        setHorometro(await horometroRes.json());
+        setTotalizador(await totalizadorRes.json());
       } catch (error) {
         console.error("Error al cargar datos:", error);
       } finally {
@@ -148,180 +116,240 @@ function App() {
     };
 
     fetchData();
-
     const intervalId = setInterval(fetchData, 120000);
 
-    return () => clearInterval(intervalId);
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener("resize", handleResize);
+    };
   }, []);
 
-  if (loading)
-    return (
-      <>
-        <Loading></Loading>
-      </>
-    );
-  if (!data) {
-    return <Error />;
-  }
-  if (!vaciado) {
-    return <Error />;
-  }
-  if (!nivelEstanque1) {
-    return <Error />;
-  }
-  if (!nivelEstanque2) {
-    return <Error />;
-  }
-  if (!caudal) {
-    return <Error></Error>;
-  }
-  if (!horometro) {
-    return <Error></Error>;
-  }
+  if (loading) return <Loading />;
+  if (!data) return <Error />;
 
-  const cleanDate = data?.lastUpdate?.trim().replace(/^"|"$/g, "");
+  const cleanDate = data?.snapshot
+    ? new Date(
+        Math.max(
+          ...Object.values(data.snapshot).map((m) => new Date(m.time).getTime())
+        )
+      ).toISOString()
+    : "";
+  console.log(cleanDate);
+  const latestHorometro =
+    horometro.length > 0 ? horometro[horometro.length - 1].value : 0;
+  const horHoras = Math.floor(latestHorometro / 60);
+  const horMinutos = Math.floor(latestHorometro % 60);
 
-  function evaluate(t = vaciado?.tiempoVaciado) {
-    if (t == "00:00:00") {
-      return "Llenando...";
-    } else {
-      return "Tiempo de Vaciado: " + t + " h";
-    }
-  }
+  const latestTotalizador =
+    totalizador.length > 0 ? totalizador[totalizador.length - 1].value : 0;
 
-  const horHoras = (data.horometro_diario - (data.horometro_diario % 60)) / 60;
-  const horMinutos = data.horometro_diario % 60;
+  /** --- VISTA DESKTOP --- **/
+  const DesktopView = () => (
+    <div className="container-fluid min-vh-100 p-0 d-flex flex-column align-items-center">
+      <div className="mb-3 w-100" style={{ maxWidth: "5000px" }}>
+        <Navbar text={cleanDate}>
+          <button
+            className="btn btn-outline-primary bi bi-save"
+            onClick={() => setIsOpenExport(true)}
+          ></button>
+        </Navbar>
+      </div>
 
-  return (
-    <>
-      <div className="container-fluid py-3">
-        {/* Navbar */}
-        <div className="mb-4">
-          <Navbar text={cleanDate} />
+      <div
+        className="row w-100 justify-content-center"
+        style={{ maxWidth: "2200px" }}
+      >
+        <div className="col-12 col-lg-8 d-flex flex-column order-2 order-lg-1">
+          <div className="card w-100 p-4">
+            <ScadaDiagram data={data} horometro={horometro} totalizador={totalizador}/>
+          </div>
         </div>
 
-        {/* Tarjetas */}
-        <div
-          className="d-flex flex-column flex-lg-row justify-content-center align-items-stretch gap-4 mx-auto"
-          style={{ maxWidth: "1500px" }}
-        >
-          {/*Estanque 1*/}
-          <div className="col-12 col-md-6 col-lg-3">
-            <Card>
-              <CardBody
-                title="Estanque 350 m³"
-                text1={"Nivel: " + data.estanque?.toFixed(2) + " m"}
-                text2={evaluate(vaciado?.tiempoVaciado)}
-              />
-              <TankLevelCircular nivelActual={data.estanque} nivelMaximo={7} />
+        <div className="col-12 col-lg-4 order-1 order-lg-2 mb-1">
+          <DropdownCard
+            isOpen={true}
+            title="Estanque 350 m³"
+            chartLabel="Nivel del Estanque (m)"
+            data={nivelEstanque1}
+            nivelMax={7}
+            nivelAlarma={2}
+          />
+          <DropdownCard
+            isOpen={true}
+            title="Estanque 2 m³"
+            chartLabel="Nivel del Estanque (m)"
+            data={nivelEstanque2}
+            nivelMax={2}
+          />
+        </div>
 
-              <ToggleCardButton
-                isOpen={isOpenEstanque}
-                onToggle={() => setIsOpenEstanque(!isOpenEstanque)}
-              />
-            </Card>
-
+        <div className="w-100 row g-2 p-0 order-2 justify-content-center">
+          <div className="col-12 col-lg-4">
             <DropdownCard
-              isOpen={isOpenEstanque}
-              title="Estanque 350 m³"
-              chartLabel="Nivel del Estanque (m)"
-              data={nivelEstanque1 || []}
-            />
-          </div>
-
-          {/*Estanque 2*/}
-          <div className="col-12 col-md-6 col-lg-3">
-            <Card>
-              <CardBody
-                title="Estanque 2 m³"
-                text1={"Nivel: " + data.estanque_2.toFixed(2) + " m"}
-              />
-              <TankLevelCircular
-                nivelActual={data.estanque_2}
-                nivelMaximo={2}
-              />
-              <ToggleCardButton
-                isOpen={isOpenEstanque2}
-                onToggle={() => setIsOpenEstanque2(!isOpenEstanque2)}
-              />
-            </Card>
-            <DropdownCard
-              isOpen={isOpenEstanque2}
-              title="Estanque 2 m³"
-              chartLabel="Nivel del Estanque (m)"
-              data={nivelEstanque2 || []}
-            />
-          </div>
-
-          {/*Bomba*/}
-          <div className="col-12 col-md-6 col-lg-3">
-            <Card>
-              <CardBody
-                title="Bomba"
-                text1={"Caudal Impulsion: " + data.caudal.toFixed(2) + " l/s"}
-                text2={
-                  "Nivel Freático: " + (data.freatico / 100).toFixed(2) + " m"
-                }
-                text3={"Presión: " + (data.presion / 10).toFixed(1) + " bar"}
-                text4={"Horómetro: " + horHoras + ":" + horMinutos + " h"}
-                text5={
-                  "Totalizador: " + data.totalizador_diario.toFixed(2) + " m³"
-                }
-                text6={
-                  "Totalizador Total: " +
-                  data.totalizador_total.toFixed(2) +
-                  " m³"
-                }
-              ></CardBody>
-
-              <ToggleCardButton
-                isOpen={isOpenBomba}
-                onToggle={() => setIsOpenBomba(!isOpenBomba)}
-              />
-            </Card>
-
-            <DropdownCard
-              isOpen={isOpenBomba}
+              isOpen
               title="Caudal"
-              chartLabel="Caudal de Impulsión (l/s)"
-              data={caudal || []}
-            />
-
-            <DropdownCardv2
-              isOpen={isOpenBomba}
-              title="Horometro Diario"
-              chartLabel="Horometro"
-              data={horometro || []}
-            />
-
-            <DropdownCardv3
-              isOpen={isOpenBomba}
-              title="Totalizador Diario"
-              chartLabel="Totalizador"
-              data={totalizador || []}
+              chartLabel="Caudal (l/s)"
+              data={caudal}
+              nivelMax={50}
             />
           </div>
+          <div className="col-12 col-lg-4">
+            <DropdownCardv2
+              isOpen
+              title="Horómetro Diario"
+              chartLabel="Horómetro"
+              data={horometro}
+            />
+          </div>
+          <div className="col-12 col-lg-4">
+            <DropdownCardv3
+              isOpen
+              title="Totalizador Diario"
+              chartLabel="Totalizador (m³)"
+              data={totalizador}
+            />
+          </div>
+        </div>
+      </div>
 
-          {/*Estado Tablero*/}
+      <footer className="mt-4 w-75 d-flex flex-wrap justify-content-between align-items-center py-3 px-4 border-top">
+        <p className="text-body-secondary">&copy; 2025 JTE Analytics.</p>
+        <img src={lgoJte} alt="logo" width={40} height={24} />
+      </footer>
+    </div>
+  );
+
+  /** --- VISTA MÓVIL --- **/
+  const MobileView = () => (
+    <div className="container-fluid min-vh-100 p-0 d-flex flex-column align-items-center">
+      <div className="mb-3 w-100">
+        <Navbar text={cleanDate}>
+          <button
+            className="btn btn-outline-primary bi bi-save"
+            onClick={() => setIsOpenExport(true)}
+          ></button>
+        </Navbar>
+      </div>
+
+      <div className="w-100 px-2">
+        {/* Estanque 1 */}
+        <div className="mb-2">
+          <Card>
+            <CardBody
+              title="Estanque 350 m³"
+              text1={`Nivel: ${data.snapshot.estanque.value.toFixed(2)} m`}
+              text2={`Tiempo Vaciado: ${data.tiempo_vaciado_formatted}`}
+            />
+            <TankLevelCircular nivelActual={data.snapshot.estanque.value} nivelMaximo={7} />
+            <ToggleCardButton
+              isOpen={isOpenEstanque}
+              onToggle={() => setIsOpenEstanque(!isOpenEstanque)}
+            />
+          </Card>
+        </div>
+
+        <div className="mb-2">
+          <DropdownCard
+            isOpen={isOpenEstanque}
+            title="Estanque 350 m³"
+            chartLabel="Nivel (m)"
+            data={nivelEstanque1}
+            nivelMax={7}
+            nivelAlarma={2}
+          />
+        </div>
+
+        {/* Estanque 2 */}
+        <div className="mb-2">
+          <Card>
+            <CardBody
+              title="Estanque 2 m³"
+              text1={`Nivel: ${data.snapshot.estanque_2.value.toFixed(2)} m`}
+            />
+            <TankLevelCircular nivelActual={data.snapshot.estanque_2.value} nivelMaximo={2} />
+            <ToggleCardButton
+              isOpen={isOpenEstanque2}
+              onToggle={() => setIsOpenEstanque2(!isOpenEstanque2)}
+            />
+          </Card>
+        </div>
+
+        <div className="mb-2">
+          <DropdownCard
+            isOpen={isOpenEstanque2}
+            title="Estanque 2 m³"
+            chartLabel="Nivel (m)"
+            data={nivelEstanque2}
+            nivelMax={2}
+          />
+        </div>
+
+        {/* Bomba */}
+        <div className="mb-2">
+          <Card>
+            <CardBody
+              title="Bomba"
+              text1={`Caudal Impulsión: ${data.snapshot.caudal.value.toFixed(2)} l/s`}
+              text2={`Nivel Freático: ${(data.snapshot.freatico.value / 100).toFixed(2)} m`}
+              text3={`Presión: ${(data.snapshot.presion.value / 10).toFixed(1)} bar`}
+              text4={`Horómetro: ${horHoras}:${horMinutos} h`}
+              text5={`Totalizador Diario: ${latestTotalizador} m³`}
+              text6={`Totalizador Total: ${data.snapshot.totalizador.value.toFixed(
+                2
+              )} m³`}
+            />
+            <ToggleCardButton
+              isOpen={isOpenBomba}
+              onToggle={() => setIsOpenBomba(!isOpenBomba)}
+            />
+          </Card>
+        </div>
+
+        <div className="mb-2">
+          <DropdownCard
+            isOpen={isOpenBomba}
+            title="Caudal"
+            chartLabel="Caudal (l/s)"
+            data={caudal}
+            nivelMax={50}
+          />
+          <DropdownCardv2
+            isOpen={isOpenBomba}
+            title="Horómetro Diario"
+            chartLabel="Horómetro"
+            data={horometro}
+          />
+          <DropdownCardv3
+            isOpen={isOpenBomba}
+            title="Totalizador Diario"
+            chartLabel="Totalizador (m³)"
+            data={totalizador}
+          />
+        </div>
+
+        {/* Estado */}
+        <div className="mb-2">
           <State>
             <StateBody
-              automatico={data.automatico.toString()}
-              bomba={data.bomba.toString()}
-              falla={data.falla.toString()}
+              automatico={data.snapshot.automatico.value.toString()}
+              bomba={data.snapshot.bomba.value.toString()}
+              falla={data.snapshot.falla.value.toString()}
             />
           </State>
         </div>
-
-        <footer className="d-flex flex-wrap justify-content-between align-items-center py-3 px-4 border-top">
-          <p className="mb-0 text-body-secondary">&copy; 2025 JTE Analytics.</p>
-          <img
-            src="/src/assets/logoJte.png"
-            alt="logo"
-            width={40}
-            height={24}
-          />
-        </footer>
       </div>
+
+      <footer className="mt-4 w-75 d-flex flex-wrap justify-content-between align-items-center py-3 px-4 border-top">
+        <p className="text-body-secondary">&copy; 2025 JTE Analytics.</p>
+        <img src={lgoJte} alt="logo" width={40} height={24} />
+      </footer>
+    </div>
+  );
+
+  return (
+    <>
+      {isLargeScreen ? <DesktopView /> : <MobileView />}
+      <ExportModal show={isOpenExport} onClose={() => setIsOpenExport(false)} />
     </>
   );
 }

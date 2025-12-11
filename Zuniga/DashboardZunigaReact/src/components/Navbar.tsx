@@ -1,15 +1,19 @@
-import BurgerMenu from "./BurgerMenu";
+import { useState } from "react";
+import lgoJte from "../assets/logoJte.png";
+import logoZuniga from "../assets/logoZuniga.png";
 
 interface NavbarProps {
   text?: string;
+  children?: React.ReactNode;
 }
 
 function Navbar(props: NavbarProps) {
-  const { text } = props;
-  const menuItems = [{ label: "Inicio", href: "/zunigamovil/" }];
+  const { text, children } = props;
 
   let formattedDate = "Desconocida";
   let timeDiffMinutes = null;
+
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   if (text) {
     const timestamp = new Date(text);
@@ -33,37 +37,48 @@ function Navbar(props: NavbarProps) {
     }
   }
 
+  const toggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      // Entrar a pantalla completa
+      document.documentElement
+        .requestFullscreen()
+        .then(() => {
+          setIsFullScreen(true);
+        })
+        .catch((err) => {
+          console.error(
+            `Error al intentar activar pantalla completa: ${err.message}`
+          );
+        });
+    } else {
+      // Salir de pantalla completa
+      document
+        .exitFullscreen()
+        .then(() => {
+          setIsFullScreen(false);
+        })
+        .catch((err) => {
+          console.error(
+            `Error al intentar desactivar pantalla completa: ${err.message}`
+          );
+        });
+    }
+  };
+
   return (
     <nav
       className="navbar navbar-expand-lg navbar-light bg-light rounded shadow-sm mt-2 mx-auto px-3"
-      style={{ width: "95%", maxWidth: "100%" }}
+      style={{ width: "98%", maxWidth: "100%" }}
     >
       <div className="container-fluid d-flex flex-wrap align-items-center justify-content-between gap-2">
-        {/* Marca / Título */}
         <a
           className="navbar-brand d-flex align-items-center gap-2 mb-0"
           href="/zunigamovil/"
         >
-          <img
-            src="/src/assets/logoJte.png"
-            alt="logo"
-            width={40}
-            height={24}
-          />
-          <img
-            src="/src/assets/logoZuniga.png"
-            alt="logoZ"
-            width={40}
-            height={40}
-          />
+          <img src={lgoJte} alt="logo" width={50} height={34} />
+          <img src={logoZuniga} alt="logoZ" width={50} height={50} />
           <span className="h5 mb-0">SSR Zuñiga</span>
         </a>
-
-        {/* Burger menu */}
-        <div className="ms-auto d-lg-none">
-          <BurgerMenu items={menuItems} />
-        </div>
-
         {/* Fecha y estado */}
         <div className="d-flex flex-column align-items-center text-lg-start flex-grow-1 order-2 order-lg-0">
           <span className={`badge rounded-pill ${freshnessClass}`}>
@@ -71,6 +86,24 @@ function Navbar(props: NavbarProps) {
           </span>
         </div>
       </div>
+      <div className="ms-auto d-none d-md-block m-4 ">{children}</div>
+
+      <button
+        className="btn btn-outline-secondary d-none d-md-inline-block"
+        onClick={toggleFullScreen}
+        title={
+          isFullScreen ? "Salir de Pantalla Completa" : "Pantalla Completa"
+        }
+        aria-label={
+          isFullScreen ? "Salir de Pantalla Completa" : "Pantalla Completa"
+        }
+      >
+        {isFullScreen ? (
+          <i className="bi bi-fullscreen-exit"></i>
+        ) : (
+          <i className="bi bi-fullscreen"></i>
+        )}
+      </button>
     </nav>
   );
 }

@@ -190,7 +190,6 @@ function App() {
               data.snapshot.metalico2.value
             ).toFixed(2)} m³`}
             text3={data.tiempo_vaciado_2_formatted}
-            date={data.snapshot.metalico2.time}
           />
           <TankLevelCircular
             nivelActual={data.snapshot.metalico2.value}
@@ -219,7 +218,7 @@ function App() {
             title="Bomba"
             text1={`Caudal Impulsión: ${(data.snapshot.caudal.value / 1000).toFixed(
               2
-            )} l/s`}
+            )} m³/h`}
             text2={`Nivel Freático: ${(
               data.snapshot.freatico.value / 100
             ).toFixed(2)} m`}
@@ -237,9 +236,9 @@ function App() {
         <DropdownCard
           isOpen={isOpenBomba}
           title="Caudal"
-          chartLabel="Caudal de Impulsión (l/s)"
+          chartLabel="Caudal de Impulsión (m³/h)"
           data={caudalChartData}
-          nivelMax={4}
+          nivelMax={80}
         />
         <DropdownCardv2
           isOpen={isOpenBomba}

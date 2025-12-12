@@ -38,8 +38,12 @@ function DropdownCardv3({
   chartLabel,
   date,
 }: DropdownCardProps) {
+  let divisor = 10;
+
   const labels = data.map((d) => new Date(d.time).toISOString().split("T")[0]);
-  const values = data.map((d) => d.value);
+  const values = data.map((d) => (d.value / divisor));
+
+
 
   const chartData = {
     labels,

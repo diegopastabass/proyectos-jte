@@ -103,9 +103,9 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           image={imageAssets.newPipe}
           hasWaterFlow={hasWaterFlow}
           style={{ top: 0, left: 250 }}
-          caudal={data.snapshot.caudal.value}
+          caudal={(data.snapshot.caudal.value / 1000)}
           totalizador_diario={Number(tot)}
-          totalizador_total={data.snapshot.totalizador.value}
+          totalizador_total={(data.snapshot.totalizador.value )}
         />
 
         {/* 4. Tanque Principal - Posición (600, 0). Max Volume: 7 */}

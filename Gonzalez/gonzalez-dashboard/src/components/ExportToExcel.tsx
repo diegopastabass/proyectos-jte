@@ -10,8 +10,8 @@ type ExportDataType =
   | "totalizador";
 
 const EXPORT_OPTIONS: Record<ExportDataType, string> = {
-  nivel: "Nivel Estanque 1",
-  nivel2: "Nivel Estanque 2",
+  nivel: "Nivel Estanque Metálico 1",
+  nivel2: "Nivel Estanque Metálico 2",
   caudal: "Caudal",
   horometro: "Horómetro",
   totalizador: "Totalizador",
@@ -56,9 +56,9 @@ function Export() {
         startDate === endDate &&
         ["nivel", "caudal", "nivel2"].includes(endpoint)
       ) {
-        apiUrl = `https://app.jteanalytics.cl/ranguil/${endpoint}`;
+        apiUrl = `https://app.jteanalytics.cl/gonzalez/${endpoint}`;
       } else {
-        apiUrl = `https://app.jteanalytics.cl/ranguil/${endpoint}?start=${startDate}&end=${endDate}`;
+        apiUrl = `https://app.jteanalytics.cl/gonzalez/${endpoint}?start=${startDate}&end=${endDate}`;
       }
 
       const res = await fetch(apiUrl);
@@ -83,7 +83,7 @@ function Export() {
             return {
               Fecha: fecha,
               Hora: hora,
-              "Valor (m)": (d.value / 100).toFixed(2),
+              "Valor (m)": d.value.toFixed(2),
             };
           case "nivel2":
             return {
@@ -95,7 +95,7 @@ function Export() {
             return {
               Fecha: fecha,
               Hora: hora,
-              "Valor (l/s)": d.value.toFixed(2),
+              "Valor (m³/h)": (d.value / 1000).toFixed(2),
             };
           case "horometro": {
             const totalMin = d.value;

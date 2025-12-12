@@ -149,7 +149,7 @@ function App() {
       <div className="col-12 col-lg-4 mb-1">
         <Card>
           <CardBody
-            title="Estanque Nuevo"
+            title="Estanque Metálico 1"
             text1={`Nivel: ${(data.snapshot.metalico1.value / 100).toFixed(
               2
             )} m`}
@@ -171,7 +171,7 @@ function App() {
         <DropdownCard
           className="mb-4 d-below-1500-none d-1500-block"
           isOpen={isOpenEstanque}
-          title="Estanque Nuevo"
+          title="Estanque Metálico 1"
           chartLabel="Nivel del Estanque (m)"
           data={nivelChartData}
           nivelMax={3}
@@ -183,7 +183,7 @@ function App() {
       <div className="col-12 col-lg-4 mb-1">
         <Card>
           <CardBody
-            title="Estanque Antiguo"
+            title="Estanque Metálico 2"
             text1={`Nivel: ${data.snapshot.metalico2.value.toFixed(2)} m`}
             text2={`Volumen Actual: ${(
               (60 / 7) *
@@ -204,7 +204,7 @@ function App() {
         <DropdownCard
           className="mb-4 d-below-1500-none d-1500-block"
           isOpen={isOpenEstanque2}
-          title="Estanque Antiguo"
+          title="Estanque Metálico 2"
           chartLabel="Nivel del Estanque (m)"
           data={nivel2ChartData}
           nivelMax={3}
@@ -217,15 +217,15 @@ function App() {
         <Card>
           <CardBody
             title="Bomba"
-            text1={`Caudal Impulsión: ${data.snapshot.caudal.value.toFixed(
+            text1={`Caudal Impulsión: ${(data.snapshot.caudal.value / 1000).toFixed(
               2
             )} l/s`}
             text2={`Nivel Freático: ${(
               data.snapshot.freatico.value / 100
             ).toFixed(2)} m`}
             text4={`Horómetro por Día: ${minutesToHHMM(ultimoHorometro)}`}
-            text5={`Totalizador por Día: ${ultimoTotalizador.toFixed(2)} m³`}
-            text6={`Totalizador: ${data.snapshot.totalizador.value.toFixed(
+            text5={`Totalizador por Día: ${(ultimoTotalizador / 10).toFixed(2)} m³`}
+            text6={`Totalizador: ${(data.snapshot.totalizador.value / 10).toFixed(
               2
             )} m³`}
           />
@@ -258,7 +258,7 @@ function App() {
       {/* Panel de Estados */}
       <State>
         <StateBody
-          automatico={"1"}
+          automatico={data.snapshot.automatico.value.toString()}
           bomba={data.snapshot.bomba.value.toString()}
           falla={data.snapshot.termica.value.toString()}
         />
@@ -288,7 +288,7 @@ function App() {
           <ScadaDiagram
             data={data}
             hor={ultimoHorometro.toFixed(2)}
-            tot={ultimoTotalizador.toFixed(2)}
+            tot={(ultimoTotalizador / 10).toFixed(2)}
           />
         </div>
       </div>
@@ -317,7 +317,7 @@ function App() {
       <div style={{ gridColumn: "3", gridRow: "1" }}>
         <DropdownCard
           isOpen={true}
-          title="Estanque Nuevo"
+          title="Estanque Metálico 1"
           chartLabel="Nivel del Estanque (m)"
           data={nivelChartData}
           nivelMax={3}
@@ -329,7 +329,7 @@ function App() {
       <div style={{ gridColumn: "3", gridRow: "2" }}>
         <DropdownCard
           isOpen={true}
-          title="Estanque Antiguo"
+          title="Estanque Metálico 2"
           chartLabel="Nivel del Estanque (m)"
           data={nivel2ChartData}
           nivelMax={3}
@@ -342,9 +342,9 @@ function App() {
         <DropdownCard
           isOpen={true}
           title="Caudal"
-          chartLabel="Caudal de Impulsión (l/s)"
+          chartLabel="Caudal de Impulsión (m³/h)"
           data={caudalChartData}
-          nivelMax={80000}
+          nivelMax={80}
         />
       </div>
     </div>

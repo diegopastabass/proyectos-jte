@@ -50,6 +50,10 @@ function DropdownCard({
       minute: "2-digit",
     })
   );
+  let divisor = 1;
+  if (title == "Caudal") {
+    divisor = 1000;
+  }
 
 
   // Línea horizontal de alarma SOLO si viene el valor
@@ -70,7 +74,7 @@ function DropdownCard({
     datasets: [
       {
         label: chartLabel,
-        data: data.map((d) => d.value),
+        data: data.map((d) => (d.value / divisor)),
         backgroundColor: "rgba(13, 110, 253, 0.6)",
         borderColor: "rgba(13, 110, 253, 1)",
         borderWidth: 2,

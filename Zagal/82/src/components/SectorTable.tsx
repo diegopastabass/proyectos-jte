@@ -52,7 +52,7 @@ const SectorTable: React.FC<Props> = ({ data }) => {
                   <StatusLed status={sector.is_active} />
                 </td>
                 <td>{formatIrrigationTime(sector.tiempo_riego_segundos)}</td>
-                <td>{(sector.totalizador / 10).toFixed(1)}</td>
+                <td>{(sector.totalizador).toFixed(1)}</td>
               </tr>
             ))}
           </tbody>

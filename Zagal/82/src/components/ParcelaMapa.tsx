@@ -82,22 +82,22 @@ const ParcelaMapa: React.FC<ParcelaMapaProps> = ({
   };
 
   const onEachFeature = (
-    feature: Feature<Geometry, { name: string }>,
+    feature: Feature<Geometry, { identifier: string }>,
     layer: Layer
   ) => {
     if (feature.geometry.type === "Polygon") {
       layer.on("click", () => {
-        const isActive = activeMap[feature.properties?.name || ""] ?? false;
+        const isActive = activeMap[feature.properties?.identifier || ""] ?? false;
         const interval = irrigationIntervals.find(
-          (i) => i.mt_name === feature.properties?.name
+          (i) => i.mt_name === feature.properties?.identifier
         );
 
-        const totalizador = ((interval?.totalizador ?? 0) / 10).toFixed(1);
+        const totalizador = (interval?.totalizador ?? 0).toFixed(1);
         const tiempoRiego = interval?.tiempo_riego_segundos ?? 0;
 
         setModalData({
           show: true,
-          title: `${feature.properties?.name}`,
+          title: `${feature.properties?.identifier}`,
           text1: `Estado de riego: ${isActive ? "Activo" : "Inactivo"}`,
           text2: `Totalizador: ${totalizador} m³`,
           text3: `Tiempo de riego: ${formatIrrigationTime(tiempoRiego)}`,

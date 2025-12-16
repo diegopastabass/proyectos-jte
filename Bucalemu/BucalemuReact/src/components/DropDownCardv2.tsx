@@ -31,8 +31,24 @@ interface DropdownCardProps {
   }[];
   className?: string;
   date?: string;
-  nivelMax?: number; // si no viene, usar 3
-  nivelAlarma?: number; // opcional
+  nivelMax?: number; 
+  nivelAlarma?: number; 
+}
+
+// Función auxiliar para parsear fechas
+function parseCustomDate(dateStr: string) {
+  // Maneja formato "YYYY-DD-MM HH:mm" (ej: 2025-14-12 21:10)
+  const [datePart, timePart] = dateStr.split(" ");
+  const [year, day, month] = datePart.split("-"); // Asume orden Año-Día-Mes
+  const [hour, minute] = timePart.split(":");
+
+  return new Date(
+    Number(year),
+    Number(month) - 1, // Meses en JS son 0-11
+    Number(day),
+    Number(hour),
+    Number(minute)
+  );
 }
 
 function DropdownCard({
@@ -44,18 +60,19 @@ function DropdownCard({
   nivelMax = 3,
   nivelAlarma,
 }: DropdownCardProps) {
+  
+  // Procesamiento de etiquetas de tiempo
   const labels = data.map((d) =>
-    new Date(d.time).toLocaleTimeString("es-CL", {
+    parseCustomDate(d.time).toLocaleTimeString("es-CL", {
       hour: "2-digit",
       minute: "2-digit",
     })
   );
 
-  // Divisor solo para Estanque Nuevo
   const divisor = title === "Estanque Nuevo" ? 100 : 1;
   const values = data.map((d) => d.value / divisor);
 
-  // Línea horizontal de alarma SOLO si viene el valor
+  // Línea horizontal de alarma
   const alarmaDataset =
     nivelAlarma !== undefined
       ? {
@@ -108,8 +125,8 @@ function DropdownCard({
       },
       y: {
         beginAtZero: true,
-        min: 0, // nivel mínimo fijo
-        max: nivelMax / divisor, // máximo dinámico o default 3
+        min: 0,
+        max: nivelMax / divisor,
         ticks: {
           color: "#555",
         },

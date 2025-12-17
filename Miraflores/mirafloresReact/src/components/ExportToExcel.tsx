@@ -9,12 +9,12 @@ export interface Metric {
   time: string;
 }
 
-type ExportOption = "totalizador-1" | "totalizador-2" | "totalizador-piscina";
+type ExportOption = "totalizador" | "caudal" | "nivel";
 
 const EXPORT_LABELS: Record<ExportOption, string> = {
-  "totalizador-1": "Totalizador 1",
-  "totalizador-2": "Totalizador 2",
-  "totalizador-piscina": "Totalizador Piscina",
+  "totalizador": "Totalizador",
+  "caudal": "Caudal",
+  "nivel": "Nivel",
 };
 
 interface ExportToExcelProps {
@@ -23,7 +23,7 @@ interface ExportToExcelProps {
 
 export default function ExportToExcel({ onClose }: ExportToExcelProps) {
   const [selectedOption, setSelectedOption] =
-    useState<ExportOption>("totalizador-1");
+    useState<ExportOption>("totalizador");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
@@ -33,7 +33,7 @@ export default function ExportToExcel({ onClose }: ExportToExcelProps) {
     start: string,
     end: string
   ): Promise<Metric[]> => {
-    const url = `https://app.jteanalytics.cl/undurraga/${option}?startDate=${start}&endDate=${end}`;
+    const url = `https://app.jteanalytics.cl/miraflores/${option}?startDate=${start}&endDate=${end}`;
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Error al obtener datos desde ${url}`);
@@ -136,9 +136,9 @@ export default function ExportToExcel({ onClose }: ExportToExcelProps) {
           </Form.Label>
           <Col sm="8">
             <Form.Select value={selectedOption} onChange={handleSelectChange}>
-              <option value="totalizador-1">Totalizador 1</option>
-              <option value="totalizador-2">Totalizador 2</option>
-              <option value="totalizador-piscina">Totalizador Piscina</option>
+              <option value="totalizador">Totalizador</option>
+              <option value="caudal">Caudal</option>
+              <option value="nivel">Nivel</option>
             </Form.Select>
           </Col>
         </Form.Group>

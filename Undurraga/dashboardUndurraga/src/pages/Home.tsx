@@ -6,6 +6,7 @@ import Loading from "./Loading";
 import type { Metric, Snapshot } from "../components/types";
 import ExportModal from "../components/ExportModal";
 import lgoJte from "../assets/logoJte.png";
+import { fillMissingDates } from "../assets/utilities";
 
 function Home() {
   const [loading, setLoading] = useState(true);
@@ -34,7 +35,7 @@ function Home() {
     const now = new Date();
     const end = formatter.format(now);
     const startDate = new Date(now);
-    startDate.setDate(startDate.getDate() - 15);
+    startDate.setDate(startDate.getDate() - 30);
     const start = formatter.format(startDate);
 
     const fetchData = async () => {
@@ -152,16 +153,27 @@ function Home() {
             <div className="col-lg-6 col-md-12">
               <TimeSeriesChart
                 title="Totalizador 1 por día"
-                metrics={totalizador1Data}
-                barColor="rgba(0, 255, 255, 0.8)"
+                metrics={fillMissingDates(totalizador1Data, 30)}
+                barColor="rgba(5, 163, 216, 0.8)"
                 chartType="bar"
               />
             </div>
             <div className="col-lg-6 col-md-12">
               <TimeSeriesChart
                 title="Totalizador 2 por día"
-                metrics={totalizador2Data}
-                barColor="rgba(255, 204, 0, 0.8)"
+                metrics={fillMissingDates(totalizador2Data, 30)}
+                barColor="rgba(5, 163, 216, 0.8)"
+                chartType="bar"
+              />
+            </div>
+          </div>
+
+          <div className="row g-3 mb-4">
+            <div className="col-lg-12">
+              <TimeSeriesChart
+                title="Totalizador Piscina"
+                metrics={fillMissingDates(piscinaData, 30)}
+                barColor="rgba(5, 163, 216, 0.8)"
                 chartType="bar"
               />
             </div>
@@ -172,7 +184,7 @@ function Home() {
               <TimeSeriesChart
                 title="Caudal 1"
                 metrics={caudal1Data}
-                barColor="rgba(173, 216, 230, 0.8)"
+                barColor="rgba(5, 163, 216, 0.8)"
                 chartType="line"
               />
             </div>
@@ -181,22 +193,13 @@ function Home() {
               <TimeSeriesChart
                 title="Caudal 2"
                 metrics={caudal2Data}
-                barColor="rgba(173, 216, 230, 0.8)"
+                barColor="rgba(5, 163, 216, 0.8)"
                 chartType="line"
               />
             </div>
           </div>
 
-          <div className="row g-3 mb-4">
-            <div className="col-lg-12">
-              <TimeSeriesChart
-                title="Totalizador Piscina"
-                metrics={piscinaData}
-                barColor="rgba(173, 216, 230, 0.8)"
-                chartType="bar"
-              />
-            </div>
-          </div>
+          
         </div>
 
         {/* Footer */}

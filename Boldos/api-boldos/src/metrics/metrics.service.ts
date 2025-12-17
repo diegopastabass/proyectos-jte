@@ -54,8 +54,12 @@ export class SsrBoldosService {
     const snapshot: MetricSnapshot = results.reduce(
       (acc: MetricSnapshot, row: any) => {
         const key = row.mt_name.replace(prefix, '');
+        let value = Number(row.mt_value);
+        if (key === 'estanque_2') {
+          value = value / 10;
+        }
         acc[key] = {
-          value: Number(row.mt_value),
+          value,
           time: new Date(row.mt_time_2).toISOString(),
         };
         return acc;
@@ -91,6 +95,7 @@ export class SsrBoldosService {
 
       const h = Math.floor(tiempo / 3600);
       const m = Math.floor((tiempo % 3600) / 60);
+      
       const s = tiempo % 60;
 
       const formatted = `${h.toString().padStart(2, '0')} h ${m
@@ -231,7 +236,7 @@ export class SsrBoldosService {
 
       return results.reverse().map((row) => ({
         time: row.mt_time_2.toISOString(),
-        value: Number(row.mt_value),
+        value: Number(row.mt_value) / 10,
       }));
     }
 
@@ -250,7 +255,7 @@ export class SsrBoldosService {
 
     return results.map((row) => ({
       time: row.mt_time_2.toISOString(),
-      value: Number(row.mt_value),
+      value: Number(row.mt_value) / 10,
     }));
   }
 

@@ -1,9 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, PrimaryColumn  } from 'typeorm';
+import { Entity, Column, PrimaryColumn  } from 'typeorm';
 
 @Entity('ssr_aromos')
 export class Telemetria {
-  @PrimaryGeneratedColumn()
-  mt_id: number;
 
   @Column()
   mt_name: string;

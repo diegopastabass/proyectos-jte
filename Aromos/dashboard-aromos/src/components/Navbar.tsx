@@ -1,6 +1,5 @@
 import { useState } from "react"; // Necesitas importar useState si aún no está importado
 import lgoJte from "../assets/logoJte.png";
-import lgon from "../assets/lgon.png";
 
 interface NavbarProps {
   text?: string;
@@ -78,7 +77,6 @@ function Navbar(props: NavbarProps) {
           href="/aromos/"
         >
           <img src={lgoJte} alt="logo" width={50} height={34} />
-          <img src={lgon} alt="logoNerquihue" width={100} />
           <span className="h5 mb-0 d-md-inline">SSR Aromos</span>
         </a>
 

@@ -32,6 +32,7 @@ interface Datos {
   freatico: Metric;
   horometro: Metric;
   totalizador: Metric;
+  ph: Metric;
 }
 
 interface Metric {
@@ -227,6 +228,7 @@ function App() {
             text6={`Totalizador: ${(data.snapshot.totalizador.value / 10).toFixed(
               2
             )} m³`}
+            text7={`Ph: ${(data.snapshot.ph.value/100).toFixed(1)}`}
           />
           <ToggleCardButton
             isOpen={isOpenBomba}

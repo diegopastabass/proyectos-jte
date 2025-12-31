@@ -3,18 +3,16 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
 // Tipos para el combobox
-type ExportDataType = "nivel" | "caudal" | "horometro" | "totalizador";
+type ExportDataType = "nivel" | "horometro" | "totalizador";
 
 const EXPORT_OPTIONS = {
   nivel: "Nivel Estanque",
-  caudal: "Caudal",
   horometro: "Horómetro",
   totalizador: "Totalizador",
 };
 
 const ENDPOINT_MAP: Record<ExportDataType, string> = {
   nivel: "nivel",
-  caudal: "caudal",
   horometro: "horometro",
   totalizador: "totalizador",
 };
@@ -38,10 +36,10 @@ function Export() {
       const endpoint = ENDPOINT_MAP[exportType];
       const sheetName = EXPORT_OPTIONS[exportType];
       let apiUrl = "";
-      if (startDate == endDate && (endpoint == "nivel" || "caudal")) {
-        apiUrl = `https://app.jteanalytics.cl/nerquihue/${endpoint}`;
+      if (startDate == endDate && (endpoint == "nivel" || endpoint == "horometro")) {
+        apiUrl = `https://app.jteanalytics.cl/aromos/${endpoint}`;
       } else {
-        apiUrl = `https://app.jteanalytics.cl/nerquihue/${endpoint}?start=${startDate}&end=${endDate}`;
+        apiUrl = `https://app.jteanalytics.cl/aromos/${endpoint}?start=${startDate}&end=${endDate}`;
       }
 
       const res = await fetch(apiUrl);

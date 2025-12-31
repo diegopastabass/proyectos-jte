@@ -28,6 +28,18 @@ export class MetricsService {
     "PARC_57_ZAGAL--slave.sector9": "PARC 52",
   };
 
+  private sectorAreas: Record<string, number> = {
+    "PARC_57_ZAGAL--slave.sector1": 45966.44,
+    "PARC_57_ZAGAL--slave.sector2": 46353.54,
+    "PARC_57_ZAGAL--slave.sector3": 38344.63,
+    "PARC_57_ZAGAL--slave.sector4": 32509.61,
+    "PARC_57_ZAGAL--slave.sector5": 13818.9,
+    "PARC_57_ZAGAL--slave.sector6": 54194.63,
+    "PARC_57_ZAGAL--slave.sector7": 61377.81,
+    "PARC_57_ZAGAL--slave.sector8": 74784.69,
+    "PARC_57_ZAGAL--slave.sector9": 87068.37
+  };
+
   private mapParcela(name: string): string {
     return this.sectorMap[name] || name;
   }
@@ -132,7 +144,7 @@ export class MetricsService {
 
   async findIrrigationInterval() {
     try {
-      // 1. Obtener activos usando DISTINCT ON
+      // 1. Obtener activos
       const activeRows = await this.repo.query(`
         SELECT DISTINCT ON (mt_name) mt_name, mt_value
         FROM parc_57_zagal
@@ -141,14 +153,18 @@ export class MetricsService {
       `);
       
       const activeSectors = activeRows
-        .filter(r => r.mt_value === '1') // Filtrar en memoria o SQL, '1' es string
+        .filter(r => r.mt_value === '1') 
         .map(r => r.mt_name);
+
+      // CÁLCULO DE ÁREA TOTAL ACTIVA (At)
+      const totalActiveArea = activeSectors.reduce((sum, name) => {
+        return sum + (this.sectorAreas[name] || 0);
+      }, 0);
 
       const activeCount = activeSectors.length;
       let irrigationTimes: Record<string, any> = {};
 
       if (activeCount > 0) {
-        // Adaptado a Postgres: EXTRACT(EPOCH...)
         const placeholders = activeSectors.map((_, i) => `$${i + 1}`).join(",");
         const irrigationTimeQuery = `
           SELECT p.mt_name,
@@ -170,8 +186,8 @@ export class MetricsService {
         irrigationTimes = Object.fromEntries(timeRows.map((r) => [r.mt_name, r]));
       }
 
-      // Lógica de totalizador global (similar a MySQL pero ajustada)
-      let totalizadorPorSector = 0;
+      // Obtener Totalizador Global
+      let totalGlobal = 0;
       if (activeCount > 0) {
           const startTimes = Object.values(irrigationTimes).map((r: any) => new Date(r.start_time).getTime());
           const endTimes = Object.values(irrigationTimes).map((r: any) => new Date(r.last_time).getTime());
@@ -187,21 +203,30 @@ export class MetricsService {
                 AND mt_time_2 BETWEEN $1 AND $2
               `, [minStart, maxEnd]);
               
-              const totalGlobal = totalRow[0] ? Number(totalRow[0].total) : 0;
-              totalizadorPorSector = totalGlobal / activeCount;
+              totalGlobal = totalRow[0] ? Number(totalRow[0].total) : 0;
           }
       }
 
-      // Mapeo final
+      // Mapeo final con cálculo proporcional por área
       const allSectors = Object.keys(this.sectorMap);
       return allSectors.map(mt_name => {
          const active = activeSectors.includes(mt_name);
          const data = irrigationTimes[mt_name];
+         
+         let sectorTotalizer = 0;
+
+         if (active && totalActiveArea > 0) {
+            const sectorArea = this.sectorAreas[mt_name] || 0;
+            // Fórmula: Totalizador * (AreaSector / AreaTotalActiva)
+            const ratio = sectorArea / totalActiveArea;
+            sectorTotalizer = totalGlobal * ratio;
+         }
+
          return {
              mt_name: this.sectorMap[mt_name],
              is_active: active ? 1 : 0,
              tiempo_riego_segundos: active ? Number(data?.tiempo_riego_segundos || 0) : 0,
-             totalizador: active ? totalizadorPorSector : 0
+             totalizador: sectorTotalizer 
          }
       });
 

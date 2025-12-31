@@ -42,7 +42,6 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<Snapshot | null>(null);
   const [nivelChartData, setNivelData] = useState<Metric[]>([]);
-  const [caudalChartData, setCaudalData] = useState<Metric[]>([]);
   const [totalizadorChartData, setTotalizadorData] = useState<Metric[]>([]);
   const [horometroChartData, setHorometroData] = useState<Metric[]>([]);
 
@@ -77,7 +76,7 @@ function App() {
 
     const fetchData = async () => {
       try {
-        const [snapshotRes, totalizadorRes, horometroRes, nivelRes, caudalRes] =
+        const [snapshotRes, totalizadorRes, horometroRes, nivelRes] =
           await Promise.all([
             fetch("https://app.jteanalytics.cl/aromos/snapshot"),
             fetch(
@@ -87,7 +86,6 @@ function App() {
               `https://app.jteanalytics.cl/aromos/horometro?start=${start}&end=${end}`
             ),
             fetch(`https://app.jteanalytics.cl/aromos/nivel`),
-            fetch(`https://app.jteanalytics.cl/aromos/caudal`),
           ]);
 
         const snapshotData: Snapshot = await snapshotRes.json();
@@ -95,7 +93,6 @@ function App() {
         setTotalizadorData(await totalizadorRes.json());
         setHorometroData(await horometroRes.json());
         setNivelData(await nivelRes.json());
-        setCaudalData(await caudalRes.json());
       } catch (error) {
         console.error("Error al cargar datos:", error);
       } finally {
@@ -172,9 +169,7 @@ function App() {
         <Card className="mb-2">
           <CardBody
             title="Bomba"
-            text1={`Caudal Impulsión: ${data.snapshot.caudal.value.toFixed(
-              2
-            )} l/s`}
+            text1={`Caudal Impulsión: ${1 } l/s`}
             text2={`Nivel Freático: ${(
               data.snapshot.freatico.value / 100
             ).toFixed(2)} m`}
@@ -189,13 +184,6 @@ function App() {
             onToggle={() => setIsOpenBomba(!isOpenBomba)}
           />
         </Card>
-        <DropdownCard
-          isOpen={isOpenBomba}
-          title="Caudal"
-          chartLabel="Caudal de Impulsión (l/s)"
-          data={caudalChartData}
-          nivelMax={5}
-        />
         <div className="my-2">
           <DropdownCardv2
             isOpen={isOpenBomba}
@@ -220,7 +208,7 @@ function App() {
           <StateBody
             automatico={"1"}
             bomba={data.snapshot.bomba.value.toString()}
-            falla={data.snapshot.falla.value.toString()}
+            falla={"0"}
           />
         </State>
       </div>
@@ -243,7 +231,7 @@ function App() {
       }}
     >
       {/* Diagrama SCADA (Cubre cols 1-2, rows 1-2) */}
-      <div style={{ gridColumn: "1 / 3", gridRow: "1 / 3" }}>
+      <div style={{ gridColumn: "1 / 3", gridRow: "1 / 3", maxWidth: "2400px" }}>
         <div className="card w-100 p-4 justify-content-center">
           <ScadaDiagram
             data={data}
@@ -261,17 +249,6 @@ function App() {
           chartLabel="Nivel del Estanque (m)"
           data={nivelChartData}
           nivelAlarma={1.7}
-        />
-      </div>
-
-      {/* Caudal (Col 3, Row 2) */}
-      <div style={{ gridColumn: "3", gridRow: "2" }}>
-        <DropdownCard
-          isOpen={true}
-          title="Caudal"
-          chartLabel="Caudal de Impulsión (l/s)"
-          data={caudalChartData}
-          nivelMax={5}
         />
       </div>
 

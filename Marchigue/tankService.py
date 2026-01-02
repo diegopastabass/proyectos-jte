@@ -3,29 +3,25 @@ import logging
 import requests
 import mysql.connector
 from datetime import datetime
-import os
 
 # --- Configuración ---
 DB_CONFIG = {
-    "host": "",
-    "user": "",
-    "password": "",
-    "database": "",
+    "host": "3.235.75.8",
+    "user": "INFORMATICO",
+    "password": "informatico_2025",
+    "database": "telemetria",
 }
 
 API_URL = "https://api.ultramsg.com/instance79783/messages/chat"
-TOKEN = ""
-TO = ""   # ID de grupo
-INTERVALO_MINUTOS = 5
+TOKEN = "j51no2r6amlze29z"
+TO = "120363296047263190@g.us" 
+INTERVALO_MINUTOS = 10
 
 # --- Logging ---
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-LOG_FILE = os.path.join(BASE_DIR, "logs.txt")
-
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.FileHandler(LOG_FILE, encoding="utf-8", mode="a")]
+    handlers=[logging.StreamHandler()]
 )
 
 # --- Funciones ---
@@ -34,7 +30,7 @@ def obtener_niveles():
     query = """
         SELECT mt_value, mt_time_2 
         FROM apr_marchigue
-        WHERE mt_name = 'SSR_ZUNIGA--slave.estanque'
+        WHERE mt_name = 'TK_MARCHIGUE--slave.AI12'
         ORDER BY mt_time_2 DESC
         LIMIT 2;
     """
@@ -52,7 +48,7 @@ def obtener_niveles():
     nivel_actual, time_actual = rows[0]
     nivel_anterior, time_anterior = rows[1]
 
-    return float(nivel_actual), float(nivel_anterior), time_actual, time_anterior
+    return (float(nivel_actual) / 100), (float(nivel_anterior) / 100), time_actual, time_anterior
 
 
 def calcular_tiempo_vaciado(nivel_actual, nivel_anterior, time_actual, time_anterior):

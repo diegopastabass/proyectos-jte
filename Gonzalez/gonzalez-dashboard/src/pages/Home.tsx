@@ -151,12 +151,11 @@ function App() {
         <Card>
           <CardBody
             title="Estanque Metálico 1"
-            text1={`Nivel: ${(data.snapshot.metalico1.value / 100).toFixed(
+            text1={`Nivel: ${(data.snapshot.metalico1.value ).toFixed(
               2
             )} m`}
             text2={`Volumen Actual: ${(
-              ((60 / 7) * data.snapshot.metalico1.value) /
-              100
+              ((60 / 7) * data.snapshot.metalico1.value) 
             ).toFixed(2)} m³`}
             text3={data.tiempo_vaciado_formatted}
           />

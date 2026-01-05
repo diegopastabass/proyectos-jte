@@ -11,12 +11,13 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
 
   app.enableCors({
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    allowedHeaders: 'Content-Type, Accept',
+    origin: '*', 
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+    allowedHeaders: 'Content-Type, Accept, Authorization', 
   });
 
-  const port = process.env.PORT || 3013;
+  const port = process.env.PORT || 3015;
   await app.listen(port);
 
   Logger.log(`Server running on http://localhost:${port}`);

@@ -1,12 +1,19 @@
 import { useState } from 'react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { type ReportData, initialData, type Material } from '../types';
-import { PDFReport } from '../components/PDFReport';
+import { PDFReport } from '../components/PDFReport'; // Ajusta la ruta si es necesario
 import 'bootstrap/dist/css/bootstrap.min.css';
-import Navbar from '../components/Navbar';
+// import Navbar from '../components/Navbar';  <-- ELIMINADO: App.tsx maneja el Navbar
+import api from '../api';
 
-function Home() {
+interface Props {
+  onBack?: () => void; // Opcional, solo para admin
+  isAdmin: boolean;
+}
+
+function ReportForm({ onBack, isAdmin }: Props) {
   const [data, setData] = useState<ReportData>(initialData);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleChange = (field: keyof ReportData, value: any) => {
     setData(prev => ({ ...prev, [field]: value }));
@@ -51,18 +58,42 @@ function Home() {
   };
   const addMaterial = () => setData(prev => ({ ...prev, materials: [...prev.materials, { description: '', quantity: 1, cost: 0 }] }));
   const removeMaterial = (index: number) => {
-    // Aquí sí permitimos borrar todo para que quede vacío
     setData(prev => ({ ...prev, materials: prev.materials.filter((_, i) => i !== index) }));
   };
 
+  const saveToDatabase = async () => {
+    try {
+      setIsSaving(true);
+      await api.post('/reports', {
+        ticketNumber: data.ticket.number,
+        clientName: data.client.name,
+        status: data.status,
+        data: data // Enviamos todo el objeto JSON
+      });
+      return true;
+    } catch (error) {
+      console.error(error);
+      alert('Error al guardar en base de datos. Verifique conexión.');
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
-    <>
-    <Navbar></Navbar>
     <div className="container py-4">
+      {/* Botón Volver (Solo Admin) */}
+      {isAdmin && (
+        <div className="mb-3">
+            <button className="btn btn-outline-secondary" onClick={onBack}>
+            <i className="bi bi-arrow-left"></i> Volver al listado
+            </button>
+        </div>
+      )}
       
       <div className="card shadow mb-4">
         <div className="card-body">
-          <form>
+          <form onSubmit={(e) => e.preventDefault()}>
             <h5 className="mb-3">Información General</h5>
             <div className="row g-3 mb-3">
               <div className="col-md-4">
@@ -166,18 +197,28 @@ function Home() {
         </div>
       </div>
 
-      <div className="d-grid gap-2 sticky-bottom pb-3 bg-white">
-        <PDFDownloadLink document={<PDFReport data={data} />} fileName={`OT-${data.ticket.number}.pdf`}>
+      <div className="d-grid gap-2 sticky-bottom pb-3 bg-white pt-3 border-top">
+        <PDFDownloadLink 
+            document={<PDFReport data={data} />} 
+            fileName={`OT-${data.ticket.number}.pdf`}
+        >
           {({ loading }) => (
-            <button className="btn btn-primary btn-lg w-100" disabled={loading}>
-              {loading ? 'Generando PDF...' : 'Descargar Informe PDF'}
+            <button 
+                className="btn btn-success btn-lg w-100" 
+                disabled={loading || isSaving}
+                onClick={async () => {
+                   // Ejecutamos el guardado al hacer clic. 
+                   // El PDF se genera en paralelo por el componente PDFDownloadLink.
+                   await saveToDatabase();
+                }}
+            >
+              {loading || isSaving ? 'Procesando...' : 'Guardar y Descargar PDF'}
             </button>
           )}
         </PDFDownloadLink>
       </div>
     </div>
-    </>
   );
 }
 
-export default Home;
+export default ReportForm;

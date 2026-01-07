@@ -81,6 +81,25 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 12
   },
+  // Estilo para la imagen de la firma
+  signatureImage: {
+    width: 120,
+    height: 60,
+    marginTop: 5,
+    objectFit: 'contain',
+  },
+  signatureBox: {
+    alignItems: 'center', 
+    width: '45%', // Ajustamos el ancho para que quepan bien
+  },
+  signatureLine: {
+    borderBottom: '1px solid #000', 
+    width: '100%', 
+    alignItems: 'center', 
+    marginBottom: 5,
+    height: 70, // Altura fija para la caja de firma
+    justifyContent: 'flex-end', // Alinear firma al fondo de la línea
+  },
   footer: {
     position: 'absolute',
     bottom: 30,
@@ -88,7 +107,7 @@ const styles = StyleSheet.create({
     right: 30,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    borderTop: '1px solid #000',
+    borderTop: '1px solid #000', // Esta línea superior es opcional si ya usamos líneas individuales
     paddingTop: 10,
   }
 });
@@ -180,16 +199,28 @@ export const PDFReport = ({ data }: Props) => (
         </View>
       )}
 
+      {/* FOOTER CON FIRMAS */}
       <View style={styles.footer}>
-        <View>
-            <Text>_______________________</Text>
+        {/* Firma Cliente */}
+        <View style={styles.signatureBox}>
+            <View style={styles.signatureLine}>
+               {data.clientSignature ? (
+                  <Image src={data.clientSignature} style={styles.signatureImage} />
+               ) : null}
+            </View>
             <Text>{data.clientSigner}</Text>
-            <Text>Cliente</Text>
+            <Text style={{ fontSize: 10, color: 'grey' }}>Cliente (Aprobado)</Text>
         </View>
-        <View>
-            <Text>_______________________</Text>
+
+        {/* Firma Técnico */}
+        <View style={styles.signatureBox}>
+            <View style={styles.signatureLine}>
+               {data.techSignature ? (
+                  <Image src={data.techSignature} style={styles.signatureImage} />
+               ) : null}
+            </View>
             <Text>{data.techName}</Text>
-            <Text>Técnico Terreno</Text>
+            <Text style={{ fontSize: 10, color: 'grey' }}>Técnico Terreno</Text>
         </View>
       </View>
     </Page>

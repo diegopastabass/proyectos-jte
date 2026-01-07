@@ -93,7 +93,7 @@ function App() {
           fetch(
             `https://app.jteanalytics.cl/gonzalez/horometro?start=${start}&end=${end}`
           ),
-          fetch(`https://app.jteanalytics.cl/gonzalez/nivel`),
+          fetch(`https://app.jteanalytics.cl/gonzalez/nivel?start=2026-01-05&end=2026-01-05`),
           fetch(`https://app.jteanalytics.cl/gonzalez/nivel2`),
           fetch(`https://app.jteanalytics.cl/gonzalez/caudal`),
         ]);

@@ -14,10 +14,10 @@ export default function Navbar({ user, onLogout }: Props) {
         <span className="navbar-brand d-flex align-items-center gap-2">
           <img 
             src={logoJte} 
-            alt="Logo JTE" 
+            alt="Logo JT" 
             style={{ height: '40px', width: 'auto' }} 
           />
-          <span className="h5 mb-0 fw-bold">JTE Reportes</span>
+          <span className="h5 mb-0 fw-bold">JT Reportes</span>
         </span>
 
         {/* Información de Usuario y Logout */}

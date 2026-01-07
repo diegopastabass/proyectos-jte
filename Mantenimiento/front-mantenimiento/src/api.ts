@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://app.jteanalytics.cl/mantenimiento/', // Ajusta al puerto de tu backend NestJS
+  baseURL: 'https://app.jteanalytics.cl/mantenimiento/', 
 });
 
 // Interceptor para agregar el token a cada petición

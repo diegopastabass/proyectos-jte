@@ -8,22 +8,18 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
-  // 1. Crear Reporte: Accesible para cualquier usuario logueado (rol 0 o 1)
   @UseGuards(JwtAuthGuard)
   @Post()
   create(@Body() createReportDto: CreateReportDto, @Request() req) {
-    // req.user viene del JWT, contiene { userId, fullName, ... }
     return this.reportsService.create(createReportDto, req.user.userId);
   }
 
-  // 2. Listar Reportes: Solo Admins (rol 1)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get()
   findAll() {
     return this.reportsService.findAll();
   }
 
-  // 3. Ver Detalle Reporte: Solo Admins (rol 1)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(':id')
   findOne(@Param('id') id: string) {

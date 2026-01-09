@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Generated } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
 @Entity('reports')
@@ -6,8 +6,9 @@ export class Report {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true, name: 'ticket_number' })
-  ticketNumber: string;
+  @Column({ name: 'ot', unique: true })
+  @Generated('increment')
+  ticketNumber: number;
 
   @Column({ name: 'client_name' })
   clientName: string;
@@ -16,7 +17,7 @@ export class Report {
   status: string;
 
   @Column({ type: 'jsonb' })
-  data: any; // Aquí se guarda todo el formulario JSON
+  data: any; 
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

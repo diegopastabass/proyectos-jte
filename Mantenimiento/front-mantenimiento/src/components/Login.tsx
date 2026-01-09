@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import api from '../api';
 import { type AuthResponse } from '../types';
+import logo from '../assets/logo_jt2.png';
 
 interface Props {
   onLoginSuccess: (user: any) => void;
@@ -28,6 +29,7 @@ export default function Login({ onLoginSuccess, onGoToRegister }: Props) {
   return (
     <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
       <div className="card shadow p-4" style={{ maxWidth: '400px', width: '100%' }}>
+        <img src={logo} alt="Logo" height={50} width={70} style={{ margin: '0 auto' }}/>
         <h2 className="text-center mb-4">Iniciar Sesión</h2>
         {error && <div className="alert alert-danger">{error}</div>}
         <form onSubmit={handleSubmit}>

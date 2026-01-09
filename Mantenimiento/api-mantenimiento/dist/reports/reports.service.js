@@ -23,11 +23,21 @@ let ReportsService = class ReportsService {
         this.reportRepository = reportRepository;
     }
     async create(createReportDto, userId) {
+        const { ticketNumber, ...reportData } = createReportDto;
         const report = this.reportRepository.create({
-            ...createReportDto,
+            ...reportData,
             user: { id: userId },
         });
-        return this.reportRepository.save(report);
+        const savedReport = await this.reportRepository.save(report);
+        const generatedOT = savedReport.ticketNumber.toString();
+        savedReport.data = {
+            ...savedReport.data,
+            ticket: {
+                ...savedReport.data.ticket,
+                number: generatedOT
+            }
+        };
+        return this.reportRepository.save(savedReport);
     }
     async findAll() {
         return this.reportRepository.find({
@@ -44,6 +54,21 @@ let ReportsService = class ReportsService {
         if (!report)
             throw new common_1.NotFoundException(`Reporte con ID ${id} no encontrado`);
         return report;
+    }
+    async update(id, updateReportDto) {
+        const report = await this.findOne(id);
+        this.reportRepository.merge(report, updateReportDto);
+        if (updateReportDto.data) {
+            report.clientName = updateReportDto.data.client?.name || report.clientName;
+            report.status = updateReportDto.data.status || report.status;
+        }
+        return this.reportRepository.save(report);
+    }
+    async remove(id) {
+        const result = await this.reportRepository.delete(id);
+        if (result.affected === 0) {
+            throw new common_1.NotFoundException(`No se pudo eliminar el reporte ${id}`);
+        }
     }
 };
 exports.ReportsService = ReportsService;

@@ -2,113 +2,187 @@ import { Page, Text, View, Document, StyleSheet, Image } from '@react-pdf/render
 import { type ReportData } from '../types';
 import logo_jt2 from '../assets/logo_jt2.png';
 
+// Colores corporativos sugeridos
+const COLORS = {
+  primary: '#103E84', // Azul oscuro profesional
+  secondary: '#666666', // Gris para textos secundarios
+  lightGray: '#F3F4F6', // Fondo suave para cajas
+  border: '#E5E7EB',
+};
+
 const styles = StyleSheet.create({
   page: {
-    padding: 30,
-    fontFamily: 'Times-Roman',
-    fontSize: 12,
+    padding: 40,
+    fontFamily: 'Helvetica', // Fuente más limpia
+    fontSize: 10,
     lineHeight: 1.5,
+    color: '#333',
   },
-  logo: {
-    width: 120,
-    height: 'auto',
-    marginBottom: 15,
-  },
-  header: {
-    marginBottom: 20,
-    borderBottom: '1px solid #000',
-    paddingBottom: 10,
+  // Header
+  headerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    borderBottomWidth: 2,
+    borderBottomColor: COLORS.primary,
+    paddingBottom: 10,
   },
-  title: {
-    fontSize: 18,
+  logo: {
+    width: 100,
+    height: 'auto',
+  },
+  headerTextContainer: {
+    alignItems: 'flex-end',
+  },
+  reportTitle: {
+    fontSize: 20,
+    color: COLORS.primary,
     fontWeight: 'bold',
+    textTransform: 'uppercase',
   },
+  otNumber: {
+    fontSize: 12,
+    color: COLORS.secondary,
+    marginTop: 4,
+  },
+  
+  // Info Boxes (Cliente y Detalles)
+  infoGrid: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 20,
+  },
+  infoBox: {
+    flex: 1,
+    backgroundColor: COLORS.lightGray,
+    padding: 10,
+    borderRadius: 4,
+  },
+  infoBoxTitle: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    marginBottom: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+    paddingBottom: 2,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    marginBottom: 2,
+  },
+  infoLabel: {
+    fontWeight: 'bold',
+    width: 60,
+    fontSize: 9,
+    color: COLORS.secondary,
+  },
+  infoValue: {
+    flex: 1,
+    fontSize: 9,
+  },
+
+  // Sections
   section: {
     marginBottom: 15,
   },
-  sectionTitle: {
-    fontSize: 14,
+  sectionHeader: {
+    backgroundColor: COLORS.primary,
+    color: 'white',
+    padding: 5,
+    paddingLeft: 10,
+    fontSize: 11,
     fontWeight: 'bold',
-    marginBottom: 5,
-    textDecoration: 'underline',
+    marginBottom: 8,
+    borderRadius: 2,
   },
-  row: {
-    flexDirection: 'row',
-    marginBottom: 5,
+  contentBlock: {
+    marginLeft: 5,
+    marginRight: 5,
+    textAlign: 'justify',
   },
-  label: {
-    fontWeight: 'bold',
-    width: 100,
-  },
-  value: {
-    flex: 1,
-  },
+
+  // List Items
   listItem: {
-    marginLeft: 15,
+    flexDirection: 'row',
+    marginBottom: 4,
+    marginLeft: 5,
   },
+  bullet: {
+    width: 10,
+    fontSize: 14,
+    color: COLORS.primary,
+  },
+  
+  // Table
   table: {
-    display: "flex",
-    width: "auto",
-    borderStyle: "solid",
+    width: '100%',
     borderWidth: 1,
-    borderRightWidth: 0,
-    borderBottomWidth: 0,
-    marginTop: 10,
+    borderColor: COLORS.border,
+    marginTop: 5,
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.lightGray,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
   tableRow: {
-    margin: "auto",
-    flexDirection: "row"
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
-  tableColDesc: {
-    width: "60%",
-    borderStyle: "solid",
-    borderWidth: 1,
-    borderLeftWidth: 0,
-    borderTopWidth: 0,
-    padding: 5,
-  },
-  tableColNum: {
-    width: "20%",
-    borderStyle: "solid",
-    borderWidth: 1,
-    borderLeftWidth: 0,
-    borderTopWidth: 0,
-    padding: 5,
-  },
-  tableCellHeader: {
-    fontWeight: 'bold',
-    fontSize: 12
-  },
-  // Estilo para la imagen de la firma
-  signatureImage: {
-    width: 120,
-    height: 60,
-    marginTop: 5,
-    objectFit: 'contain',
-  },
-  signatureBox: {
-    alignItems: 'center', 
-    width: '45%', // Ajustamos el ancho para que quepan bien
-  },
-  signatureLine: {
-    borderBottom: '1px solid #000', 
-    width: '100%', 
-    alignItems: 'center', 
-    marginBottom: 5,
-    height: 70, // Altura fija para la caja de firma
-    justifyContent: 'flex-end', // Alinear firma al fondo de la línea
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 30,
-    left: 30,
-    right: 30,
+  colDesc: { width: '60%', padding: 5, borderRightWidth: 1, borderRightColor: COLORS.border },
+  colQty: { width: '15%', padding: 5, borderRightWidth: 1, borderRightColor: COLORS.border, textAlign: 'center' },
+  colCost: { width: '25%', padding: 5, textAlign: 'right' },
+  tableHeaderText: { fontWeight: 'bold', fontSize: 9, color: COLORS.primary },
+
+  // Signatures Area (Page 2 specific)
+  signatureSection: {
+    marginTop: 50, // Espacio antes de las firmas
     flexDirection: 'row',
     justifyContent: 'space-between',
-    borderTop: '1px solid #000', // Esta línea superior es opcional si ya usamos líneas individuales
-    paddingTop: 10,
+    paddingHorizontal: 20,
+  },
+  signatureBlock: {
+    width: '40%',
+    alignItems: 'center',
+  },
+  signatureLine: {
+    width: '100%',
+    height: 60, // Altura fija para la imagen
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+    marginBottom: 5,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  signatureImage: {
+    width: 100,
+    height: 50,
+    objectFit: 'contain',
+  },
+  signerName: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  signerRole: {
+    fontSize: 9,
+    color: COLORS.secondary,
+    textAlign: 'center',
+  },
+  
+  // Footer page number
+  pageFooter: {
+    position: 'absolute',
+    bottom: 30,
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    fontSize: 8,
+    color: 'grey',
   }
 });
 
@@ -118,111 +192,167 @@ interface Props {
 
 export const PDFReport = ({ data }: Props) => (
   <Document>
+    {/* ================= PÁGINA 1: DATOS TÉCNICOS ================= */}
     <Page size="LETTER" style={styles.page}>
-      <Image style={styles.logo} src={logo_jt2} />
-
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>Informe Técnico</Text>
-          <Text>{data.type}</Text>
-        </View>
-        <View style={{ alignItems: 'flex-end' }}>
-          <Text>OT: {data.ticket.number}</Text>
-          <Text>Fecha: {data.ticket.date}</Text>
+      
+      {/* Header */}
+      <View style={styles.headerContainer}>
+        <Image style={styles.logo} src={logo_jt2} />
+        <View style={styles.headerTextContainer}>
+          <Text style={styles.reportTitle}>Informe Técnico</Text>
+          <Text style={styles.otNumber}>OT N°: {data.ticket.number}</Text>
+          <Text style={{ fontSize: 10, color: COLORS.secondary }}>{data.ticket.date}</Text>
         </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>1. Información del Cliente</Text>
-        <View style={styles.row}>
-          <Text style={styles.label}>Cliente:</Text>
-          <Text style={styles.value}>{data.client.name}</Text>
+      {/* Info Grid: Cliente + Contacto/Detalles */}
+      <View style={styles.infoGrid}>
+        <View style={styles.infoBox}>
+          <Text style={styles.infoBoxTitle}>INFORMACIÓN DEL CLIENTE</Text>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Empresa:</Text>
+            <Text style={styles.infoValue}>{data.client.name}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Dirección:</Text>
+            <Text style={styles.infoValue}>{data.client.address}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Equipos:</Text>
+            <Text style={styles.infoValue}>{data.client.equipment}</Text>
+          </View>
         </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Dirección:</Text>
-          <Text style={styles.value}>{data.client.address}</Text>
+
+        <View style={styles.infoBox}>
+          <Text style={styles.infoBoxTitle}>DETALLE DE ATENCIÓN</Text>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Contacto:</Text>
+            <Text style={styles.infoValue}>{data.contact.name}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Tipo:</Text>
+            <Text style={styles.infoValue}>{data.type}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Estado:</Text>
+            <Text style={{ ...styles.infoValue, fontWeight: 'bold' }}>{data.status}</Text>
+          </View>
         </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Equipos:</Text>
-          <Text style={styles.value}>{data.client.equipment}</Text>
+      </View>
+
+      {/* Diagnóstico */}
+      <View style={styles.section}>
+        <Text style={styles.sectionHeader}>1. DIAGNÓSTICO / DESCRIPCIÓN</Text>
+        <View style={styles.contentBlock}>
+            <Text>{data.description}</Text>
         </View>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>2. Contacto en Sitio</Text>
-        <Text>Nombre: {data.contact.name} | Tel: {data.contact.phone} | Email: {data.contact.email}</Text>
+        <Text style={styles.sectionHeader}>2. DESARROLLO DE ACTIVIDADES</Text>
+        <View style={styles.contentBlock}>
+          {data.developments && data.developments.length > 0 ? (
+            data.developments.map((dev, index) => (
+              <View key={index} style={styles.listItem}>
+                 {/* Usamos guión o bullet diferente para diferenciar */}
+                <Text style={styles.bullet}>-</Text>
+                <Text style={{ flex: 1 }}>{dev}</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={{ fontStyle: 'italic', color: '#666' }}>Sin detalles de desarrollo registrados.</Text>
+          )}
+        </View>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>3. Detalle de Atención</Text>
-        <Text>Inicio: {new Date(data.startDate).toLocaleString()} - Fin: {new Date(data.endDate).toLocaleString()}</Text>
-        <Text style={{ marginTop: 5 }}>Estado Final: {data.status}</Text>
+        <Text style={styles.sectionHeader}>3. SOLUCIÓN TÉCNICA</Text>
+        <View style={styles.contentBlock}>
+          {data.solutions.map((sol, index) => (
+            <View key={index} style={styles.listItem}>
+              <Text style={styles.bullet}>•</Text>
+              <Text style={{ flex: 1 }}>{sol}</Text>
+            </View>
+          ))}
+        </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>4. Descripción / Diagnóstico</Text>
-        <Text>{data.description}</Text>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>5. Desarrollo y Solución</Text>
-        {data.solutions.map((sol, index) => (
-          <Text key={index} style={styles.listItem}>• {sol}</Text>
-        ))}
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>6. Observaciones Generales</Text>
-        {data.observations.map((obs, index) => (
-          <Text key={index} style={styles.listItem}>• {obs}</Text>
-        ))}
-      </View>
-
-      {/* Solo renderiza esta sección si hay materiales */}
+      {/* Materiales (Si existen) */}
       {data.materials.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>7. Repuestos / Materiales Utilizados</Text>
+          <Text style={styles.sectionHeader}>4. REPUESTOS E INSUMOS</Text>
           <View style={styles.table}>
-            <View style={styles.tableRow}>
-              <View style={styles.tableColDesc}><Text style={styles.tableCellHeader}>Descripción</Text></View>
-              <View style={styles.tableColNum}><Text style={styles.tableCellHeader}>Cant.</Text></View>
-              <View style={styles.tableColNum}><Text style={styles.tableCellHeader}>Costo ($)</Text></View>
+            <View style={styles.tableHeader}>
+              <View style={styles.colDesc}><Text style={styles.tableHeaderText}>DESCRIPCIÓN</Text></View>
+              <View style={styles.colQty}><Text style={styles.tableHeaderText}>CANT.</Text></View>
             </View>
             {data.materials.map((mat, index) => (
-              <View style={styles.tableRow} key={index}>
-                <View style={styles.tableColDesc}><Text>{mat.description}</Text></View>
-                <View style={styles.tableColNum}><Text>{mat.quantity}</Text></View>
-                <View style={styles.tableColNum}><Text>{mat.cost}</Text></View>
+              <View key={index} style={styles.tableRow}>
+                <View style={styles.colDesc}><Text>{mat.description}</Text></View>
+                <View style={styles.colQty}><Text>{mat.quantity}</Text></View>
+                <View style={styles.colCost}><Text>{mat.cost}</Text></View>
               </View>
             ))}
           </View>
         </View>
       )}
 
-      {/* FOOTER CON FIRMAS */}
-      <View style={styles.footer}>
-        {/* Firma Cliente */}
-        <View style={styles.signatureBox}>
-            <View style={styles.signatureLine}>
-               {data.clientSignature ? (
-                  <Image src={data.clientSignature} style={styles.signatureImage} />
-               ) : null}
-            </View>
-            <Text>{data.clientSigner}</Text>
-            <Text style={{ fontSize: 10, color: 'grey' }}>Cliente (Aprobado)</Text>
+      <Text style={styles.pageFooter} render={({ pageNumber, totalPages }) => `Página ${pageNumber} de ${totalPages}`} />
+    </Page>
+
+    {/* ================= PÁGINA 2: OBS Y FIRMAS ================= */}
+    <Page size="LETTER" style={styles.page}>
+      
+      {/* Header Simplificado para Pág 2 */}
+      <View style={{...styles.headerContainer, marginBottom: 40}}>
+         <View>
+            <Text style={{fontSize: 10, color: COLORS.secondary}}>ANEXO DE CIERRE</Text>
+            <Text style={{...styles.reportTitle, fontSize: 14}}>OT N°: {data.ticket.number}</Text>
+         </View>
+         <Text style={{fontSize: 10, color: COLORS.secondary}}>Fecha: {data.ticket.date}</Text>
+      </View>
+
+      {/* Observaciones (Condicional) */}
+      {data.observations.length > 0 && (
+        <View style={{ ...styles.section, marginBottom: 60 }}>
+          <Text style={styles.sectionHeader}>OBSERVACIONES GENERALES</Text>
+          <View style={styles.contentBlock}>
+            {data.observations.map((obs, index) => (
+              <View key={index} style={styles.listItem}>
+                <Text style={styles.bullet}>•</Text>
+                <Text style={{ flex: 1 }}>{obs}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* Sección de Firmas (Siempre aquí) */}
+      <View style={styles.signatureSection}>
+        {/* Firma Técnico */}
+        <View style={styles.signatureBlock}>
+           <View style={styles.signatureLine}>
+              {data.techSignature && (
+                 <Image src={data.techSignature} style={styles.signatureImage} />
+              )}
+           </View>
+           <Text style={styles.signerName}>{data.techName}</Text>
+           <Text style={styles.signerRole}>Técnico Especialista</Text>
         </View>
 
-        {/* Firma Técnico */}
-        <View style={styles.signatureBox}>
-            <View style={styles.signatureLine}>
-               {data.techSignature ? (
-                  <Image src={data.techSignature} style={styles.signatureImage} />
-               ) : null}
-            </View>
-            <Text>{data.techName}</Text>
-            <Text style={{ fontSize: 10, color: 'grey' }}>Técnico Terreno</Text>
+        {/* Firma Cliente */}
+        <View style={styles.signatureBlock}>
+           <View style={styles.signatureLine}>
+              {data.clientSignature && (
+                 <Image src={data.clientSignature} style={styles.signatureImage} />
+              )}
+           </View>
+           <Text style={styles.signerName}>{data.clientSigner}</Text>
+           <Text style={styles.signerRole}>Recepción Cliente</Text>
         </View>
       </View>
+
+      <Text style={styles.pageFooter} render={({ pageNumber, totalPages }) => `Página ${pageNumber} de ${totalPages}`} />
     </Page>
   </Document>
 );

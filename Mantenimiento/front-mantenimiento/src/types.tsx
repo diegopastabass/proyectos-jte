@@ -11,11 +11,12 @@ export const initialData: ReportData = {
   client: { name: '', address: '', equipment: '' },
   contact: { name: '', phone: '', email: '' },
   ticket: { 
-    number: Math.floor(Math.random() * 90000 + 10000).toString(), 
+    number: '', // Se deja vacío, el backend lo asignará
     date: new Date().toISOString().split('T')[0] 
   },
   status: 'Resuelto',
   description: '',
+  developments: [''], 
   solutions: [''],
   observations: [''],
   materials: [],
@@ -65,6 +66,7 @@ export interface ReportData {
     };
     status: 'Sin Resolver' | 'Parcialmente Resuelto' | 'Resuelto';
     description: string;
+    developments: string[];
     solutions: string[];
     observations: string[];
     materials: Material[];

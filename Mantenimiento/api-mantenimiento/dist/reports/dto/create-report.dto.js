@@ -12,17 +12,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateReportDto = void 0;
 const class_validator_1 = require("class-validator");
 class CreateReportDto {
-    ticketNumber;
     clientName;
     status;
     data;
 }
 exports.CreateReportDto = CreateReportDto;
-__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
-    __metadata("design:type", String)
-], CreateReportDto.prototype, "ticketNumber", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsNotEmpty)(),

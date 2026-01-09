@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap-icons/font/bootstrap-icons.css'; // Importante para los íconos
+import 'bootstrap-icons/font/bootstrap-icons.css'; 
 import Navbar from './components/Navbar';
 import Login from './components/Login';
 import Register from './components/Register';
@@ -8,14 +8,14 @@ import ReportList from './components/ReportList';
 import ReportForm from './components/ReportForm';
 import { type User } from './types';
 
-// Definimos las posibles vistas
 type ViewState = 'login' | 'register' | 'list' | 'form';
 
 function App() {
   const [view, setView] = useState<ViewState>('login');
   const [user, setUser] = useState<User | null>(null);
+  // Estado para saber qué ID estamos editando (null = creando nuevo)
+  const [editingId, setEditingId] = useState<string | null>(null);
 
-  // Al cargar, verificar si hay sesión
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     const token = localStorage.getItem('token');
@@ -23,7 +23,6 @@ function App() {
     if (storedUser && token) {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
-      // Redirección inicial basada en rol
       if (parsedUser.role === '1') {
         setView('list');
       } else {
@@ -48,7 +47,17 @@ function App() {
     setView('login');
   };
 
-  // Renderizado Condicional (Routing Manual)
+  // Función para iniciar edición desde la lista
+  const handleEditReport = (id: string) => {
+    setEditingId(id);
+    setView('form');
+  };
+
+  const handleCreateNew = () => {
+    setEditingId(null);
+    setView('form');
+  };
+
   const renderContent = () => {
     switch (view) {
       case 'login':
@@ -58,14 +67,14 @@ function App() {
         return <Register onGoToLogin={() => setView('login')} />;
       
       case 'list':
-        // Protección simple: si no es admin, mandar al form
         if (user?.role !== '1') return <ReportForm isAdmin={false} />;
-        return <ReportList onCreateNew={() => setView('form')} />;
+        return <ReportList onCreateNew={handleCreateNew} onEdit={handleEditReport} />;
       
       case 'form':
         return (
             <ReportForm 
                 isAdmin={user?.role === '1'} 
+                reportId={editingId} // Pasamos el ID (si existe)
                 onBack={() => setView('list')} 
             />
         );

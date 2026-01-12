@@ -1,10 +1,24 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { DatabaseModule } from './config/database.module';
+import { DatabaseConfig } from './config/database.config';
+import { SsrPuQuillayModule } from './metrics/metrics.module';
 
 @Module({
-  imports: [],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
+
+    TypeOrmModule.forRootAsync({
+      imports: [DatabaseModule],
+      useExisting: DatabaseConfig,
+    }),
+
+    DatabaseModule,
+    SsrPuQuillayModule,
+  ],
 })
 export class AppModule {}

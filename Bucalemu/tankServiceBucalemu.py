@@ -36,7 +36,6 @@ API_URL = os.getenv("API_URL")
 TOKEN = os.getenv("API_TOKEN")
 TO = os.getenv("API_TO")
 
-# Nombre interno (mt_name) vs. Nombre de alerta
 NOMBRE_ESTANQUE_ESPECIAL = {
     "CASUTO--slave.AI12": "Casuto"
 }

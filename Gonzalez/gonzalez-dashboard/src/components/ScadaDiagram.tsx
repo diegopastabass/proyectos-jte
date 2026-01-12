@@ -28,6 +28,9 @@ interface DatosSnapshot {
   freatico: Metric;
   horometro: Metric;
   totalizador: Metric;
+  cloro: Metric;
+  valvula: Metric;
+  ph: Metric;
 }
 
 interface Metric {
@@ -64,11 +67,12 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
   return (
     <div>
       <div style={containerStyle}>
-        <State style={{ maxWidth: "230px", maxHeight: "200px" }}>
+        <State style={{ maxWidth: "230px", maxHeight: "240px" }}>
           <StateBody
-            automatico={"1"}
+            automatico={data.snapshot.automatico.value.toString()}
             falla={data.snapshot.termica.value.toString()}
             bomba={data.snapshot.bomba.value.toString()}
+            valvula={data.snapshot.valvula.value.toString()}
           ></StateBody>
         </State>
         {/* 1. Bomba - Posición (0, 300) */}
@@ -104,6 +108,8 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           hasWaterFlow={hasWaterFlow}
           style={{ top: 0, left: 250 }}
           caudal={(data.snapshot.caudal.value / 1000)}
+          cloro={(data.snapshot.cloro.value)}
+          ph={(data.snapshot.ph.value / 100)}
           totalizador_diario={Number(tot)}
           totalizador_total={(data.snapshot.totalizador.value )}
         />
@@ -118,7 +124,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           volume={data.snapshot.metalico1.value}
           maxVolume={3}
           style={{ top: 0, left: 550 }}
-          name="Metálico 1"
+          name="Estanque Viejo"
           labelX={550}
           labelY={150}
           tiempoVaciado={data.tiempo_vaciado_formatted}
@@ -134,7 +140,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           volume={data.snapshot.metalico2.value}
           maxVolume={3}
           style={{ top: 0, left: 850 }}
-          name="Metálico 2"
+          name="Estanque Nuevo"
           labelX={850}
           labelY={-60}
           tiempoVaciado={data.tiempo_vaciado_2_formatted}

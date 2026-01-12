@@ -8,6 +8,8 @@ interface PipeProps {
   hasWaterFlow: boolean;
   style?: CSSProperties;
   caudal?: number;
+  cloro?: number;
+  ph?: number;
   totalizador_total?: number;
   totalizador_diario?: number;
 }
@@ -23,6 +25,8 @@ const Pipe: React.FC<PipeProps> = ({
   hasWaterFlow,
   style,
   caudal,
+  cloro,
+  ph,
   totalizador_diario,
   totalizador_total,
 }) => {
@@ -56,7 +60,7 @@ const Pipe: React.FC<PipeProps> = ({
         style={{
           maxWidth: "220px",
           position: "absolute",
-          top: 80,
+          top: -15,
           left: 320,
           zIndex: 10,
         }}
@@ -78,7 +82,19 @@ const Pipe: React.FC<PipeProps> = ({
         <div className="mb-2">
           <span className="text-muted small">Caudal de Impulsión:</span>
           <strong>
-            <h6>{caudal ? caudal?.toFixed(2) : 0} l/s</h6>
+            <h6>{caudal ? caudal?.toFixed(2) : 0} m³/h</h6>
+          </strong>
+        </div>
+        <div className="mb-2">
+          <span className="text-muted small">Cloro:</span>
+          <strong>
+            <h6>{cloro ? cloro?.toFixed(2) : 0} mg/L</h6>
+          </strong>
+        </div>
+        <div className="mb-2">
+          <span className="text-muted small">pH:</span>
+          <strong>
+            <h6>{ph ? ph?.toFixed(2) : 0}</h6>
           </strong>
         </div>
       </div>

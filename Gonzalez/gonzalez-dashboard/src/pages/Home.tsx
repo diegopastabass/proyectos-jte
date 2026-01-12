@@ -32,6 +32,8 @@ interface Datos {
   freatico: Metric;
   horometro: Metric;
   totalizador: Metric;
+  cloro: Metric;
+  valvula: Metric;
   ph: Metric;
 }
 
@@ -93,7 +95,9 @@ function App() {
           fetch(
             `https://app.jteanalytics.cl/gonzalez/horometro?start=${start}&end=${end}`
           ),
-          fetch(`https://app.jteanalytics.cl/gonzalez/nivel?start=2026-01-05&end=2026-01-05`),
+          fetch(
+            `https://app.jteanalytics.cl/gonzalez/nivel?start=2026-01-05&end=2026-01-05`
+          ),
           fetch(`https://app.jteanalytics.cl/gonzalez/nivel2`),
           fetch(`https://app.jteanalytics.cl/gonzalez/caudal`),
         ]);
@@ -150,13 +154,12 @@ function App() {
       <div className="col-12 col-lg-4 mb-1">
         <Card>
           <CardBody
-            title="Estanque Metálico 1"
-            text1={`Nivel: ${(data.snapshot.metalico1.value ).toFixed(
-              2
-            )} m`}
-            text2={`Volumen Actual: ${(
-              ((60 / 7) * data.snapshot.metalico1.value) 
-            ).toFixed(2)} m³`}
+            title="Estanque Viejo"
+            text1={["Nivel", `${data.snapshot.metalico1.value.toFixed(2)} m`]}
+            text2={[
+              "Volumen Actual",
+              `${((60 / 7) * data.snapshot.metalico1.value).toFixed(2)} m³`,
+            ]}
             text3={data.tiempo_vaciado_formatted}
           />
           <TankLevelCircular
@@ -171,7 +174,7 @@ function App() {
         <DropdownCard
           className="mb-4 d-below-1500-none d-1500-block"
           isOpen={isOpenEstanque}
-          title="Estanque Metálico 1"
+          title="Estanque Viejo"
           chartLabel="Nivel del Estanque (m)"
           data={nivelChartData}
           nivelMax={3}
@@ -183,12 +186,12 @@ function App() {
       <div className="col-12 col-lg-4 mb-1">
         <Card>
           <CardBody
-            title="Estanque Metálico 2"
-            text1={`Nivel: ${data.snapshot.metalico2.value.toFixed(2)} m`}
-            text2={`Volumen Actual: ${(
-              (60 / 7) *
-              data.snapshot.metalico2.value
-            ).toFixed(2)} m³`}
+            title="Estanque Nuevo"
+            text1={["Nivel", `${data.snapshot.metalico2.value.toFixed(2)} m`]}
+            text2={[
+              "Volumen Actual",
+              `${((60 / 7) * data.snapshot.metalico2.value).toFixed(2)} m³`,
+            ]}
             text3={data.tiempo_vaciado_2_formatted}
           />
           <TankLevelCircular
@@ -203,7 +206,7 @@ function App() {
         <DropdownCard
           className="mb-4 d-below-1500-none d-1500-block"
           isOpen={isOpenEstanque2}
-          title="Estanque Metálico 2"
+          title="Estanque Nuevo"
           chartLabel="Nivel del Estanque (m)"
           data={nivel2ChartData}
           nivelMax={3}
@@ -216,18 +219,28 @@ function App() {
         <Card>
           <CardBody
             title="Bomba"
-            text1={`Caudal Impulsión: ${(data.snapshot.caudal.value / 1000).toFixed(
-              2
-            )} m³/h`}
-            text2={`Nivel Freático: ${(
-              data.snapshot.freatico.value / 100
-            ).toFixed(2)} m`}
-            text4={`Horómetro por Día: ${minutesToHHMM(ultimoHorometro)}`}
-            text5={`Totalizador por Día: ${(ultimoTotalizador / 10).toFixed(2)} m³`}
-            text6={`Totalizador: ${(data.snapshot.totalizador.value / 10).toFixed(
-              2
-            )} m³`}
-            text7={`Ph: ${(data.snapshot.ph.value/100).toFixed(1)}`}
+            text1={[
+              "Caudal Impulsión",
+              `${(data.snapshot.caudal.value / 1000).toFixed(2)} m³/h`,
+            ]}
+            text2={[
+              "Nivel Freático",
+              `${(data.snapshot.freatico.value / 100).toFixed(2)} m`,
+            ]}
+            text4={["Horómetro por Día", minutesToHHMM(ultimoHorometro)]}
+            text5={[
+              "Totalizador por Día",
+              `${(ultimoTotalizador / 10).toFixed(2)} m³`,
+            ]}
+            text6={[
+              "Totalizador",
+              `${(data.snapshot.totalizador.value / 10).toFixed(2)} m³`,
+            ]}
+            text7={["Ph", (data.snapshot.ph.value / 100).toFixed(1)]}
+            text8={[
+              "Cloro",
+              `${(data.snapshot.cloro.value / 100).toFixed(1)} mg/L`,
+            ]}
           />
           <ToggleCardButton
             isOpen={isOpenBomba}
@@ -261,6 +274,7 @@ function App() {
           automatico={data.snapshot.automatico.value.toString()}
           bomba={data.snapshot.bomba.value.toString()}
           falla={data.snapshot.termica.value.toString()}
+          valvula={data.snapshot.valvula.value.toString()}
         />
       </State>
     </>
@@ -317,7 +331,7 @@ function App() {
       <div style={{ gridColumn: "3", gridRow: "1" }}>
         <DropdownCard
           isOpen={true}
-          title="Estanque Metálico 1"
+          title="Estanque Viejo"
           chartLabel="Nivel del Estanque (m)"
           data={nivelChartData}
           nivelMax={3}
@@ -329,7 +343,7 @@ function App() {
       <div style={{ gridColumn: "3", gridRow: "2" }}>
         <DropdownCard
           isOpen={true}
-          title="Estanque Metálico 2"
+          title="Estanque Nuevo"
           chartLabel="Nivel del Estanque (m)"
           data={nivel2ChartData}
           nivelMax={3}

@@ -1,32 +1,39 @@
 import time
 import logging
 import requests
-import mysql.connector
+import psycopg2
+import os
 from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # --- Configuración ---
 DB_CONFIG = {
-    "host": "localhost",
-    "user": "root",
-    "password": "root",
-    "database": "telemetria",
+    "host": os.getenv("DB_HOST"),
+    "port": os.getenv("DB_PORT"),
+    "user": os.getenv("DB_USER"),
+    "password": os.getenv("DB_PASSWORD"),
+    "dbname": os.getenv("DB_NAME"),
+    "sslmode": os.getenv("DB_SSLMODE", "require"),
 }
 
-API_URL = "https://api.ultramsg.com/instance79783/messages/chat"
-TOKEN = "j51no2r6amlze29z"
-TO = "120363399346901978@g.us" 
+API_URL = os.getenv("API_URL")
+TOKEN = os.getenv("API_TOKEN")
+TO = os.getenv("API_TO")
 INTERVALO_MINUTOS = 5
 
-# --- Logging ---
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+LOG_FILE = os.path.join(BASE_DIR, "logs.txt")
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.StreamHandler()]
+    handlers=[logging.FileHandler(LOG_FILE, encoding="utf-8", mode="a")]
 )
 
 # --- Funciones ---
 def obtener_niveles():
-    """Obtiene los dos últimos registros del estanque desde MySQL."""
     query = """
         SELECT mt_value, mt_time_2 
         FROM ssr_zuniga
@@ -34,39 +41,42 @@ def obtener_niveles():
         ORDER BY mt_time_2 DESC
         LIMIT 2;
     """
-    conn = mysql.connector.connect(**DB_CONFIG)
-    cursor = conn.cursor()
-    cursor.execute(query)
-    rows = cursor.fetchall()
-    cursor.close()
-    conn.close()
+    
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cursor = conn.cursor()
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
 
-    if len(rows) < 2:
-        logging.warning("No hay suficientes datos en la BD.")
+        if len(rows) < 2:
+            logging.warning("No hay suficientes datos en la BD.")
+            return None, None, None, None
+
+        nivel_actual, time_actual = rows[0]
+        nivel_anterior, time_anterior = rows[1]
+
+        return float(nivel_actual), float(nivel_anterior), time_actual, time_anterior
+    
+    except Exception as e:
+        logging.error(f"Error de conexión a BD: {e}")
         return None, None, None, None
 
-    nivel_actual, time_actual = rows[0]
-    nivel_anterior, time_anterior = rows[1]
-
-    return float(nivel_actual), float(nivel_anterior), time_actual, time_anterior
-
-
 def calcular_tiempo_vaciado(nivel_actual, nivel_anterior, time_actual, time_anterior):
-    """Calcula tiempo estimado de vaciado y lo devuelve en formato HH:MM:SS."""
     delta_nivel = nivel_actual - nivel_anterior
     delta_tiempo = (time_actual - time_anterior).total_seconds()
 
     if delta_nivel >= 0 or delta_tiempo <= 0:
-        return None  # No hay vaciado o timestamps inválidos
+        return None
 
     tasa_descenso = abs(delta_nivel) / delta_tiempo
     tiempo_restante_segundos = nivel_actual / tasa_descenso
 
+    # Corrección para compatibilidad con datetime
     return str(datetime.utcfromtimestamp(tiempo_restante_segundos).strftime("%H:%M:%S"))
 
-
 def enviar_alerta(nivel_actual, tiempo_vaciado):
-    """Envía alerta a la API y loguea toda la respuesta."""
     body_msg = (
         f"⚠️ Nivel de Estanque crítico\n"
         f"Nivel Actual: {nivel_actual:.2f} m\n"
@@ -82,9 +92,7 @@ def enviar_alerta(nivel_actual, tiempo_vaciado):
     except requests.RequestException as e:
         logging.error(f"Error al enviar alerta: {e}")
 
-
 def monitorear():
-    """Bucle principal de monitoreo."""
     while True:
         logging.info("Consultando datos de estanque...")
         nivel_actual, nivel_anterior, time_actual, time_anterior = obtener_niveles()
@@ -105,7 +113,6 @@ def monitorear():
 
         logging.info(f"Esperando {INTERVALO_MINUTOS} minutos para la siguiente consulta...")
         time.sleep(INTERVALO_MINUTOS * 60)
-
 
 if __name__ == "__main__":
     try:

@@ -24,6 +24,7 @@ interface CardBodyProps {
   automatico: string; // "1" o "0"
   bomba: string;
   falla: string;
+  valvula: string;
 }
 
 const indicadorBase: React.CSSProperties = {
@@ -31,15 +32,15 @@ const indicadorBase: React.CSSProperties = {
   marginLeft: "10px",
   padding: "5px 10px",
   color: "white",
-  borderRadius: "12px", // más redondeado
-  fontSize: "0.8rem", // texto más pequeño
-  minWidth: "110px", // mismo ancho para todos
+  borderRadius: "12px",
+  fontSize: "0.8rem",
+  minWidth: "110px",
   textAlign: "center",
 };
 
 const getEstadoStyle = (
   valor: string,
-  tipo: "automatico" | "bomba" | "falla"
+  tipo: "automatico" | "bomba" | "falla" | "valvula"
 ): React.CSSProperties => {
   const activo = valor === "1";
 
@@ -58,7 +59,7 @@ const getEstadoStyle = (
 
 const getLabel = (
   valor: string,
-  tipo: "automatico" | "bomba" | "falla"
+  tipo: "automatico" | "bomba" | "falla" | "valvula"
 ): string => {
   const activo = valor === "1";
 
@@ -69,11 +70,13 @@ const getLabel = (
       return activo ? "Encendida" : "Apagada";
     case "falla":
       return activo ? "Con falla termica" : "Sin falla termica";
+    case "valvula":
+      return activo ? "Abierta" : "Cerrada";
   }
 };
 
 export function StateBody(props: CardBodyProps) {
-  const { automatico, bomba, falla } = props;
+  const { automatico, bomba, falla, valvula } = props;
 
   return (
     <>
@@ -97,6 +100,13 @@ export function StateBody(props: CardBodyProps) {
         <span>Estado:</span>
         <span style={getEstadoStyle(falla, "falla")}>
           {getLabel(falla, "falla")}
+        </span>
+      </div>
+
+      <div className="d-flex justify-content-between align-items-center mb-2">
+        <span>Valvula:</span>
+        <span style={getEstadoStyle(valvula, "valvula")}>
+          {getLabel(valvula, "valvula")}
         </span>
       </div>
     </>

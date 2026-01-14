@@ -12,7 +12,6 @@ import {
   Filler,
 } from "chart.js";
 import type { ChartOptions } from "chart.js";
-import "chartjs-adapter-date-fns";
 
 Chart.register(
   LineController,

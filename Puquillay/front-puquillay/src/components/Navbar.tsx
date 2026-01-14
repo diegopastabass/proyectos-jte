@@ -1,9 +1,5 @@
-import { useState } from "react"; // Necesitas importar useState si aún no está importado
+import { useState } from "react";
 import lgoJte from "../assets/logoJte.png";
-import logoA from "../assets/logo_A.png";
-import logoB from "../assets/logo_B.png";
-import logoInacap from "../assets/logo_inacap.png";
-import lgon from "../assets/lgon.png";
 
 interface NavbarProps {
   text?: string;
@@ -78,11 +74,10 @@ function Navbar(props: NavbarProps) {
         {/* 1. Logo Principal (Marca) */}
         <a
           className="navbar-brand d-flex align-items-center gap-2 mb-0 me-lg-4"
-          href="/nerquihue/"
+          href="/puquillay/"
         >
           <img src={lgoJte} alt="logo" width={50} height={34} />
-          <img src={lgon} alt="logoNerquihue" width={100} />
-          <span className="h5 mb-0 d-md-inline">SSR Nerquihue</span>
+          <span className="h5 mb-0 d-md-inline">SSR Puquillay</span>
         </a>
 
         <div className="d-flex align-items-center gap-2 flex-grow-1">
@@ -91,27 +86,6 @@ function Navbar(props: NavbarProps) {
               {formattedDate}
             </span>
           </div>
-        </div>
-
-        <div className="d-flex align-items-center gap-2">
-          <img
-            src={logoA}
-            alt="logoProOhiggins"
-            width={100}
-            className="d-none d-md-block"
-          />
-          <img
-            src={logoB}
-            alt="logoSecundarioB"
-            width={250}
-            className="d-none d-md-block"
-          />
-          <img
-            src={logoInacap}
-            alt="logoSecundarioC"
-            width={100}
-            className="d-none d-md-block"
-          />
         </div>
       </div>
 

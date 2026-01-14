@@ -26,11 +26,6 @@ export class SsrPuQuillayController {
     return this.service.getNivel(dto);
   }
 
-  @Get('nivel2')
-  getNivel2(@Query() dto: DateRangeDto) {
-    return this.service.getNivel2(dto);
-  }
-
   @Get('caudal')
   getCaudal(@Query() dto: DateRangeDto) {
     return this.service.getCaudal(dto);

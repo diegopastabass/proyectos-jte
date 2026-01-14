@@ -35,8 +35,6 @@ export class SsrPuQuillayService {
     snapshot: MetricSnapshot;
     tiempo_vaciado: number;
     tiempo_vaciado_formatted: string;
-    tiempo_vaciado_2: number;
-    tiempo_vaciado_2_formatted: string;
   }> {
     const results = await this.repo.query(`
     SELECT t.mt_name, t.mt_value, t.mt_time_2
@@ -49,7 +47,7 @@ export class SsrPuQuillayService {
     ON t.mt_name = latest.mt_name AND t.mt_time_2 = latest.last_time
   `);
 
-    const prefix = 'SSR_GONZALEZ--slave.';
+    const prefix = 'SSR_PUQUILLAY--slave.';
 
     const snapshot: MetricSnapshot = results.reduce(
       (acc: MetricSnapshot, row: any) => {
@@ -100,20 +98,14 @@ export class SsrPuQuillayService {
       return { tiempo, formatted };
     };
 
-    const estanque1 = await calcularTiempoVaciado(
-      'SSR_PUQUILLAY--slave.metalico1',
-    );
-
-    const estanque2 = await calcularTiempoVaciado(
-      'SSR_PUQUILLAY--slave.metalico2',
+    const estanque = await calcularTiempoVaciado(
+      'SSR_PUQUILLAY--slave.estanque',
     );
 
     return {
       snapshot,
-      tiempo_vaciado: estanque1.tiempo,
-      tiempo_vaciado_formatted: estanque1.formatted,
-      tiempo_vaciado_2: estanque2.tiempo,
-      tiempo_vaciado_2_formatted: estanque2.formatted,
+      tiempo_vaciado: estanque.tiempo,
+      tiempo_vaciado_formatted: estanque.formatted,
     };
   }
 
@@ -200,7 +192,7 @@ export class SsrPuQuillayService {
     const range = this.normalizeDateRange(dto);
     if (!range) {
       const results = await this.repo.find({
-        where: { mt_name: 'SSR_PUQUILLAY--slave.metalico1' },
+        where: { mt_name: 'SSR_PUQUILLAY--slave.estanque' },
         order: { mt_time_2: 'DESC' },
         take: 100,
       });
@@ -215,42 +207,7 @@ export class SsrPuQuillayService {
 
     const results = await this.repo.find({
       where: {
-        mt_name: 'SSR_PUQUILLAY--slave.metalico1',
-        mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
-          start,
-          end,
-        }),
-      },
-      order: { mt_time_2: 'ASC' },
-    });
-
-    return results.map((row) => ({
-      time: row.mt_time_2.toISOString(),
-      value: Number(row.mt_value),
-    }));
-  }
-
-  // Nivel 2
-  async getNivel2(dto: DateRangeDto): Promise<Metric[]> {
-    const range = this.normalizeDateRange(dto);
-    if (!range) {
-      const results = await this.repo.find({
-        where: { mt_name: 'SSR_PUQUILLAY--slave.metalico2' },
-        order: { mt_time_2: 'DESC' },
-        take: 100,
-      });
-
-      return results.reverse().map((row) => ({
-        time: row.mt_time_2.toISOString(),
-        value: Number(row.mt_value),
-      }));
-    }
-
-    const { start, end } = range;
-
-    const results = await this.repo.find({
-      where: {
-        mt_name: 'SSR_PUQUILLAY--slave.metalico2',
+        mt_name: 'SSR_PUQUILLAY--slave.estanque',
         mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
           start,
           end,

@@ -6,7 +6,7 @@ import { DateRangeDto } from './models/dto/date-range.dto';
 import { MetricSnapshot, Metric } from './models/types';
 
 interface DailyQueryResult {
-  day: Date; 
+  day: Date;
   daily_value: number;
 }
 
@@ -78,6 +78,10 @@ export class SsrGonzalezService {
       const nivel_actual = Number(actual.mt_value);
       const nivel_anterior = Number(anterior.mt_value);
 
+      if (nivel_actual == nivel_anterior) {
+        return { tiempo: 0, formatted: 'Nivel Estático' };
+      }
+
       const t_actual = actual.mt_time_2.getTime() / 1000;
       const t_anterior = anterior.mt_time_2.getTime() / 1000;
 
@@ -148,7 +152,10 @@ export class SsrGonzalezService {
     );
 
     return results.map((row) => ({
-      time: typeof row.day === 'string' ? row.day : row.day.toISOString().split('T')[0],
+      time:
+        typeof row.day === 'string'
+          ? row.day
+          : row.day.toISOString().split('T')[0],
       value: Number(row.daily_value),
     }));
   }
@@ -184,7 +191,10 @@ export class SsrGonzalezService {
     );
 
     return results.map((row) => ({
-      time: typeof row.day === 'string' ? row.day : row.day.toISOString().split('T')[0],
+      time:
+        typeof row.day === 'string'
+          ? row.day
+          : row.day.toISOString().split('T')[0],
       value: Number(row.daily_value),
     }));
   }
@@ -329,6 +339,4 @@ export class SsrGonzalezService {
       value: Number(row.mt_value),
     }));
   }
-
-
 }

@@ -105,11 +105,11 @@ export class SsrGonzalezService {
     };
 
     const estanque1 = await calcularTiempoVaciado(
-      'SSR_CONZALEZ--slave.metalico1',
+      'SSR_GONZALEZ--slave.metalico1',
     );
 
     const estanque2 = await calcularTiempoVaciado(
-      'SSR_CONZALEZ--slave.metalico2',
+      'SSR_GONZALEZ--slave.metalico2',
     );
 
     return {

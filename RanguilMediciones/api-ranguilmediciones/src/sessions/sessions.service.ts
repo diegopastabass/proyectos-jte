@@ -23,8 +23,13 @@ export class SessionsService {
     await queryRunner.startTransaction();
 
     try {
-      const user = new User();
-      user.id = data.userId;
+      const user = await queryRunner.manager.findOne(User, {
+        where: { id: data.userId },
+      });
+
+      if (!user) {
+        throw new BadRequestException('El usuario asignado no existe.');
+      }
 
       const newSession = new Session();
       newSession.user = user;
@@ -57,6 +62,7 @@ export class SessionsService {
       };
     } catch (err) {
       await queryRunner.rollbackTransaction();
+      console.error('Error Transaction:', err);
       throw new BadRequestException(
         'Error al guardar la sesión: ' + err.message,
       );

@@ -33,10 +33,7 @@ function App() {
   };
 
   return (
-    <div
-      className="container-fluid"
-      style={{ minHeight: "100vh", backgroundColor: "#f8f9fa" }}
-    >
+    <div>
       {view === "login" && (
         <Login
           onLogin={handleLogin}

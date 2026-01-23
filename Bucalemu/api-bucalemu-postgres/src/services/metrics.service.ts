@@ -2,29 +2,14 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  OnModuleDestroy,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ViewEntity, Column, Raw } from 'typeorm';
+import { Raw, Repository } from 'typeorm';
 import { CreateMetricDto } from '../models/dto/create-metric.dto';
 import { DateRangeDto } from '../models/dto/date-range.dto';
-
-@ViewEntity({
-  name: 'ssr_bucalemu',
-  expression: `SELECT * FROM ssr_bucalemu`,
-})
-export class Metric {
-  @Column({ name: 'mt_id' })
-  mt_id: number;
-
-  @Column({ name: 'mt_name' })
-  mt_name: string;
-
-  @Column({ name: 'mt_value' })
-  mt_value: number;
-
-  @Column({ name: 'mt_time_2' })
-  mt_time_2: Date;
-}
+import { Metric } from '../models/metric.entity';
 
 export class Total {
   time: string;
@@ -37,26 +22,64 @@ interface DailyQueryResult {
 }
 
 @Injectable()
-export class MetricsService {
+export class MetricsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MetricsService.name);
+
+  // Buffer para acumular mediciones
+  private metricsBuffer: CreateMetricDto[] = [];
+  private flushInterval: NodeJS.Timeout;
 
   constructor(
     @InjectRepository(Metric)
     private readonly metricRepository: Repository<Metric>,
   ) {}
 
-  // Create Metric
+  // Iniciar el cron de vaciado al arrancar
+  onModuleInit() {
+    this.flushInterval = setInterval(() => {
+      this.flushMetrics();
+    }, 30000); // Guardar cada 30 segundos
+  }
+
+  onModuleDestroy() {
+    clearInterval(this.flushInterval);
+    this.flushMetrics(); // Guardado final
+  }
+
+  // Create Metric (Modificado para usar Buffer)
   async createMetric(
     dto: CreateMetricDto,
-  ): Promise<{ success: boolean; insertedId: number }> {
+  ): Promise<{ success: boolean; message: string }> {
+    this.metricsBuffer.push(dto);
+
+    // Si el buffer se llena mucho, forzar guardado
+    if (this.metricsBuffer.length >= 100) {
+      await this.flushMetrics();
+    }
+
+    return { success: true, message: 'Metric buffered' };
+  }
+
+  // Función privada para guardar en lote
+  private async flushMetrics() {
+    if (this.metricsBuffer.length === 0) return;
+
+    const dataToSave = [...this.metricsBuffer];
+    this.metricsBuffer = []; // Limpiar buffer inmediatamente
+
     try {
-      const metric = this.metricRepository.create(dto);
-      const result = await this.metricRepository.save(metric);
-      this.logger.log(`Inserted metric with id ${result.mt_id}`);
-      return { success: true, insertedId: result.mt_id };
+      // insert es mucho más rápido que save para arrays grandes
+      await this.metricRepository
+        .createQueryBuilder()
+        .insert()
+        .into('ssr_bucalemu')
+        .values(dataToSave)
+        .execute();
+
+      this.logger.log(`Bulk inserted ${dataToSave.length} metrics`);
     } catch (error) {
-      this.logger.error('Error inserting metric', error);
-      throw new InternalServerErrorException('Error inserting metric');
+      this.logger.error('Error in bulk insert', error);
+      // Opcional: Reintentar o guardar en archivo de error
     }
   }
 

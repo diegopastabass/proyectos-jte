@@ -1,21 +1,16 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-} from 'typeorm';
+import { Entity, Column } from 'typeorm';
 
 @Entity({ name: 'ssr_bucalemu' })
 export class Metric {
-  @PrimaryGeneratedColumn()
+  @Column({ name: 'mt_id', primary: true })
   mt_id: number;
 
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ name: 'mt_name' })
   mt_name: string;
 
-  @Column({ type: 'double precision' })
+  @Column({ name: 'mt_value', type: 'float' })
   mt_value: number;
 
-  @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ name: 'mt_time_2' })
   mt_time_2: Date;
 }

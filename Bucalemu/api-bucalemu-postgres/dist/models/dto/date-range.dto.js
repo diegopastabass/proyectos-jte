@@ -9,26 +9,22 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreateReportDto = void 0;
+exports.DateRangeDto = void 0;
 const class_validator_1 = require("class-validator");
-class CreateReportDto {
-    clientName;
-    status;
-    data;
+const class_transformer_1 = require("class-transformer");
+class DateRangeDto {
+    start;
+    end;
 }
-exports.CreateReportDto = CreateReportDto;
+exports.DateRangeDto = DateRangeDto;
 __decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
-    __metadata("design:type", String)
-], CreateReportDto.prototype, "clientName", void 0);
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Date),
+    __metadata("design:type", Date)
+], DateRangeDto.prototype, "start", void 0);
 __decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
-    __metadata("design:type", String)
-], CreateReportDto.prototype, "status", void 0);
-__decorate([
-    (0, class_validator_1.IsObject)(),
-    __metadata("design:type", Object)
-], CreateReportDto.prototype, "data", void 0);
-//# sourceMappingURL=create-report.dto.js.map
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Date),
+    __metadata("design:type", Date)
+], DateRangeDto.prototype, "end", void 0);
+//# sourceMappingURL=date-range.dto.js.map

@@ -8,7 +8,7 @@ export declare class AuthController {
         user: {
             email: string;
             fullName: string;
-            role: string;
+            type: string;
         };
     }>;
 }

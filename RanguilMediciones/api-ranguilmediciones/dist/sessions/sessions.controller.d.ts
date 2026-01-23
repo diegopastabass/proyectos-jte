@@ -1,3 +1,4 @@
+import { type Response } from 'express';
 import { SessionsService } from './sessions.service';
 export declare class SessionsController {
     private readonly sessionsService;
@@ -6,6 +7,7 @@ export declare class SessionsController {
         message: string;
         sessionId: string;
     }>;
+    downloadReport(id: string, res: Response): Promise<void>;
     findAll(): Promise<import("./entities/session.entity").Session[]>;
     findOne(id: string): Promise<import("./entities/session.entity").Session | null>;
     remove(id: string): Promise<import("typeorm").DeleteResult>;

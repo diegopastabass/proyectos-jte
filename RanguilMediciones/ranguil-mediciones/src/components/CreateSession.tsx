@@ -1,14 +1,13 @@
 import { useState } from "react";
 import axios from "axios";
 import { type User } from "../types";
-import PhotoCaptureModal from "./PhotoCaptureModal"; // 1. Importar el modal
+import PhotoCaptureModal from "./PhotoCaptureModal";
 
 interface Props {
   user: User;
   onBack: () => void;
 }
 
-// Estructura fija de inputs requeridos
 const FIELD_CONFIG = [
   { id: "horometro", label: "Horómetro", section: "Bomba", hasLocation: false },
   {
@@ -111,7 +110,6 @@ export default function CreateSession({ user, onBack }: Props) {
       formData.append("data", JSON.stringify(dataJson));
 
       const token = localStorage.getItem("user_token");
-      // Ajusta la URL si es necesario
       await axios.post(
         "https://app.jteanalytics.cl/ranguil-mediciones/sessions/app/",
         formData,

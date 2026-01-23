@@ -28,16 +28,16 @@ let AuthService = class AuthService {
         const payload = {
             sub: user.id,
             email: user.email,
-            role: user.role,
-            fullName: user.full_name
+            type: user.type,
+            fullName: user.name,
         };
         return {
             access_token: this.jwtService.sign(payload),
             user: {
                 email: user.email,
-                fullName: user.full_name,
-                role: user.role
-            }
+                fullName: user.name,
+                type: user.type,
+            },
         };
     }
 };

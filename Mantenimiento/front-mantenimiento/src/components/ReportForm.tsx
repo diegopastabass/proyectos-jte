@@ -159,9 +159,9 @@ function ReportForm({ onBack, isAdmin, reportId }: Props) {
       };
 
       if (reportId) {
-        res = await api.patch(`/reports/${reportId}`, payload);
+        res = await api.patch(`/app/reports/${reportId}`, payload);
       } else {
-        res = await api.post("/reports", payload);
+        res = await api.post("/app/reports/", payload);
       }
 
       return res.data.data;

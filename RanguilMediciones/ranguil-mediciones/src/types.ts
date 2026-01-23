@@ -2,7 +2,7 @@ export interface User {
   id: string;
   email: string;
   fullName: string;
-  role: "0" | "1";
+  type: "0" | "1";
   token?: string;
 }
 

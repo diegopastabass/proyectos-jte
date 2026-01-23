@@ -9,7 +9,9 @@ export declare class SessionsService {
         message: string;
         sessionId: string;
     }>;
+    private getUnit;
     findAll(): Promise<Session[]>;
+    getReportData(id: string): Promise<any>;
     findOne(id: string): Promise<Session | null>;
     remove(id: string): Promise<import("typeorm").DeleteResult>;
 }

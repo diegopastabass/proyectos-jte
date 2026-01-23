@@ -27,7 +27,7 @@ export default function ReportList({ onCreateNew, onEdit }: Props) {
 
   const fetchReports = async () => {
     try {
-      const res = await api.get("/reports/app");
+      const res = await api.get("/app/reports/");
       setReports(res.data);
     } catch (error) {
       console.error("Error fetching reports", error);
@@ -38,7 +38,7 @@ export default function ReportList({ onCreateNew, onEdit }: Props) {
 
   const handleDownload = async (id: string, ticketNumber: string) => {
     try {
-      const res = await api.get(`/reports/app/${id}`);
+      const res = await api.get(`/app/reports/${id}`);
       const fullData: ReportData = res.data.data;
       const blob = await pdf(<PDFReport data={fullData} />).toBlob();
       saveAs(blob, `OT-${ticketNumber}.pdf`);
@@ -59,7 +59,7 @@ export default function ReportList({ onCreateNew, onEdit }: Props) {
   const executeDelete = async () => {
     if (!reportToDelete) return;
     try {
-      await api.delete(`/reports/app/${reportToDelete.id}`);
+      await api.delete(`/app/reports/${reportToDelete.id}`);
       setReports((prev) => prev.filter((r) => r.id !== reportToDelete.id));
       setShowDeleteModal(false);
       setReportToDelete(null);

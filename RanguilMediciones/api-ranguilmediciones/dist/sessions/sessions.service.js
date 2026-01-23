@@ -31,16 +31,14 @@ let SessionsService = class SessionsService {
         await queryRunner.connect();
         await queryRunner.startTransaction();
         try {
-            const user = new user_entity_1.User();
-            user.id = data.userId;
-            const newSession = new session_entity_1.Session();
-            newSession.user = user;
-            newSession.measures_number = data.measurements.length;
-            newSession.report_json = data.reportMetadata || {};
-            const savedSession = await queryRunner.manager.save(newSession);
+            const user = await queryRunner.manager.findOne(user_entity_1.User, {
+                where: { id: data.userId },
+            });
+            if (!user) {
+                throw new common_1.BadRequestException('El usuario asignado no existe.');
+            }
             const measurementsToSave = data.measurements.map((item, index) => {
                 const measure = new measurement_entity_1.Measurement();
-                measure.session = savedSession;
                 measure.name = item.name;
                 measure.value = Number(item.value);
                 measure.time = new Date(item.time);
@@ -50,6 +48,31 @@ let SessionsService = class SessionsService {
                 }
                 return measure;
             });
+            const reportSnapshot = {
+                header: {
+                    sessionId: null,
+                    date: new Date().toISOString(),
+                    technicianName: user.name,
+                    technicianEmail: user.email,
+                },
+                items: measurementsToSave.map((m) => ({
+                    label: m.name,
+                    value: m.value,
+                    unit: this.getUnit(m.name),
+                    location: m.location,
+                    time: m.time,
+                    image: m.imagePath,
+                })),
+                metadata: data.reportMetadata,
+            };
+            const newSession = new session_entity_1.Session();
+            newSession.user = user;
+            newSession.measures_number = data.measurements.length;
+            newSession.report_json = reportSnapshot;
+            const savedSession = await queryRunner.manager.save(newSession);
+            savedSession.report_json['header']['sessionId'] = savedSession.id;
+            await queryRunner.manager.save(savedSession);
+            measurementsToSave.forEach((m) => (m.session = savedSession));
             await queryRunner.manager.save(measurementsToSave);
             await queryRunner.commitTransaction();
             return {
@@ -59,11 +82,24 @@ let SessionsService = class SessionsService {
         }
         catch (err) {
             await queryRunner.rollbackTransaction();
+            console.error('Error Transaction:', err);
             throw new common_1.BadRequestException('Error al guardar la sesión: ' + err.message);
         }
         finally {
             await queryRunner.release();
         }
+    }
+    getUnit(name) {
+        const lower = name.toLowerCase();
+        if (lower.includes('cloro'))
+            return 'ppm';
+        if (lower.includes('caudal'))
+            return 'm³';
+        if (lower.includes('energía') || lower.includes('kwh'))
+            return 'kWh';
+        if (lower.includes('horómetro'))
+            return 'Hrs';
+        return '';
     }
     async findAll() {
         return this.sessionRepo.find({
@@ -74,11 +110,29 @@ let SessionsService = class SessionsService {
                 createdAt: true,
                 measures_number: true,
                 user: {
-                    full_name: true,
+                    name: true,
                     email: true,
                 },
             },
         });
+    }
+    async getReportData(id) {
+        const session = await this.sessionRepo.findOne({
+            where: { id },
+            relations: ['user'],
+        });
+        if (!session)
+            throw new common_1.NotFoundException('Sesión no encontrada');
+        if (session.report_json && session.report_json.items) {
+            return session.report_json;
+        }
+        return {
+            header: {
+                date: session.createdAt,
+                technicianName: session.user?.name,
+            },
+            items: [],
+        };
     }
     async findOne(id) {
         return this.sessionRepo.findOne({

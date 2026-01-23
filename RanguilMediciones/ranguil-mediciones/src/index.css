@@ -27,16 +27,13 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  /* Eliminamos display: flex y place-items: center para que Bootstrap maneje el layout */
 }
 
 #root {
-  /* Eliminamos el max-width y padding que centraban y restringían el contenido */
   width: 100%;
   min-height: 100vh;
   margin: 0;
   padding: 0;
-  /* Asegura que el contenedor raíz permita a los hijos ocupar toda la altura */
   display: flex;
   flex-direction: column;
 }

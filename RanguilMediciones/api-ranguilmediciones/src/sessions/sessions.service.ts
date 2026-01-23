@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Session } from './entities/session.entity';
@@ -31,31 +35,55 @@ export class SessionsService {
         throw new BadRequestException('El usuario asignado no existe.');
       }
 
+      const measurementsToSave: Measurement[] = data.measurements.map(
+        (item, index) => {
+          const measure = new Measurement();
+          measure.name = item.name;
+          measure.value = Number(item.value);
+          measure.time = new Date(item.time);
+          measure.location = item.location || '';
+
+          if (files && files[index]) {
+            measure.imagePath = files[index].filename;
+          }
+
+          return measure;
+        },
+      );
+
+      const reportSnapshot = {
+        header: {
+          sessionId: null,
+          date: new Date().toISOString(),
+          technicianName: user.name,
+          technicianEmail: user.email,
+        },
+        items: measurementsToSave.map((m) => ({
+          label: m.name,
+          value: m.value,
+          unit: this.getUnit(m.name),
+          location: m.location,
+          time: m.time,
+          image: m.imagePath,
+        })),
+        metadata: data.reportMetadata,
+      };
+
       const newSession = new Session();
       newSession.user = user;
       newSession.measures_number = data.measurements.length;
-      newSession.report_json = data.reportMetadata || {};
+      newSession.report_json = reportSnapshot;
 
       const savedSession = await queryRunner.manager.save(newSession);
 
-      const measurementsToSave = data.measurements.map((item, index) => {
-        const measure = new Measurement();
-        measure.session = savedSession;
-        measure.name = item.name;
-        measure.value = Number(item.value);
-        measure.time = new Date(item.time);
-        measure.location = item.location || '';
+      savedSession.report_json['header']['sessionId'] = savedSession.id;
+      await queryRunner.manager.save(savedSession);
 
-        if (files && files[index]) {
-          measure.imagePath = files[index].filename;
-        }
-
-        return measure;
-      });
-
+      measurementsToSave.forEach((m) => (m.session = savedSession));
       await queryRunner.manager.save(measurementsToSave);
 
       await queryRunner.commitTransaction();
+
       return {
         message: 'Sesión creada exitosamente',
         sessionId: savedSession.id,
@@ -69,6 +97,16 @@ export class SessionsService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  // Helper simple para determinar unidades basado en el nombre (puedes mejorarlo)
+  private getUnit(name: string): string {
+    const lower = name.toLowerCase();
+    if (lower.includes('cloro')) return 'ppm';
+    if (lower.includes('caudal')) return 'm³';
+    if (lower.includes('energía') || lower.includes('kwh')) return 'kWh';
+    if (lower.includes('horómetro')) return 'Hrs';
+    return '';
   }
 
   async findAll() {
@@ -85,6 +123,28 @@ export class SessionsService {
         },
       },
     });
+  }
+
+  async getReportData(id: string) {
+    const session = await this.sessionRepo.findOne({
+      where: { id },
+      relations: ['user'],
+    });
+    if (!session) throw new NotFoundException('Sesión no encontrada');
+
+    // Si existe el snapshot JSON, lo usamos. Si no, lo construimos al vuelo (retrocompatibilidad)
+    if (session.report_json && session.report_json.items) {
+      return session.report_json;
+    }
+
+    // Fallback: Si es una sesión antigua sin JSON rico, retornamos algo básico
+    return {
+      header: {
+        date: session.createdAt,
+        technicianName: session.user?.name,
+      },
+      items: [],
+    };
   }
 
   async findOne(id: string) {

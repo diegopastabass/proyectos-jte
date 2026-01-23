@@ -1,6 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ViewEntity } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Metric } from '../models/metric.entity';
 import { CreateMetricDto } from '../models/dto/create-metric.dto';
 import {
@@ -8,18 +13,67 @@ import {
   TotalizadorResponse,
 } from '../models/metric.response';
 
-@ViewEntity({
-  name: 'undurraga_metrics',
-  expression: `SELECT * FROM undurraga_metrics`,
-})
 @Injectable()
-export class MetricsService {
+export class MetricsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MetricsService.name);
+  private metricsBuffer: CreateMetricDto[] = [];
+  private flushInterval: NodeJS.Timeout;
 
   constructor(
     @InjectRepository(Metric)
     private readonly metricRepository: Repository<Metric>,
   ) {}
+
+  onModuleInit() {
+    this.flushInterval = setInterval(() => {
+      this.flushMetrics();
+    }, 30000);
+  }
+
+  onModuleDestroy() {
+    clearInterval(this.flushInterval);
+    this.flushMetrics();
+  }
+
+  async createMetric(
+    dto: CreateMetricDto,
+  ): Promise<{ success: boolean; message: string }> {
+    if (!dto.sensor_id || dto.value === undefined || dto.value === null) {
+      throw new Error(
+        'Debe proporcionar sensor_id y value para insertar un nuevo registro.',
+      );
+    }
+
+    this.metricsBuffer.push(dto);
+
+    if (this.metricsBuffer.length >= 100) {
+      await this.flushMetrics();
+    }
+
+    return { success: true, message: 'Metric buffered' };
+  }
+
+  private async flushMetrics() {
+    if (this.metricsBuffer.length === 0) return;
+
+    const dataToSave = [...this.metricsBuffer];
+    this.metricsBuffer = []; // Vaciar buffer
+
+    try {
+      await this.metricRepository
+        .createQueryBuilder()
+        .insert()
+        .into(Metric)
+        .values(dataToSave)
+        .execute();
+
+      this.logger.log(
+        `Bulk inserted ${dataToSave.length} metrics for Undurraga`,
+      );
+    } catch (error) {
+      this.logger.error('Error in bulk insert', error);
+    }
+  }
 
   async getSnapshot(): Promise<SnapshotResponse> {
     this.logger.log('Fetching snapshot of latest metrics...');
@@ -134,23 +188,6 @@ export class MetricsService {
     }
 
     return this.getTotalizadorData(3, startDate, endDate);
-  }
-
-  async createMetric(dto: CreateMetricDto): Promise<Metric> {
-    this.logger.log(`Creating new metric: ${dto.sensor_id} = ${dto.value}`);
-
-    if (!dto.sensor_id || dto.value === undefined || dto.value === null) {
-      throw new Error(
-        'Debe proporcionar sensor_id y value para insertar un nuevo registro.',
-      );
-    }
-
-    const metric = this.metricRepository.create({
-      sensor_id: dto.sensor_id,
-      value: dto.value,
-    });
-
-    return await this.metricRepository.save(metric);
   }
 
   /**

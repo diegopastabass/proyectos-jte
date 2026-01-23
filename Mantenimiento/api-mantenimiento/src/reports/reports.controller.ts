@@ -15,36 +15,36 @@ import { UpdateReportDto } from './dto/update-report.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 
-@Controller('/reports')
+@Controller('/app/reports')
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
   @UseGuards(JwtAuthGuard)
-  @Post('/app')
+  @Post()
   create(@Body() createReportDto: CreateReportDto, @Request() req) {
     return this.reportsService.create(createReportDto, req.user.userId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Get('/app')
+  @Get()
   findAll() {
     return this.reportsService.findAll();
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Get('/app/:id')
+  @Get(':id')
   findOne(@Param('id') id: string) {
     return this.reportsService.findOne(id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Patch('/app/:id')
+  @Patch(':id')
   update(@Param('id') id: string, @Body() updateReportDto: UpdateReportDto) {
     return this.reportsService.update(id, updateReportDto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Delete('/app/:id')
+  @Delete(':id')
   remove(@Param('id') id: string) {
     return this.reportsService.remove(id);
   }

@@ -44,6 +44,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var UsersService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsersService = void 0;
 const common_1 = require("@nestjs/common");
@@ -51,44 +52,87 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const user_entity_1 = require("./entities/user.entity");
 const bcrypt = __importStar(require("bcrypt"));
-let UsersService = class UsersService {
+let UsersService = UsersService_1 = class UsersService {
     userRepository;
+    logger = new common_1.Logger(UsersService_1.name);
     constructor(userRepository) {
         this.userRepository = userRepository;
     }
     async create(createUserDto) {
         const { email, password, fullName } = createUserDto;
-        const existing = await this.userRepository.findOne({ where: { email } });
-        if (existing)
-            throw new common_1.ConflictException('El email ya está registrado');
-        const salt = await bcrypt.genSalt();
-        const passwordHash = await bcrypt.hash(password, salt);
-        const user = this.userRepository.create({
-            email,
-            password_hash: passwordHash,
-            full_name: fullName,
-            role: '0',
-        });
-        return this.userRepository.save(user);
+        this.logger.log(`Iniciando creación de usuario: ${email}`);
+        try {
+            const existing = await this.userRepository.findOne({ where: { email } });
+            if (existing) {
+                this.logger.warn(`Intento de registro duplicado para: ${email}`);
+                throw new common_1.ConflictException('El email ya está registrado');
+            }
+            this.logger.debug('Generando hash de contraseña...');
+            const salt = await bcrypt.genSalt();
+            const passwordHash = await bcrypt.hash(password, salt);
+            const user = this.userRepository.create({
+                email,
+                password_hash: passwordHash,
+                name: fullName,
+                type: '0',
+            });
+            const savedUser = await this.userRepository.save(user);
+            this.logger.log(`Usuario creado exitosamente con ID: ${savedUser.id}`);
+            return savedUser;
+        }
+        catch (error) {
+            this.logger.error(`Error en create(): ${error.message}`, error.stack);
+            if (error instanceof common_1.ConflictException)
+                throw error;
+            throw new common_1.InternalServerErrorException('Error al crear el usuario. Revise los logs del servidor.');
+        }
     }
     async validateUser(loginUserDto) {
         const { email, password } = loginUserDto;
-        const user = await this.userRepository.findOne({ where: { email } });
-        if (user && (await bcrypt.compare(password, user.password_hash))) {
-            const { password_hash, ...result } = user;
-            return result;
+        this.logger.log(`Validando credenciales para: ${email}`);
+        try {
+            const user = await this.userRepository.findOne({ where: { email } });
+            if (!user) {
+                this.logger.warn(`Usuario no encontrado: ${email}`);
+                throw new common_1.UnauthorizedException('Credenciales inválidas');
+            }
+            const isMatch = await bcrypt.compare(password, user.password_hash);
+            if (isMatch) {
+                this.logger.log(`Login exitoso para: ${email}`);
+                const { password_hash, ...result } = user;
+                return result;
+            }
+            else {
+                this.logger.warn(`Contraseña incorrecta para: ${email}`);
+                throw new common_1.UnauthorizedException('Credenciales inválidas');
+            }
         }
-        throw new common_1.UnauthorizedException('Credenciales inválidas');
+        catch (error) {
+            this.logger.error(`Error en validateUser(): ${error.message}`, error.stack);
+            if (error instanceof common_1.UnauthorizedException)
+                throw error;
+            throw new common_1.InternalServerErrorException('Error en el proceso de validación');
+        }
     }
     async findOne(id) {
-        const user = await this.userRepository.findOne({ where: { id } });
-        if (!user)
-            throw new common_1.NotFoundException(`User with id ${id} not found`);
-        return user;
+        try {
+            const user = await this.userRepository.findOne({ where: { id } });
+            if (!user) {
+                this.logger.warn(`Usuario ID ${id} no encontrado`);
+                throw new common_1.NotFoundException(`User with id ${id} not found`);
+            }
+            return user;
+        }
+        catch (error) {
+            this.logger.error(`Error buscando usuario ID ${id}: ${error.message}`, error.stack);
+            if (error instanceof common_1.NotFoundException)
+                throw error;
+            throw new common_1.InternalServerErrorException('Error al buscar usuario');
+        }
     }
 };
 exports.UsersService = UsersService;
-exports.UsersService = UsersService = __decorate([
+exports.UsersService = UsersService = UsersService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __metadata("design:paramtypes", [typeorm_2.Repository])

@@ -3,12 +3,13 @@ import Login from "./components/Login";
 import Register from "./components/Register";
 import Home from "./components/Home";
 import CreateSession from "./components/CreateSession";
+import ExportReports from "./components/ExportReports";
 import { type User } from "./types";
 
 function App() {
-  const [view, setView] = useState<"login" | "register" | "home" | "create">(
-    "login",
-  );
+  const [view, setView] = useState<
+    "login" | "register" | "home" | "create" | "export"
+  >("login");
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
@@ -53,11 +54,20 @@ function App() {
           user={user}
           onLogout={handleLogout}
           onNewSession={() => setView("create")}
+          onGoToExport={() => setView("export")}
         />
       )}
 
       {user && view === "create" && (
         <CreateSession user={user} onBack={() => setView("home")} />
+      )}
+
+      {user && view === "export" && (
+        <ExportReports
+          user={user}
+          onLogout={handleLogout}
+          onBack={() => setView("home")}
+        />
       )}
     </div>
   );

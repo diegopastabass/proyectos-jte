@@ -3,15 +3,25 @@ import axios from "axios";
 import { type User, type SessionData } from "../types";
 import Navbar from "./Navbar";
 
+import { pdf } from "@react-pdf/renderer";
+import { PDFMeasurementReport, type ReportJson } from "./PDFMeasurementReport";
+
 interface Props {
   user: User;
   onLogout: () => void;
   onNewSession: () => void;
+  onGoToExport: () => void;
 }
 
-export default function Home({ user, onLogout, onNewSession }: Props) {
+export default function Home({
+  user,
+  onLogout,
+  onNewSession,
+  onGoToExport,
+}: Props) {
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSessions();
@@ -28,11 +38,9 @@ export default function Home({ user, onLogout, onNewSession }: Props) {
       );
 
       let data = res.data;
-
       if (user.type === "1") {
         data = data.filter((s: SessionData) => s.user.email === user.email);
       }
-
       setSessions(data);
     } catch (error) {
       console.error("Error cargando sesiones");
@@ -42,44 +50,61 @@ export default function Home({ user, onLogout, onNewSession }: Props) {
   };
 
   const handleDownload = async (id: string) => {
+    setDownloadingId(id);
     try {
       const token = localStorage.getItem("user_token");
 
-      // Hacemos una petición BLOB para descargar el archivo
-      const res = await axios.get(
+      const res = await axios.get<ReportJson>(
         `https://app.jteanalytics.cl/ranguil-mediciones/sessions/app/report/${id}`,
         {
           headers: { Authorization: `Bearer ${token}` },
-          responseType: "blob", // Importante para recibir binarios
         },
       );
 
-      // Crear URL temporal para descargar
-      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const reportData = res.data;
+
+      const blob = await pdf(
+        <PDFMeasurementReport data={reportData} />,
+      ).toBlob();
+
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `Reporte_Sesion_${id}.pdf`);
+      link.download = `Reporte_Sesion_${id}.pdf`;
       document.body.appendChild(link);
       link.click();
-      link.parentNode?.removeChild(link); // Limpieza
+
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } catch (error) {
-      console.error("Error descargando reporte", error);
-      alert("No se pudo generar el reporte. Intente nuevamente.");
+      console.error("Error generando reporte:", error);
+      alert("Error al generar el reporte. Intente nuevamente.");
+    } finally {
+      setDownloadingId(null);
     }
   };
 
   return (
     <>
-      {/* Navbar */}
       <Navbar user={user} onLogout={onLogout} />
       <div className="container py-4">
         <div>
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h4>Historial de Mediciones</h4>
-            <button
-              className="btn btn-success bi-plus-circle"
-              onClick={onNewSession}
-            ></button>
+          <div className="d-flex align-items-center mb-3">
+            <h4 className="mb-0">Historial de Mediciones</h4>
+
+            <div className="ms-auto d-flex gap-2">
+              {user.type === "0" && (
+                <button className="btn btn-outline-dark" onClick={onGoToExport}>
+                  <i className="bi bi-bar-chart-line me-2"></i>
+                  Reportes Acumulados
+                </button>
+              )}
+
+              <button className="btn btn-success" onClick={onNewSession}>
+                <i className="bi bi-plus-circle me-2"></i>
+                Nueva Sesión
+              </button>
+            </div>
           </div>
 
           {loading ? (
@@ -106,15 +131,25 @@ export default function Home({ user, onLogout, onNewSession }: Props) {
                         {new Date(session.createdAt).toLocaleDateString()}{" "}
                         {new Date(session.createdAt).toLocaleTimeString()}
                       </td>
-                      <td>{session.user.full_name}</td>
+                      <td>{session.user.name}</td>
                       <td>{session.measures_number}</td>
                       <td>
                         <button
                           className="btn btn-sm btn-outline-primary"
                           onClick={() => handleDownload(session.id)}
+                          disabled={downloadingId === session.id}
                         >
-                          <i className="bi bi-file-earmark-arrow-down"></i>{" "}
-                          Informe
+                          {downloadingId === session.id ? (
+                            <>
+                              <span className="spinner-border spinner-border-sm me-2"></span>
+                              Generando...
+                            </>
+                          ) : (
+                            <>
+                              <i className="bi bi-file-earmark-pdf me-1"></i>
+                              Informe
+                            </>
+                          )}
                         </button>
                       </td>
                     </tr>

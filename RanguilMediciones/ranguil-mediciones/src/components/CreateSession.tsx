@@ -2,6 +2,7 @@ import { useState } from "react";
 import axios from "axios";
 import { type User } from "../types";
 import PhotoCaptureModal from "./PhotoCaptureModal";
+import ConfirmationModal from "./ConfirmationModal";
 
 interface Props {
   user: User;
@@ -12,17 +13,30 @@ const FIELD_CONFIG = [
   { id: "horometro", label: "Horómetro", section: "Bomba", hasLocation: false },
   {
     id: "caudalimetro",
-    label: "Caudalímetro (m³)",
+    label: "Caudalímetro",
     section: "Bomba",
     hasLocation: false,
   },
-  { id: "kwh", label: "Energía (Kwh)", section: "Bomba", hasLocation: false },
+  { id: "kwh", label: "Energía", section: "Bomba", hasLocation: false },
+  {
+    id: "nivel_estatico",
+    label: "Nivel Estático",
+    section: "Bomba",
+    hasLocation: false,
+  },
+  {
+    id: "nivel_dinamico",
+    label: "Nivel Dinámico",
+    section: "Bomba",
+    hasLocation: false,
+  },
   {
     id: "cloro_bomba",
-    label: "Cloro en la Red",
+    label: "Cloro en Caseta",
     section: "Bomba",
     hasLocation: false,
   },
+
   {
     id: "cloro_red_1",
     label: "Cloro Red Punto 1",
@@ -43,36 +57,57 @@ export default function CreateSession({ user, onBack }: Props) {
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [loading, setLoading] = useState(false);
 
-  // 2. Estados para el manejo del modal de cámara
   const [showCameraModal, setShowCameraModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
   const [activeFieldId, setActiveFieldId] = useState("");
   const [activeFieldLabel, setActiveFieldLabel] = useState("");
 
-  // 3. Función para abrir el modal y saber qué campo lo invocó
   const handleOpenCamera = (fieldId: string, fieldLabel: string) => {
     setActiveFieldId(fieldId);
     setActiveFieldLabel(fieldLabel);
     setShowCameraModal(true);
   };
 
-  // 4. Callback que recibe la foto tomada desde el modal
   const handlePhotoCaptured = (file: File, fieldId: string) => {
     setFiles((prev) => ({ ...prev, [fieldId]: file }));
-    // El modal se cierra solo dentro del componente hijo
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handlePreSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validación simple: verificar que todos los campos tengan foto
-    const missingPhotos = FIELD_CONFIG.some((field) => !files[field.id]);
-    if (missingPhotos) {
+    const bombaFields = FIELD_CONFIG.filter((f) => f.section === "Bomba");
+
+    const missingBomba = bombaFields.some(
+      (field) =>
+        !values[field.id] || values[field.id] === "" || !files[field.id],
+    );
+
+    if (missingBomba) {
       alert(
-        "Por favor, tome una fotografía para cada medición antes de guardar.",
+        "Todos los campos de la sección 'Caseta/Bomba' son obligatorios y requieren fotografía.",
       );
       return;
     }
 
+    const redFields = FIELD_CONFIG.filter((f) => f.section === "Red");
+    const incompleteRed = redFields.some((field) => {
+      const hasValue = values[field.id] && values[field.id] !== "";
+      const hasPhoto = !!files[field.id];
+      return hasValue && !hasPhoto;
+    });
+
+    if (incompleteRed) {
+      alert(
+        "Si ingresa un valor en la Red, debe adjuntar su fotografía correspondiente.",
+      );
+      return;
+    }
+
+    setShowConfirmModal(true);
+  };
+
+  const handleFinalSave = async () => {
     setLoading(true);
 
     try {
@@ -80,24 +115,23 @@ export default function CreateSession({ user, onBack }: Props) {
       const measurementsPayload: any[] = [];
       const now = new Date().toISOString();
 
-      // Construir el payload ordenado
       FIELD_CONFIG.forEach((field) => {
-        // 1. Datos JSON
-        measurementsPayload.push({
-          name: field.label,
-          value: parseFloat(values[field.id] || "0"),
-          time: now,
-          location: field.hasLocation ? locations[field.id] : "",
-        });
+        const val = values[field.id];
+        if (val && val !== "") {
+          measurementsPayload.push({
+            name: field.label,
+            value: parseFloat(val),
+            time: now,
+            location: field.hasLocation ? locations[field.id] : "",
+          });
 
-        // 2. Archivos (Garantizado que existe por la validación inicial)
-        const file = files[field.id];
-        if (file) {
-          formData.append("files", file);
+          const file = files[field.id];
+          if (file) {
+            formData.append("files", file);
+          }
         }
       });
 
-      // Agregar el JSON String
       const dataJson = {
         userId: user.id,
         measurements: measurementsPayload,
@@ -121,8 +155,9 @@ export default function CreateSession({ user, onBack }: Props) {
         },
       );
 
-      alert("Mediciones guardadas correctamente");
-      onBack(); // Volver al home
+      setShowConfirmModal(false);
+      alert(`Mediciones guardadas correctamente`);
+      onBack();
     } catch (error: any) {
       console.error(error);
       alert(
@@ -134,18 +169,21 @@ export default function CreateSession({ user, onBack }: Props) {
     }
   };
 
-  // Función auxiliar para renderizar los campos
   const renderFields = (sectionName: string) => {
     return FIELD_CONFIG.filter((f) => f.section === sectionName).map(
       (field) => {
         const hasPhoto = !!files[field.id];
+        const hasValue = !!values[field.id];
 
         return (
           <div
             key={field.id}
-            className="row mb-4 bg-light p-3 rounded shadow-sm align-items-end"
+            className={`row mb-4 p-3 rounded shadow-sm align-items-end ${
+              sectionName === "Red" && !hasValue
+                ? "bg-light opacity-75"
+                : "bg-light"
+            }`}
           >
-            {/* Input de Valor */}
             <div className="col-md-4 mb-3 mb-md-0">
               <label className="form-label fw-bold small">{field.label}</label>
               <div className="input-group">
@@ -153,8 +191,8 @@ export default function CreateSession({ user, onBack }: Props) {
                   type="number"
                   step="0.01"
                   className="form-control"
-                  placeholder="Ingresar valor"
-                  required
+                  placeholder={sectionName === "Red" ? "" : "Obligatorio"}
+                  required={sectionName === "Bomba"}
                   value={values[field.id] || ""}
                   onChange={(e) =>
                     setValues({ ...values, [field.id]: e.target.value })
@@ -166,10 +204,18 @@ export default function CreateSession({ user, onBack }: Props) {
                 {field.id.includes("caudalimetro") && (
                   <span className="input-group-text">m³</span>
                 )}
+                {field.id.includes("horometro") && (
+                  <span className="input-group-text">h</span>
+                )}
+                {field.id.includes("nivel") && (
+                  <span className="input-group-text">m</span>
+                )}
+                {field.id.includes("cloro") && (
+                  <span className="input-group-text">mg/L</span>
+                )}
               </div>
             </div>
 
-            {/* Input de Ubicación (Si aplica) */}
             {field.hasLocation && (
               <div className="col-md-4 mb-3 mb-md-0">
                 <label className="form-label small fw-bold">Ubicación</label>
@@ -177,7 +223,6 @@ export default function CreateSession({ user, onBack }: Props) {
                   type="text"
                   className="form-control"
                   placeholder="Ej: Sector Norte"
-                  required
                   value={locations[field.id] || ""}
                   onChange={(e) =>
                     setLocations({ ...locations, [field.id]: e.target.value })
@@ -186,7 +231,6 @@ export default function CreateSession({ user, onBack }: Props) {
               </div>
             )}
 
-            {/* 5. Botón de Cámara (Reemplaza al input type file) */}
             <div className={field.hasLocation ? "col-md-4" : "col-md-8"}>
               <label className="form-label small fw-bold d-block">
                 Registro Fotográfico
@@ -194,21 +238,15 @@ export default function CreateSession({ user, onBack }: Props) {
               <div className="d-grid">
                 <button
                   type="button"
-                  // Cambia el color si ya hay foto tomada
                   className={`btn ${hasPhoto ? "btn-success" : "btn-outline-primary"} d-flex align-items-center justify-content-center gap-2`}
                   onClick={() => handleOpenCamera(field.id, field.label)}
                 >
                   <i
                     className={`bi ${hasPhoto ? "bi-check-circle-fill" : "bi-camera-fill"}`}
                   ></i>
-                  {hasPhoto ? "Foto Tomada (Cambiar)" : "Tomar Foto"}
+                  {hasPhoto ? "Foto Lista" : "Tomar Foto"}
                 </button>
               </div>
-              {hasPhoto && (
-                <small className="text-success d-block mt-1">
-                  <i className="bi bi-check"></i> Lista para subir
-                </small>
-              )}
             </div>
           </div>
         );
@@ -228,51 +266,49 @@ export default function CreateSession({ user, onBack }: Props) {
         <h4 className="mb-0 text-primary">Nueva Sesión de Medición</h4>
       </div>
 
-      <form onSubmit={handleSubmit} className="card p-4 shadow">
-        {/* Sección BOMBA */}
+      {/* Cambiamos handleSubmit por handlePreSubmit */}
+      <form onSubmit={handlePreSubmit} className="card p-4 shadow">
         <h5 className="text-secondary border-bottom pb-2 mb-3">
           <i className="bi bi-droplet-half me-2"></i>Medición en Caseta
         </h5>
         {renderFields("Bomba")}
 
-        {/* Sección RED */}
         <h5 className="text-secondary border-bottom pb-2 mb-3 mt-5">
-          <i className="bi bi-geo-alt me-2"></i>En la Red
+          <i className="bi bi-geo-alt me-2"></i>Medición en la Red
         </h5>
+        <p className="text-muted small">
+          Ingrese valores solo si realizó mediciones en terreno.
+        </p>
         {renderFields("Red")}
 
         <div className="mt-5">
           <button
             type="submit"
             className="btn btn-primary btn-lg w-100 py-3 fw-bold"
-            disabled={loading}
           >
-            {loading ? (
-              <>
-                <span
-                  className="spinner-border spinner-border-sm me-2"
-                  role="status"
-                  aria-hidden="true"
-                ></span>
-                Subiendo sesión...
-              </>
-            ) : (
-              <>
-                <i className="bi bi-cloud-upload-fill me-2"></i> Finalizar y
-                Guardar Sesión
-              </>
-            )}
+            <i className="bi bi-arrow-right-circle me-2"></i> Revisar y Guardar
           </button>
         </div>
       </form>
 
-      {/* 6. Renderizar el Modal de Cámara */}
+      {/* Modal de Cámara */}
       <PhotoCaptureModal
         show={showCameraModal}
         onHide={() => setShowCameraModal(false)}
         onCapture={handlePhotoCaptured}
         fieldId={activeFieldId}
         fieldLabel={activeFieldLabel}
+      />
+
+      {/* Modal de Confirmación Nuevo */}
+      <ConfirmationModal
+        show={showConfirmModal}
+        onHide={() => setShowConfirmModal(false)}
+        onConfirm={handleFinalSave}
+        values={values}
+        files={files}
+        fieldConfig={FIELD_CONFIG}
+        loading={loading}
       />
     </div>
   );

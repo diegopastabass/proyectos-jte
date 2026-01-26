@@ -11,7 +11,7 @@ export interface SessionData {
   createdAt: string;
   measures_number: number;
   user: {
-    full_name: string;
+    name: string;
     email: string;
   };
 }

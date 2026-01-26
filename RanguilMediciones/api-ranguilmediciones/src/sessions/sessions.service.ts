@@ -4,11 +4,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, Between } from 'typeorm';
 import { Session } from './entities/session.entity';
 import { Measurement } from './entities/measurement.entity';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { User } from '../users/entities/user.entity';
+import { join } from 'path';
+import { existsSync } from 'fs';
 
 @Injectable()
 export class SessionsService {
@@ -17,6 +19,28 @@ export class SessionsService {
     private readonly sessionRepo: Repository<Session>,
     private readonly dataSource: DataSource,
   ) {}
+
+  getStaticFile(filename: string): string {
+    // Construimos la ruta absoluta: Root del proyecto + uploads + nombre archivo
+    const filePath = join(process.cwd(), 'uploads', filename);
+
+    // Validación de seguridad básica para evitar Path Traversal (../)
+    if (
+      filename.includes('..') ||
+      filename.includes('/') ||
+      filename.includes('\\')
+    ) {
+      throw new BadRequestException('Nombre de archivo inválido');
+    }
+
+    if (!existsSync(filePath)) {
+      throw new NotFoundException(
+        `La imagen ${filename} no existe en el servidor`,
+      );
+    }
+
+    return filePath;
+  }
 
   async createFullSession(
     data: CreateSessionDto,
@@ -27,12 +51,24 @@ export class SessionsService {
     await queryRunner.startTransaction();
 
     try {
+      // 1. Rescatar el nombre del técnico desde la metadata
+      const technicianName = data.reportMetadata?.generatedBy;
+
+      if (!technicianName) {
+        throw new BadRequestException(
+          'No se encontró el nombre del técnico (generatedBy) en la metadata.',
+        );
+      }
+
+      // 2. Buscar al usuario por su nombre exacto
       const user = await queryRunner.manager.findOne(User, {
-        where: { id: data.userId },
+        where: { name: technicianName },
       });
 
       if (!user) {
-        throw new BadRequestException('El usuario asignado no existe.');
+        throw new BadRequestException(
+          `El usuario con nombre "${technicianName}" no existe en el sistema.`,
+        );
       }
 
       const measurementsToSave: Measurement[] = data.measurements.map(
@@ -99,7 +135,24 @@ export class SessionsService {
     }
   }
 
-  // Helper simple para determinar unidades basado en el nombre (puedes mejorarlo)
+  async findMeasurementsByRange(startDate: string, endDate: string) {
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    return this.dataSource.getRepository(Measurement).find({
+      where: {
+        time: Between(start, end),
+      },
+      order: {
+        time: 'ASC',
+      },
+      relations: ['session', 'session.user'],
+    });
+  }
+
   private getUnit(name: string): string {
     const lower = name.toLowerCase();
     if (lower.includes('cloro')) return 'ppm';

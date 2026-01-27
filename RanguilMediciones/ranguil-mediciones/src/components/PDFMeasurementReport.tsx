@@ -31,7 +31,7 @@ export interface ReportJson {
 }
 
 const COLORS = {
-  primary: "#0d6efd", // Azul Bootstrap
+  primary: "#0d6efd",
   secondary: "#6c757d",
   lightGray: "#f8f9fa",
   border: "#dee2e6",

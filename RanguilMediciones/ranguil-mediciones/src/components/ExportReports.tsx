@@ -1,10 +1,10 @@
 import { useState } from "react";
 import axios from "axios";
-import * as XLSX from "xlsx"; // Librería para Excel
-import { pdf } from "@react-pdf/renderer";
+import * as XLSX from "xlsx";
 import { PDFCumulativeReport } from "./PDFCumulativeReport";
 import Navbar from "./Navbar";
 import { type User } from "../types";
+import { saveAs } from "file-saver";
 
 interface Props {
   user: User;
@@ -32,8 +32,6 @@ export default function ExportReports({ user, onLogout, onBack }: Props) {
 
       const rawData = res.data; // Array de measurements
 
-      // 1. Agrupar por Tiempo (usamos el time string exacto o agrupamos por sesión si viene el id)
-      // Como el timestamp es idéntico para medidas de una misma sesión, agrupamos por time.
       const grouped: Record<string, any> = {};
 
       rawData.forEach((m: any) => {
@@ -179,22 +177,24 @@ export default function ExportReports({ user, onLogout, onBack }: Props) {
   };
 
   const exportPDF = async () => {
-    const blob = await pdf(
-      <PDFCumulativeReport
-        data={processedData}
-        stats={stats}
-        range={{ start: startDate, end: endDate }}
-      />,
-    ).toBlob();
+    setLoading(true);
+    try {
+      const { pdf } = await import("@react-pdf/renderer");
+      const blob = await pdf(
+        <PDFCumulativeReport
+          data={processedData}
+          stats={stats}
+          range={{ start: startDate, end: endDate }}
+        />,
+      ).toBlob();
 
-    // Descarga manual
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `Informe_Acumulado_${startDate}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      saveAs(blob, `Reporte_Acumulado_${startDate}_${endDate}.pdf`);
+    } catch (error) {
+      console.error("Error generando PDF:", error);
+      alert("Hubo un error al generar el archivo PDF.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

@@ -3,8 +3,9 @@ import axios from "axios";
 import { type User, type SessionData } from "../types";
 import Navbar from "./Navbar";
 
-import { pdf } from "@react-pdf/renderer";
-import { PDFMeasurementReport, type ReportJson } from "./PDFMeasurementReport";
+import { PDFMeasurementReport } from "./PDFMeasurementReport";
+import saveAs from "file-saver";
+import api from "../api";
 
 interface Props {
   user: User;
@@ -52,14 +53,8 @@ export default function Home({
   const handleDownload = async (id: string) => {
     setDownloadingId(id);
     try {
-      const token = localStorage.getItem("user_token");
-
-      const res = await axios.get<ReportJson>(
-        `https://app.jteanalytics.cl/ranguil-mediciones/sessions/app/report/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      const { pdf } = await import("@react-pdf/renderer");
+      const res = await api.get(`sessions/app/report/${id}`);
 
       const reportData = res.data;
 
@@ -67,15 +62,7 @@ export default function Home({
         <PDFMeasurementReport data={reportData} />,
       ).toBlob();
 
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `Reporte_Sesion_${id}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      saveAs(blob, `Reporte_Sesion_${id}.pdf`);
     } catch (error) {
       console.error("Error generando reporte:", error);
       alert("Error al generar el reporte. Intente nuevamente.");

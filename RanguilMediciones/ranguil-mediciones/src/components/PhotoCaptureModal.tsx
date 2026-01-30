@@ -117,8 +117,8 @@ export default function PhotoCaptureModal({
         }
       },
       "image/jpeg",
-      0.9,
-    ); // Calidad JPEG 90%
+      0.5,
+    ); // Calidad JPEG 50%
   };
 
   const handleClose = () => {

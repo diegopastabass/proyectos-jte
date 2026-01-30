@@ -70,7 +70,7 @@ const Tank: React.FC<TankProps> = ({
       >
         <h5>{name}</h5>
         <h6>{volume.toFixed(2)} m</h6>
-        <h6>{((60 / 7) * volume).toFixed(2)} m³</h6>
+        <h6>{((500 / 11) * volume).toFixed(2)} m³</h6>
         <p>{Math.round(percentage * 100)}%</p>
         {tiempoVaciado && (
           <div className="alert alert-primary" style={{ padding: "5px" }}>

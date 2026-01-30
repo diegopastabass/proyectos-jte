@@ -82,10 +82,10 @@ function App() {
           await Promise.all([
             fetch("https://app.jteanalytics.cl/puquillay/snapshot"),
             fetch(
-              `https://app.jteanalytics.cl/puquillay/totalizador?start=${start}&end=${end}`
+              `https://app.jteanalytics.cl/puquillay/totalizador?start=${start}&end=${end}`,
             ),
             fetch(
-              `https://app.jteanalytics.cl/puquillay/horometro?start=${start}&end=${end}`
+              `https://app.jteanalytics.cl/puquillay/horometro?start=${start}&end=${end}`,
             ),
             fetch(`https://app.jteanalytics.cl/puquillay/nivel`),
             fetch(`https://app.jteanalytics.cl/puquillay/caudal`),
@@ -132,7 +132,7 @@ function App() {
     const minutes = mins % 60;
     return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
       2,
-      "0"
+      "0",
     )}`;
   };
 
@@ -145,17 +145,17 @@ function App() {
       <div className="col-12 mb-1">
         <Card className="mb-2">
           <CardBody
-            title="Estanque 30 m³"
+            title="Estanque 200 m³"
             text1={`Nivel: ${data.snapshot.estanque.value.toFixed(2)} m`}
             text2={`Volumen Actual: ${(
-              (60 / 7) *
+              (500 / 11) *
               data.snapshot.estanque.value
             ).toFixed(2)} m³`}
             text3={data.tiempo_vaciado_formatted}
           />
           <TankLevelCircular
             nivelActual={data.snapshot.estanque.value}
-            nivelMaximo={3.5}
+            nivelMaximo={4.4}
           />
           <ToggleCardButton
             isOpen={isOpenEstanque}
@@ -168,6 +168,7 @@ function App() {
           title="Estanque"
           chartLabel="Nivel del Estanque (m)"
           data={nivelChartData}
+          nivelMax={5}
         />
       </div>
 
@@ -177,7 +178,7 @@ function App() {
           <CardBody
             title="Bomba"
             text1={`Caudal Impulsión: ${data.snapshot.caudal.value.toFixed(
-              2
+              2,
             )} l/s`}
             text2={`Nivel Freático: ${(
               data.snapshot.freatico.value / 100
@@ -185,7 +186,7 @@ function App() {
             text4={`Horómetro: ${minutesToHHMM(ultimoHorometro)}`}
             text5={`Totalizador Diario: ${ultimoTotalizador.toFixed(2)} m³`}
             text6={`Totalizador Total: ${data.snapshot.totalizador.value.toFixed(
-              2
+              2,
             )} m³`}
           />
           <ToggleCardButton
@@ -198,7 +199,7 @@ function App() {
           title="Caudal"
           chartLabel="Caudal de Impulsión (l/s)"
           data={caudalChartData}
-          nivelMax={5}
+          nivelMax={10}
         />
         <div className="my-2">
           <DropdownCardv2
@@ -260,6 +261,7 @@ function App() {
           title="Estanque"
           chartLabel="Nivel del Estanque (m)"
           data={nivelChartData}
+          nivelMax={5}
         />
       </div>
 

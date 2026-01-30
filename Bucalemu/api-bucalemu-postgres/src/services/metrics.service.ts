@@ -25,7 +25,6 @@ interface DailyQueryResult {
 export class MetricsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MetricsService.name);
 
-  // Buffer para acumular mediciones
   private metricsBuffer: CreateMetricDto[] = [];
   private flushInterval: NodeJS.Timeout;
 
@@ -34,25 +33,22 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     private readonly metricRepository: Repository<Metric>,
   ) {}
 
-  // Iniciar el cron de vaciado al arrancar
   onModuleInit() {
     this.flushInterval = setInterval(() => {
       this.flushMetrics();
-    }, 30000); // Guardar cada 30 segundos
+    }, 60000);
   }
 
   onModuleDestroy() {
     clearInterval(this.flushInterval);
-    this.flushMetrics(); // Guardado final
+    this.flushMetrics();
   }
 
-  // Create Metric (Modificado para usar Buffer)
   async createMetric(
     dto: CreateMetricDto,
   ): Promise<{ success: boolean; message: string }> {
     this.metricsBuffer.push(dto);
 
-    // Si el buffer se llena mucho, forzar guardado
     if (this.metricsBuffer.length >= 100) {
       await this.flushMetrics();
     }
@@ -60,15 +56,13 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     return { success: true, message: 'Metric buffered' };
   }
 
-  // Función privada para guardar en lote
   private async flushMetrics() {
     if (this.metricsBuffer.length === 0) return;
 
     const dataToSave = [...this.metricsBuffer];
-    this.metricsBuffer = []; // Limpiar buffer inmediatamente
+    this.metricsBuffer = [];
 
     try {
-      // insert es mucho más rápido que save para arrays grandes
       await this.metricRepository
         .createQueryBuilder()
         .insert()
@@ -79,11 +73,9 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
       this.logger.log(`Bulk inserted ${dataToSave.length} metrics`);
     } catch (error) {
       this.logger.error('Error in bulk insert', error);
-      // Opcional: Reintentar o guardar en archivo de error
     }
   }
 
-  // Find Latest Metrics
   async findLatestMetrics(limit: number): Promise<Metric[]> {
     return this.metricRepository.find({
       order: { mt_time_2: 'DESC' },
@@ -91,7 +83,6 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  // Find Latest Metric By Name
   async findLatestMetricByName(name: string): Promise<Metric | null> {
     return this.metricRepository.findOne({
       where: { mt_name: name },
@@ -99,7 +90,6 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  // Find Latest For Each Name (Remapeado y corrección valor Casuto)
   async findLatestForEachName(): Promise<
     Record<string, { value: number; time: Date }>
   > {
@@ -191,7 +181,6 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     return grouped;
   }
 
-  // Estimate Emptying Times (Incluye Casuto y corrección valor)
   async estimateEmptyingTimes(): Promise<{ [key: string]: string }> {
     try {
       const rawQuery = `
@@ -299,7 +288,6 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     return level1 / lossRate;
   }
 
-  // Get Totalizador
   async getTotalizador(dto: DateRangeDto): Promise<Total[]> {
     const { start, end } = dto;
     if (!start || !end) throw new Error('Se requiere rango de fechas válido.');
@@ -341,14 +329,12 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     }));
   }
 
-  // Format Date Helper
   private formatDate(date: Date): string {
     const d = new Date(date);
     const pad = (n: number) => n.toString().padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getDate())}-${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
-  // Get Caudal
   async getCaudal(
     dto: DateRangeDto,
   ): Promise<{ time: string; value: number }[]> {
@@ -381,7 +367,6 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     }));
   }
 
-  // Format Seconds Helper
   private formatSecondsToDuration(seconds: number): string {
     if (seconds < 0) return 'NaN';
     const days = Math.floor(seconds / 86400);

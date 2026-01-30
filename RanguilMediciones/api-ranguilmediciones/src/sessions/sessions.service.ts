@@ -136,11 +136,10 @@ export class SessionsService {
   }
 
   async findMeasurementsByRange(startDate: string, endDate: string) {
-    const start = new Date(startDate);
-    start.setHours(0, 0, 0, 0);
-
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
+    const start = new Date(`${startDate} 00:00:00`);
+    console.log(start);
+    const end = new Date(`${endDate} 23:59:59`);
+    console.log(end);
 
     return this.dataSource.getRepository(Measurement).find({
       where: {

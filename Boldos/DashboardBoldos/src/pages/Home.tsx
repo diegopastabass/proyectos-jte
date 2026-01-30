@@ -2,7 +2,7 @@ import Card, { CardBody } from "../components/Card";
 import { useEffect, useState } from "react";
 import { TankLevelCircular } from "../components/Level";
 import Navbar from "../components/Navbar";
-import State, { StateBody } from "../components/States";
+import States from "../components/States";
 import "../index.css";
 import Loading from "./Loading";
 import ToggleCardButton from "../components/ToggelCardButton";
@@ -32,6 +32,13 @@ interface Datos {
   freatico: Metric;
   horometro: Metric;
   totalizador: Metric;
+  automatico_p1: Metric;
+  asimetria_p1: Metric;
+  falla_vdf1_p1: Metric;
+  falla_vdf2_p1: Metric;
+  bomba_p1: Metric;
+  falla_p1: Metric;
+  presion: Metric;
 }
 
 interface Metric {
@@ -92,10 +99,10 @@ function App() {
         ] = await Promise.all([
           fetch("https://app.jteanalytics.cl/boldos/snapshot"),
           fetch(
-            `https://app.jteanalytics.cl/boldos/totalizador?start=${start}&end=${end}`
+            `https://app.jteanalytics.cl/boldos/totalizador?start=${start}&end=${end}`,
           ),
           fetch(
-            `https://app.jteanalytics.cl/boldos/horometro?start=${start}&end=${end}`
+            `https://app.jteanalytics.cl/boldos/horometro?start=${start}&end=${end}`,
           ),
           fetch(`https://app.jteanalytics.cl/boldos/nivel`),
           fetch(`https://app.jteanalytics.cl/boldos/nivel2`),
@@ -141,7 +148,7 @@ function App() {
     const minutes = mins % 60;
     return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
       2,
-      "0"
+      "0",
     )}`;
   };
 
@@ -155,11 +162,10 @@ function App() {
         <Card>
           <CardBody
             title="Estanque 1"
-            text1={`Nivel: ${(data.snapshot.estanque.value).toFixed(
-              2
-            )} m`}
+            text1={`Nivel: ${data.snapshot.estanque.value.toFixed(2)} m`}
             text2={`Volumen Actual: ${(
-              ((60 / 7) * data.snapshot.estanque.value) 
+              (60 / 7) *
+              data.snapshot.estanque.value
             ).toFixed(2)} m³`}
             text3={data.tiempo_vaciado_est_1_formatted}
           />
@@ -222,7 +228,7 @@ function App() {
           <CardBody
             title="Bomba"
             text1={`Caudal Impulsión: ${data.snapshot.caudal.value.toFixed(
-              2
+              2,
             )} l/s`}
             text2={`Nivel Freático: ${(
               data.snapshot.freatico.value / 100
@@ -230,7 +236,7 @@ function App() {
             text4={`Horómetro por Día: ${minutesToHHMM(ultimoHorometro)}`}
             text5={`Totalizador por Día: ${ultimoTotalizador.toFixed(2)} m³`}
             text6={`Totalizador: ${data.snapshot.totalizador.value.toFixed(
-              2
+              2,
             )} m³`}
           />
           <ToggleCardButton
@@ -260,13 +266,27 @@ function App() {
       </div>
 
       {/* Panel de Estados */}
-      <State>
-        <StateBody
-          automatico={"1"}
-          bomba={data.snapshot.bomba.value.toString()}
-          falla={data.snapshot.falla.value.toString()}
-        />
-      </State>
+      <States
+        title="Estado Tablero Planta 1"
+        automatico_p1={data.snapshot.automatico_p1.value.toString()}
+        asimetria_p1={data.snapshot.asimetria_p1.value.toString()}
+        bomba_p1={data.snapshot.bomba_p1.value.toString()}
+        falla_p1={data.snapshot.falla_p1.value.toString()}
+      />
+
+      <States
+        title="Estado Tablero Planta 2"
+        automatico={data.snapshot.automatico.value.toString()}
+        falla={data.snapshot.falla.value.toString()}
+        bomba={data.snapshot.bomba.value.toString()}
+      />
+
+      <States
+        title="Estado Presurizadora"
+        falla_vdf1_p1={data.snapshot.falla_vdf1_p1.value.toString()}
+        falla_vdf2_p1={data.snapshot.falla_vdf2_p1.value.toString()}
+        presion={data.snapshot.presion.value.toFixed(2)}
+      />
     </>
   );
 

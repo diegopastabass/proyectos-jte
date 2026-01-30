@@ -5,7 +5,7 @@ import {
   Body,
   Param,
   ParseIntPipe,
-  Query
+  Query,
 } from '@nestjs/common';
 import { MetricsService } from '../services/metrics.service';
 import { CreateMetricDto } from '../models/dto/create-metric.dto';

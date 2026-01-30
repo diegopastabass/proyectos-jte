@@ -3,7 +3,7 @@ import Tank from "./Tank";
 import Pipe from "./Pipe";
 import Pump from "./Pump";
 import Elbow from "./Elbow";
-import State, { StateBody } from "./States";
+import States from "./States";
 import tankImage from "../assets/newTank.png";
 import pipeImage from "../assets/newPipe.png";
 import elbowImage from "../assets/newElbow.png";
@@ -28,6 +28,13 @@ interface DatosSnapshot {
   freatico: Metric;
   horometro: Metric;
   totalizador: Metric;
+  automatico_p1: Metric;
+  asimetria_p1: Metric;
+  falla_vdf1_p1: Metric;
+  falla_vdf2_p1: Metric;
+  bomba_p1: Metric;
+  falla_p1: Metric;
+  presion: Metric;
 }
 
 interface Metric {
@@ -67,13 +74,35 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
   return (
     <div>
       <div style={containerStyle}>
-        <State style={{ maxWidth: "230px", maxHeight: "200px" }}>
-          <StateBody
-            automatico={"1"}
-            falla={data.snapshot.falla.value.toString()}
-            bomba={data.snapshot.bomba.value.toString()}
-          ></StateBody>
-        </State>
+        <States
+          style={{
+            maxWidth: "240px",
+            maxHeight: "200px",
+            marginBottom: "5px",
+          }}
+          title="Estado Tablero Planta 1"
+          automatico_p1={data.snapshot.automatico_p1.value.toString()}
+          asimetria_p1={data.snapshot.asimetria_p1.value.toString()}
+          bomba_p1={data.snapshot.bomba_p1.value.toString()}
+          falla_p1={data.snapshot.falla_p1.value.toString()}
+        />
+
+        <States
+          title="Estado Tablero Planta 2"
+          style={{ maxWidth: "240px", maxHeight: "150px" }}
+          automatico={data.snapshot.automatico.value.toString()}
+          falla={data.snapshot.falla.value.toString()}
+          bomba={data.snapshot.bomba.value.toString()}
+        />
+
+        <States
+          title="Estado Presurizadora"
+          style={{ maxWidth: "240px", maxHeight: "150px" }}
+          falla_vdf1_p1={data.snapshot.falla_vdf1_p1.value.toString()}
+          falla_vdf2_p1={data.snapshot.falla_vdf2_p1.value.toString()}
+          presion={data.snapshot.presion.value.toFixed(2)}
+        />
+
         {/* 1. Bomba - Posición (0, 300) */}
         <Pump
           spriteWidth={SPRITE_SIZE}
@@ -81,7 +110,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           sentido={0}
           image={imageAssets.newPump}
           isActive={hasWaterFlow}
-          style={{ top: 300, left: -50 }}
+          style={{ top: 300, left: 5 }}
         />
 
         {/* 2. Codo - Posición (0, 0) */}
@@ -92,7 +121,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           b={0}
           image={imageAssets.newElbow}
           hasWaterFlow={hasWaterFlow}
-          style={{ top: 0, left: -50 }}
+          style={{ top: 0, left: 5 }}
           freatico={data.snapshot.freatico.value}
           horometro_diario={Number(hor)}
           horometro_total={data.snapshot.horometro.value}
@@ -105,7 +134,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           sentido={1}
           image={imageAssets.newPipe}
           hasWaterFlow={hasWaterFlow}
-          style={{ top: 0, left: 250 }}
+          style={{ top: 0, left: 305 }}
           caudal={data.snapshot.caudal.value}
           totalizador_diario={Number(tot)}
           totalizador_total={data.snapshot.totalizador.value}
@@ -120,10 +149,10 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           image={imageAssets.newTank}
           volume={data.snapshot.estanque.value}
           maxVolume={nivelMaxEstanque}
-          style={{ top: 0, left: 550 }}
+          style={{ top: 0, left: 605 }}
           name="Estanque 1"
-          labelX={550}
-          labelY={150}
+          labelX={600}
+          labelY={-180}
           tiempoVaciado={data.tiempo_vaciado_est_1_formatted}
         />
 
@@ -136,10 +165,10 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           image={imageAssets.newTank2}
           volume={data.snapshot.estanque_2.value}
           maxVolume={nivelMaxEstanque2}
-          style={{ top: 0, left: 850 }}
+          style={{ top: 0, left: 905 }}
           name="Estanque 2"
-          labelX={850}
-          labelY={-60}
+          labelX={900}
+          labelY={-390}
           tiempoVaciado={data.tiempo_vaciado_est_2_formatted}
         />
       </div>

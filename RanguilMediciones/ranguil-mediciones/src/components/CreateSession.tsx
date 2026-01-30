@@ -10,31 +10,47 @@ interface Props {
 }
 
 const FIELD_CONFIG = [
-  { id: "horometro", label: "Horómetro", section: "Bomba", hasLocation: false },
+  {
+    id: "horometro",
+    label: "Horómetro",
+    section: "Bomba",
+    hasLocation: false,
+    required: true,
+  },
   {
     id: "caudalimetro",
     label: "Caudalímetro",
     section: "Bomba",
     hasLocation: false,
+    required: true,
   },
-  { id: "kwh", label: "Energía", section: "Bomba", hasLocation: false },
+  {
+    id: "kwh",
+    label: "Energía",
+    section: "Bomba",
+    hasLocation: false,
+    required: true,
+  },
   {
     id: "nivel_estatico",
     label: "Nivel Estático",
     section: "Bomba",
     hasLocation: false,
+    required: true,
   },
   {
     id: "nivel_dinamico",
     label: "Nivel Dinámico",
     section: "Bomba",
     hasLocation: false,
+    required: true,
   },
   {
     id: "cloro_bomba",
     label: "Cloro en Caseta",
     section: "Bomba",
     hasLocation: false,
+    required: false,
   },
 
   {
@@ -42,12 +58,14 @@ const FIELD_CONFIG = [
     label: "Cloro Red Punto 1",
     section: "Red",
     hasLocation: true,
+    required: false,
   },
   {
     id: "cloro_red_2",
     label: "Cloro Red Punto 2",
     section: "Red",
     hasLocation: true,
+    required: false,
   },
 ];
 
@@ -76,30 +94,29 @@ export default function CreateSession({ user, onBack }: Props) {
   const handlePreSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const bombaFields = FIELD_CONFIG.filter((f) => f.section === "Bomba");
-
-    const missingBomba = bombaFields.some(
+    const requiredFields = FIELD_CONFIG.filter((f) => f.required);
+    const missingRequired = requiredFields.some(
       (field) =>
         !values[field.id] || values[field.id] === "" || !files[field.id],
     );
 
-    if (missingBomba) {
+    if (missingRequired) {
       alert(
-        "Todos los campos de la sección 'Caseta/Bomba' son obligatorios y requieren fotografía.",
+        "Todos los campos marcados como obligatorios requieren valor y fotografía.",
       );
       return;
     }
 
-    const redFields = FIELD_CONFIG.filter((f) => f.section === "Red");
-    const incompleteRed = redFields.some((field) => {
+    const optionalFields = FIELD_CONFIG.filter((f) => !f.required);
+    const incompleteOptional = optionalFields.some((field) => {
       const hasValue = values[field.id] && values[field.id] !== "";
       const hasPhoto = !!files[field.id];
       return hasValue && !hasPhoto;
     });
 
-    if (incompleteRed) {
+    if (incompleteOptional) {
       alert(
-        "Si ingresa un valor en la Red, debe adjuntar su fotografía correspondiente.",
+        "Si ingresa un valor en un campo opcional, debe adjuntar su fotografía.",
       );
       return;
     }
@@ -173,26 +190,24 @@ export default function CreateSession({ user, onBack }: Props) {
     return FIELD_CONFIG.filter((f) => f.section === sectionName).map(
       (field) => {
         const hasPhoto = !!files[field.id];
-        const hasValue = !!values[field.id];
 
         return (
           <div
             key={field.id}
-            className={`row mb-4 p-3 rounded shadow-sm align-items-end ${
-              sectionName === "Red" && !hasValue
-                ? "bg-light opacity-75"
-                : "bg-light"
-            }`}
+            className="row mb-4 p-3 rounded shadow-sm align-items-end bg-light"
           >
             <div className="col-md-4 mb-3 mb-md-0">
-              <label className="form-label fw-bold small">{field.label}</label>
+              <label className="form-label fw-bold small">
+                {field.label}
+                {field.required && <span className="text-danger ms-1">*</span>}
+              </label>
               <div className="input-group">
                 <input
                   type="number"
                   step="0.01"
                   className="form-control"
-                  placeholder={sectionName === "Red" ? "" : "Obligatorio"}
-                  required={sectionName === "Bomba"}
+                  placeholder={field.required ? "Obligatorio" : "Opcional"}
+                  required={field.required}
                   value={values[field.id] || ""}
                   onChange={(e) =>
                     setValues({ ...values, [field.id]: e.target.value })

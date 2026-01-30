@@ -121,9 +121,9 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           positionY={0}
           image={imageAssets.newTank}
           volume={data.snapshot.estanque.value}
-          maxVolume={3.5}
+          maxVolume={4.5}
           style={{ top: 0, left: 700 }}
-          name="Estanque 30m³"
+          name="Estanque 200m³"
           labelOffsetX={35}
           tiempoVaciado={data.tiempo_vaciado_formatted}
         />

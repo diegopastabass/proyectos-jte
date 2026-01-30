@@ -6,7 +6,7 @@ import { DateRangeDto } from './models/dto/date-range.dto';
 import { MetricSnapshot, Metric } from './models/types';
 
 interface DailyQueryResult {
-  day: Date; 
+  day: Date;
   daily_value: number;
 }
 
@@ -56,7 +56,7 @@ export class SsrBoldosService {
         const key = row.mt_name.replace(prefix, '');
         let value = Number(row.mt_value);
         if (key === 'estanque_2') {
-          value = value / 10;
+          value = value / 100;
         }
         acc[key] = {
           value,
@@ -95,7 +95,7 @@ export class SsrBoldosService {
 
       const h = Math.floor(tiempo / 3600);
       const m = Math.floor((tiempo % 3600) / 60);
-      
+
       const s = tiempo % 60;
 
       const formatted = `${h.toString().padStart(2, '0')} h ${m
@@ -148,7 +148,10 @@ export class SsrBoldosService {
     );
 
     return results.map((row) => ({
-      time: typeof row.day === 'string' ? row.day : row.day.toISOString().split('T')[0],
+      time:
+        typeof row.day === 'string'
+          ? row.day
+          : row.day.toISOString().split('T')[0],
       value: Number(row.daily_value),
     }));
   }
@@ -184,7 +187,10 @@ export class SsrBoldosService {
     );
 
     return results.map((row) => ({
-      time: typeof row.day === 'string' ? row.day : row.day.toISOString().split('T')[0],
+      time:
+        typeof row.day === 'string'
+          ? row.day
+          : row.day.toISOString().split('T')[0],
       value: Number(row.daily_value),
     }));
   }
@@ -236,7 +242,7 @@ export class SsrBoldosService {
 
       return results.reverse().map((row) => ({
         time: row.mt_time_2.toISOString(),
-        value: Number(row.mt_value) / 10,
+        value: Number(row.mt_value) / 100,
       }));
     }
 
@@ -255,7 +261,7 @@ export class SsrBoldosService {
 
     return results.map((row) => ({
       time: row.mt_time_2.toISOString(),
-      value: Number(row.mt_value) / 10,
+      value: Number(row.mt_value) / 100,
     }));
   }
 

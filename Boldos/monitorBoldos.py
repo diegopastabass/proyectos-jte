@@ -138,7 +138,7 @@ def monitorear():
         logging.info("Iniciando ciclo de monitoreo...")
 
         alerta_estanque_1 = procesar_estanque(SENSOR_ESTANQUE, "Estanque 1", nivel_alerta, divisor=1)
-        alerta_estanque_2 = procesar_estanque(SENSOR_ESTANQUE_2, "Estanque 2", nivel_alerta, divisor=10)
+        alerta_estanque_2 = procesar_estanque(SENSOR_ESTANQUE_2, "Estanque 2", nivel_alerta, divisor=100)
         
         alerta_global = alerta_estanque_1 or alerta_estanque_2
         

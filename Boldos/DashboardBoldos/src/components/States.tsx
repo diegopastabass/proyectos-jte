@@ -116,7 +116,8 @@ export default function States(props: StatesProps) {
         {/* Props Originales */}
         <StateRow label="Modo" value={props.automatico} type="automatico" />
         <StateRow label="Bomba" value={props.bomba} type="bomba" />
-        <StateRow label="Estado" value={props.falla} type="falla" />
+        <StateRow label="Falla Asimetría" value={"0"} type="falla" />
+        <StateRow label="Falla Térmica" value={props.falla} type="falla" />
 
         {/* Props Planta 1 */}
         <StateRow label="Falla VDF1" value={props.falla_vdf1_p1} type="falla" />
@@ -124,13 +125,13 @@ export default function States(props: StatesProps) {
         <StateRow label="Presión" value={props.presion} type="info" />
 
         {/* Props Planta 2 */}
-        <StateRow
-          label="Automático"
-          value={props.automatico_p1}
-          type="automatico"
-        />
-        <StateRow label="Asimetría" value={props.asimetria_p1} type="falla" />
+        <StateRow label="Modo" value={props.automatico_p1} type="automatico" />
         <StateRow label="Bomba" value={props.bomba_p1} type="bomba" />
+        <StateRow
+          label="Falla Asimetría"
+          value={props.asimetria_p1}
+          type="falla"
+        />
         <StateRow label="Falla Térmica" value={props.falla_p1} type="falla" />
       </div>
     </div>

@@ -101,7 +101,6 @@ def obtener_niveles():
     WHERE rn <= 2
     ORDER BY mt_name, rn;
     """
-    # ... (el resto de la función obtener_niveles es igual)
 
     conn = None
     resultados = {}
@@ -188,7 +187,7 @@ def monitorear_estanques():
         t_anterior = datos["anterior"]["tiempo"]
 
         # Condición 1: Nivel muy bajo y descendiendo
-        if actual < 1 and actual < anterior:
+        if (actual < 1 and actual < anterior) and not (nombre == "Bucalemu Alto" or nombre == "Casuto" ):
             tiempo = calcular_tiempo_vaciado(actual, anterior, t_actual, t_anterior)
             mensaje = (
                 f"⚠️ ALERTA NIVEL CRÍTICO ⚠️\n"
@@ -196,7 +195,7 @@ def monitorear_estanques():
                 f"Nivel Actual: {actual:.2f} m\n"
                 f"Tiempo Estimado de Vaciado: {tiempo if tiempo else 'N/A'}"
             )
-            INTERVALO_MONITOREO_TEMP = max(INTERVALO_MONITOREO_TEMP, 900)
+            INTERVALO_MONITOREO_TEMP = max(INTERVALO_MONITOREO_TEMP, 1800)
             alerta_activa = True
             enviar_alerta(mensaje)
 
@@ -208,7 +207,19 @@ def monitorear_estanques():
                 f"Nivel Actual: {actual:.2f} m\n"
                 f"Condición: Sobrellenado en curso."
             )
-            INTERVALO_MONITOREO_TEMP = max(INTERVALO_MONITOREO_TEMP, 900)
+            INTERVALO_MONITOREO_TEMP = max(INTERVALO_MONITOREO_TEMP, 1800)
+            alerta_activa = True
+            enviar_alerta(mensaje)
+
+        elif (actual < 2 and actual < anterior) and (nombre == "Bucalemu Alto" or nombre == "Casuto" ):
+            tiempo = calcular_tiempo_vaciado(actual, anterior, t_actual, t_anterior)
+            mensaje = (
+                f"⚠️ ALERTA NIVEL CRÍTICO ⚠️\n"
+                f"Estanque: {nombre}\n"
+                f"Nivel Actual: {actual:.2f} m\n"
+                f"Tiempo Estimado de Vaciado: {tiempo if tiempo else 'N/A'}"
+            )
+            INTERVALO_MONITOREO_TEMP = max(INTERVALO_MONITOREO_TEMP, 1800)
             alerta_activa = True
             enviar_alerta(mensaje)
 

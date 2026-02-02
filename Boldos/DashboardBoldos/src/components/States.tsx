@@ -3,19 +3,20 @@ import React from "react";
 interface StatesProps {
   title?: string;
   style?: React.CSSProperties;
-  // Originales
-  automatico?: string;
-  bomba?: string;
-  falla?: string;
   // Planta 1
   falla_vdf1_p1?: string;
   falla_vdf2_p1?: string;
   presion?: string;
-  // Planta 2
+  // Planta 1
   automatico_p1?: string;
   asimetria_p1?: string;
   bomba_p1?: string;
   falla_p1?: string;
+  // Planta 2
+  automatico?: string;
+  bomba?: string;
+  falla?: string;
+  falla_asimetria?: string;
 }
 
 // Estilos Base
@@ -26,7 +27,7 @@ const indicadorBase: React.CSSProperties = {
   color: "white",
   borderRadius: "12px",
   fontSize: "0.8rem",
-  minWidth: "110px",
+  minWidth: "100px",
   textAlign: "center",
 };
 
@@ -61,7 +62,7 @@ const getLabel = (
   const activo = valor === "1";
   switch (tipo) {
     case "automatico":
-      return activo ? "Automático" : "Manual";
+      return activo ? "Automático" : "Apagado";
     case "bomba":
       return activo ? "Encendida" : "Apagada";
     case "falla":
@@ -116,7 +117,11 @@ export default function States(props: StatesProps) {
         {/* Props Originales */}
         <StateRow label="Modo" value={props.automatico} type="automatico" />
         <StateRow label="Bomba" value={props.bomba} type="bomba" />
-        <StateRow label="Falla Asimetría" value={"0"} type="falla" />
+        <StateRow
+          label="Falla Asimetría"
+          value={props.falla_asimetria}
+          type="falla"
+        />
         <StateRow label="Falla Térmica" value={props.falla} type="falla" />
 
         {/* Props Planta 1 */}

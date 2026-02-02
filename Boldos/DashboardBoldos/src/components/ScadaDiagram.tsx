@@ -76,28 +76,29 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
       <div style={containerStyle}>
         <States
           style={{
-            maxWidth: "240px",
-            maxHeight: "200px",
-            marginBottom: "5px",
+            maxWidth: "250px",
+            maxHeight: "210px",
+            marginBottom: "8px",
           }}
           title="Estado Tablero Planta 1"
           automatico_p1={data.snapshot.automatico_p1.value.toString()}
-          asimetria_p1={data.snapshot.asimetria_p1.value.toString()}
           bomba_p1={data.snapshot.bomba_p1.value.toString()}
+          asimetria_p1={data.snapshot.asimetria_p1.value.toString()}
           falla_p1={data.snapshot.falla_p1.value.toString()}
         />
 
         <States
           title="Estado Tablero Planta 2"
-          style={{ maxWidth: "240px", maxHeight: "150px" }}
+          style={{ maxWidth: "250px", maxHeight: "210px", marginBottom: "8px" }}
           automatico={data.snapshot.automatico.value.toString()}
-          falla={data.snapshot.falla.value.toString()}
           bomba={data.snapshot.bomba.value.toString()}
+          falla_asimetria={"0"}
+          falla={data.snapshot.falla.value.toString()}
         />
 
         <States
           title="Estado Presurizadora"
-          style={{ maxWidth: "240px", maxHeight: "150px" }}
+          style={{ maxWidth: "250px", maxHeight: "150px" }}
           falla_vdf1_p1={data.snapshot.falla_vdf1_p1.value.toString()}
           falla_vdf2_p1={data.snapshot.falla_vdf2_p1.value.toString()}
           presion={data.snapshot.presion.value.toFixed(2)}
@@ -152,7 +153,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           style={{ top: 0, left: 605 }}
           name="Estanque 1"
           labelX={600}
-          labelY={-180}
+          labelY={-300}
           tiempoVaciado={data.tiempo_vaciado_est_1_formatted}
         />
 
@@ -167,8 +168,8 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           maxVolume={nivelMaxEstanque2}
           style={{ top: 0, left: 905 }}
           name="Estanque 2"
-          labelX={900}
-          labelY={-390}
+          labelX={910}
+          labelY={-510}
           tiempoVaciado={data.tiempo_vaciado_est_2_formatted}
         />
       </div>

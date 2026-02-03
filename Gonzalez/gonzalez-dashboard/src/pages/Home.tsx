@@ -90,10 +90,10 @@ function App() {
         ] = await Promise.all([
           fetch("https://app.jteanalytics.cl/gonzalez/snapshot"),
           fetch(
-            `https://app.jteanalytics.cl/gonzalez/totalizador?start=${start}&end=${end}`
+            `https://app.jteanalytics.cl/gonzalez/totalizador?start=${start}&end=${end}`,
           ),
           fetch(
-            `https://app.jteanalytics.cl/gonzalez/horometro?start=${start}&end=${end}`
+            `https://app.jteanalytics.cl/gonzalez/horometro?start=${start}&end=${end}`,
           ),
           fetch(`https://app.jteanalytics.cl/gonzalez/nivel`),
           fetch(`https://app.jteanalytics.cl/gonzalez/nivel2`),
@@ -139,7 +139,7 @@ function App() {
     const minutes = mins % 60;
     return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
       2,
-      "0"
+      "0",
     )}`;
   };
 
@@ -152,11 +152,11 @@ function App() {
       <div className="col-12 col-lg-4 mb-1">
         <Card>
           <CardBody
-            title="Estanque Viejo"
+            title="Estanque Viejo 75 m³"
             text1={["Nivel", `${data.snapshot.metalico1.value.toFixed(2)} m`]}
             text2={[
               "Volumen Actual",
-              `${((60 / 7) * data.snapshot.metalico1.value).toFixed(2)} m³`,
+              `${(25.01471 * data.snapshot.metalico1.value).toFixed(2)} m³`,
             ]}
             text3={data.tiempo_vaciado_formatted}
           />
@@ -172,7 +172,7 @@ function App() {
         <DropdownCard
           className="mb-4 d-below-1500-none d-1500-block"
           isOpen={isOpenEstanque}
-          title="Estanque Viejo"
+          title="Estanque Viejo 75 m³"
           chartLabel="Nivel del Estanque (m)"
           data={nivelChartData}
           nivelMax={3}
@@ -184,11 +184,11 @@ function App() {
       <div className="col-12 col-lg-4 mb-1">
         <Card>
           <CardBody
-            title="Estanque Nuevo"
+            title="Estanque Nuevo 100 m³"
             text1={["Nivel", `${data.snapshot.metalico2.value.toFixed(2)} m`]}
             text2={[
               "Volumen Actual",
-              `${((60 / 7) * data.snapshot.metalico2.value).toFixed(2)} m³`,
+              `${(33.425565 * data.snapshot.metalico2.value).toFixed(2)} m³`,
             ]}
             text3={data.tiempo_vaciado_2_formatted}
           />

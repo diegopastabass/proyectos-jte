@@ -1,0 +1,44 @@
+{
+  "measurements": [
+    {
+      "name": "Horómetro",
+      "value": 2,
+      "time": "2026-01-23T16:33:56.906Z",
+      "location": ""
+    },
+    {
+      "name": "Caudalímetro (m³)",
+      "value": 2,
+      "time": "2026-01-23T16:33:56.906Z",
+      "location": ""
+    },
+    {
+      "name": "Energía (Kwh)",
+      "value": 2,
+      "time": "2026-01-23T16:33:56.906Z",
+      "location": ""
+    },
+    {
+      "name": "Cloro en la Red",
+      "value": 2,
+      "time": "2026-01-23T16:33:56.906Z",
+      "location": ""
+    },
+    {
+      "name": "Cloro Red Punto 1",
+      "value": 2,
+      "time": "2026-01-23T16:33:56.906Z",
+      "location": "aaa"
+    },
+    {
+      "name": "Cloro Red Punto 2",
+      "value": 2,
+      "time": "2026-01-23T16:33:56.906Z",
+      "location": "aaaa"
+    }
+  ],
+  "reportMetadata": {
+    "generatedBy": "Diego Enrique Vilches Jiménez",
+    "clientUserAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Mobile/15E148 Safari/604.1"
+  }
+}

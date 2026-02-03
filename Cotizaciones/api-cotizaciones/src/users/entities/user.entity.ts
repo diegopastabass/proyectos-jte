@@ -3,15 +3,17 @@ import {
   Column,
   PrimaryGeneratedColumn,
   CreateDateColumn,
-  UpdateDateColumn,
   OneToMany,
 } from 'typeorm';
-import { Quote } from '../../quotes/entities/quotes.entity';
+import { Quote } from '../../quotes/entities/quote.entity';
 
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column()
+  name: string;
 
   @Column({ unique: true })
   email: string;
@@ -19,17 +21,11 @@ export class User {
   @Column({ select: false })
   password_hash: string;
 
-  @Column()
-  full_name: string;
-
   @Column({ default: '0' })
   role: string;
 
   @CreateDateColumn()
   created_at: Date;
-
-  @UpdateDateColumn()
-  updated_at: Date;
 
   // Relación Inversa
   @OneToMany(() => Quote, (quote) => quote.user)

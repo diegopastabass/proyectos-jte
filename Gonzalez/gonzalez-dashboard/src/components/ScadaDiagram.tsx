@@ -107,11 +107,11 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           image={imageAssets.newPipe}
           hasWaterFlow={hasWaterFlow}
           style={{ top: 0, left: 250 }}
-          caudal={(data.snapshot.caudal.value / 1000)}
-          cloro={(data.snapshot.cloro.value)}
-          ph={(data.snapshot.ph.value / 100)}
+          caudal={data.snapshot.caudal.value / 1000}
+          cloro={data.snapshot.cloro.value}
+          ph={data.snapshot.ph.value / 100}
           totalizador_diario={Number(tot)}
-          totalizador_total={(data.snapshot.totalizador.value )}
+          totalizador_total={data.snapshot.totalizador.value}
         />
 
         {/* 4. Tanque Principal - Posición (600, 0). Max Volume: 7 */}
@@ -121,12 +121,13 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           positionX={600}
           positionY={0}
           image={imageAssets.newTank}
-          volume={data.snapshot.metalico1.value}
-          maxVolume={3}
+          nivel={data.snapshot.metalico1.value}
+          volume={data.snapshot.metalico1.value * 25.01471}
+          maxLevel={3}
           style={{ top: 0, left: 550 }}
-          name="Estanque Viejo"
+          name="Estanque Viejo 75 m³"
           labelX={550}
-          labelY={150}
+          labelY={60}
           tiempoVaciado={data.tiempo_vaciado_formatted}
         />
 
@@ -137,12 +138,13 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           positionX={600}
           positionY={0}
           image={imageAssets.newTank2}
-          volume={data.snapshot.metalico2.value}
-          maxVolume={3}
+          nivel={data.snapshot.metalico2.value}
+          volume={data.snapshot.metalico2.value * 33.425565}
+          maxLevel={3}
           style={{ top: 0, left: 850 }}
-          name="Estanque Nuevo"
+          name="Estanque Nuevo 100 m³"
           labelX={850}
-          labelY={-60}
+          labelY={-150}
           tiempoVaciado={data.tiempo_vaciado_2_formatted}
         />
       </div>

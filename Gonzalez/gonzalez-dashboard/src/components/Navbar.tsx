@@ -46,7 +46,7 @@ function Navbar(props: NavbarProps) {
         })
         .catch((err) => {
           console.error(
-            `Error al intentar activar pantalla completa: ${err.message}`
+            `Error al intentar activar pantalla completa: ${err.message}`,
           );
         });
     } else {
@@ -57,7 +57,7 @@ function Navbar(props: NavbarProps) {
         })
         .catch((err) => {
           console.error(
-            `Error al intentar desactivar pantalla completa: ${err.message}`
+            `Error al intentar desactivar pantalla completa: ${err.message}`,
           );
         });
     }
@@ -76,7 +76,7 @@ function Navbar(props: NavbarProps) {
         >
           <img src={logoJte} alt="logo" width={50} height={34} />
           <img src={logoGnz} alt="logo" width={80} />
-          <span className="h5 mb-0">APR Gonzalez</span>
+          <span className="h5 mb-0">SSR Cuesta Lo Gonzalez</span>
         </a>
       </div>{" "}
       <div className="d-flex align-items-center gap-2 flex-grow-1">
@@ -86,9 +86,7 @@ function Navbar(props: NavbarProps) {
           </span>
         </div>
       </div>
-      <div className="m-4">
-        {" "}
-        </div>
+      <div className="m-4"> </div>
       <div className="ms-auto d-none d-md-block m-4 ">{children}</div>
       <button
         className="btn btn-outline-secondary d-none d-md-inline-block"

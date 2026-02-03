@@ -3,36 +3,25 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
-@Entity('quotes')
+@Entity('cotizaciones')
 export class Quote {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
-  client_name: string;
+  @Column({ unique: true })
+  folio: string;
 
-  @Column('decimal', { precision: 10, scale: 2 })
-  total_amount: number;
-
-  @Column({ type: 'text', nullable: true })
-  description: string;
-
-  @Column({ default: 'draft' })
-  status: string;
+  @Column({ type: 'jsonb' })
+  data: any;
 
   @CreateDateColumn()
   created_at: Date;
 
-  @UpdateDateColumn()
-  updated_at: Date;
-
-  // Relación actualizada
   @ManyToOne(() => User, (user) => user.quotes)
   @JoinColumn({ name: 'user_id' })
   user: User;

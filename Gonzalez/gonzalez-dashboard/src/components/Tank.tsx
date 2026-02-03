@@ -6,8 +6,9 @@ interface TankProps {
   positionX: number; // Posición X en el canvas original
   positionY: number; // Posición Y en el canvas original
   image: string; // URL de la imagen del sprite
-  volume: number; // Volumen actual (para el nivel de agua)
-  maxVolume: number; // Volumen máximo
+  nivel: number; // Nivel actual
+  volume: number; // Volumen actual
+  maxLevel: number; // Nivel máximo
   style?: CSSProperties;
   name?: string;
   labelX?: number;
@@ -27,7 +28,8 @@ const Tank: React.FC<TankProps> = ({
   labelY,
   image,
   volume,
-  maxVolume,
+  nivel,
+  maxLevel,
   style,
   name,
   tiempoVaciado,
@@ -42,8 +44,8 @@ const Tank: React.FC<TankProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  const safeVolume = Math.max(0, volume);
-  const safeMaxVolume = Math.max(1, maxVolume);
+  const safeVolume = Math.max(0, nivel);
+  const safeMaxVolume = Math.max(1, maxLevel);
   const percentage = safeVolume / safeMaxVolume;
   let frameY = Math.floor(percentage * MAX_LEVEL_FRAMES);
   frameY = Math.min(Math.max(frameY, 0), MAX_LEVEL_FRAMES);
@@ -72,8 +74,8 @@ const Tank: React.FC<TankProps> = ({
         }}
       >
         <h5>{name}</h5>
-        <h6>{volume.toFixed(2)} m</h6>
-        <h6>{((60 / 7) * volume).toFixed(2)} m³</h6>
+        <h6>{nivel.toFixed(2)} m</h6>
+        <h6>{volume.toFixed(2)} m³</h6>
         <p>{Math.round(percentage * 100)}%</p>
         {tiempoVaciado && (
           <div

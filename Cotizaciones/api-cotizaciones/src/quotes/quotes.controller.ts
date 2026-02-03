@@ -12,13 +12,12 @@ import { CreateQuoteDto } from './dto/create-quote.dto';
 import { AuthGuard } from '@nestjs/passport';
 
 @Controller('quotes')
-@UseGuards(AuthGuard('jwt')) // Protege todas las rutas
+@UseGuards(AuthGuard('jwt'))
 export class QuotesController {
   constructor(private readonly quotesService: QuotesService) {}
 
   @Post()
   create(@Body() createQuoteDto: CreateQuoteDto, @Request() req) {
-    // req.user viene del JwtStrategy
     return this.quotesService.create(createQuoteDto, req.user);
   }
 

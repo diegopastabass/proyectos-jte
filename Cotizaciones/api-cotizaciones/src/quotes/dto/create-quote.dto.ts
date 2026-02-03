@@ -1,15 +1,7 @@
-import { IsNotEmpty, IsString, IsNumber, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsObject } from 'class-validator';
 
 export class CreateQuoteDto {
   @IsNotEmpty()
-  @IsString()
-  clientName: string;
-
-  @IsNotEmpty()
-  @IsNumber()
-  totalAmount: number;
-
-  @IsOptional()
-  @IsString()
-  description?: string;
+  @IsObject()
+  data: any; // Recibe el JSON completo de la cotización
 }

@@ -19,34 +19,42 @@ export class UsersService {
   ) {}
 
   // 1. Crear Usuario
-  async create(createUserDto: CreateUserDto): Promise<User> {
+  async create(
+    createUserDto: CreateUserDto,
+  ): Promise<{ message: string; createdAt: Date }> {
     const { email, password, name } = createUserDto;
 
-    // Verificar si existe
     const existing = await this.userRepository.findOne({ where: { email } });
     if (existing) throw new ConflictException('El email ya está registrado');
 
-    // Hash password
     const salt = await bcrypt.genSalt();
     const passwordHash = await bcrypt.hash(password, salt);
 
     const user = this.userRepository.create({
       email,
       password_hash: passwordHash,
-      full_name: name,
-      role: '0', // Por defecto rol usuario
+      name: name,
+      role: '1',
     });
 
-    return this.userRepository.save(user);
+    const savedUser = await this.userRepository.save(user);
+
+    return {
+      message: 'Usuario creado exitosamente',
+      createdAt: savedUser.created_at,
+    };
   }
 
-  // 2. Validar Usuario (Login)
   async validateUser(loginUserDto: LoginUserDto): Promise<User> {
     const { email, password } = loginUserDto;
-    const user = await this.userRepository.findOne({ where: { email } });
+
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .addSelect('user.password_hash')
+      .where('user.email = :email', { email })
+      .getOne();
 
     if (user && (await bcrypt.compare(password, user.password_hash))) {
-      // Retornamos el usuario sin el hash
       const { password_hash, ...result } = user;
       return result as User;
     }

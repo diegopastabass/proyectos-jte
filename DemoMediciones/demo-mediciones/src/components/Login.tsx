@@ -45,7 +45,7 @@ export default function Login({ onLogin, onSwitchToRegister }: Props) {
   return (
     <div className="d-flex justify-content-center align-items-center vh-100">
       <div className="card shadow p-4" style={{ width: "400px" }}>
-        <h3 className="text-center mb-4">Ranguil Mediciones</h3>
+        <h3 className="text-center mb-4">Demo Mediciones</h3>
         {error && <div className="alert alert-danger">{error}</div>}
 
         <form onSubmit={handleSubmit}>

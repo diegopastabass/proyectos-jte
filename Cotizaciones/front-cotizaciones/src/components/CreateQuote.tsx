@@ -121,9 +121,9 @@ export default function CreateQuote({ token, onCancel, onSuccess }: Props) {
           <table className="table table-bordered">
             <thead>
               <tr>
-                <th>Detalle</th>
-                <th className="w-100">Cant.</th>
-                <th className="w-150">Unitario</th>
+                <th className="w-75">Detalle</th>
+                <th>Cant.</th>
+                <th>Unitario</th>
                 <th>Acción</th>
               </tr>
             </thead>

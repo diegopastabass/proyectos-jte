@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
 });
 
 const BASE_IMAGE_URL =
-  "https://app.jteanalytics.cl/ranguil-mediciones/sessions/app/uploads/";
+  "https://app.jteanalytics.cl/demo-mediciones/sessions/app/uploads/";
 
 export const PDFMeasurementReport = ({ data }: { data: ReportJson }) => (
   <Document>

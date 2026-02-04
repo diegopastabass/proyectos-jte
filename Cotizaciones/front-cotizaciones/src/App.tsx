@@ -4,6 +4,7 @@ import Register from "./components/Register";
 import Dashboard from "./components/Dashboard";
 import CreateQuote from "./components/CreateQuote";
 import { type User } from "./types";
+import Navbar from "./components/Navbar";
 
 function App() {
   const [view, setView] = useState<
@@ -48,22 +49,7 @@ function App() {
       {(view === "dashboard" || view === "create") && user && (
         <>
           {/* Navbar */}
-          <nav className="navbar navbar-dark bg-dark px-3 mb-4">
-            <div className="d-flex align-items-center">
-              <span className="navbar-brand mb-0 h1 me-3">
-                <img src="./assets/logo_jt2.png" alt="" />
-              </span>
-              <button
-                className="btn btn-outline-light btn-sm"
-                onClick={handleLogout}
-              >
-                Salir
-              </button>
-            </div>
-            <span className="navbar-text text-white">
-              Hola, {user.fullName}
-            </span>
-          </nav>
+          <Navbar user={user} onLogout={handleLogout} className="mb-4" />
 
           <div className="container">
             {view === "dashboard" && (

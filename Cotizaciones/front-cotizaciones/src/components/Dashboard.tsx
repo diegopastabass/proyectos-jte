@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { type Quote } from "../types";
+import { pdf } from "@react-pdf/renderer"; // Importante
+import PDFQuote from "./PDFQuote"; // Importamos el componente PDF
 
 interface Props {
   token: string;
@@ -9,9 +11,11 @@ interface Props {
 export default function Dashboard({ token, onCreateClick }: Props) {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [isGrid, setIsGrid] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("https://app.jteanalytics.cl/cotizaciones/quotes", {
+      // Ajusta la URL si es prod
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -20,8 +24,31 @@ export default function Dashboard({ token, onCreateClick }: Props) {
   }, [token]);
 
   const handleDelete = (id: string) => {
-    // Implementar lógica de eliminación si el backend lo soporta
+    // Implementar lógica de eliminación
     console.log("Eliminar", id);
+  };
+
+  // Función para manejar la descarga del PDF
+  const handleDownloadPDF = async (quote: Quote) => {
+    setDownloadingId(quote.id);
+    try {
+      // Generamos el blob del PDF usando el componente PDFQuote
+      const blob = await pdf(<PDFQuote quote={quote} />).toBlob();
+      const url = URL.createObjectURL(blob);
+
+      // Creamos un link temporal para descargar
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Cotizacion_${quote.folio}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error al generar PDF", error);
+      alert("No se pudo generar el PDF");
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   const renderCard = (q: Quote) => (
@@ -33,7 +60,7 @@ export default function Dashboard({ token, onCreateClick }: Props) {
           <small>Fecha: {new Date(q.created_at).toLocaleDateString()}</small>
         </p>
         <p className="card-text mb-1">
-          <small>Total: ${q.data.total.toLocaleString()}</small>
+          <small>Total: ${q.data.total.toLocaleString("es-CL")}</small>
         </p>
         <div className="mt-3">
           <button
@@ -42,8 +69,23 @@ export default function Dashboard({ token, onCreateClick }: Props) {
           >
             <i className="bi bi-trash"></i>
           </button>
-          <button className="btn btn-sm btn-primary">
-            <i className="bi bi-file-earmark-pdf"></i> PDF
+
+          {/* Botón de Descarga */}
+          <button
+            className="btn btn-sm btn-primary"
+            onClick={() => handleDownloadPDF(q)}
+            disabled={downloadingId === q.id}
+          >
+            {downloadingId === q.id ? (
+              <span
+                className="spinner-border spinner-border-sm"
+                role="status"
+                aria-hidden="true"
+              ></span>
+            ) : (
+              <i className="bi bi-file-earmark-pdf"></i>
+            )}{" "}
+            PDF
           </button>
         </div>
       </div>

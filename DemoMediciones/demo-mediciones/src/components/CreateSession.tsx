@@ -162,7 +162,7 @@ export default function CreateSession({ user, onBack }: Props) {
 
       const token = localStorage.getItem("user_token");
       await axios.post(
-        "https://app.jteanalytics.cl/ranguil-mediciones/sessions/app/",
+        "https://app.jteanalytics.cl/demo-mediciones/sessions/app/",
         formData,
         {
           headers: {

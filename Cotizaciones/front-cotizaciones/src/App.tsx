@@ -7,16 +7,16 @@ import { type User } from "./types";
 import Navbar from "./components/Navbar";
 
 function App() {
+  const storedToken = localStorage.getItem("token");
+  const storedUser = localStorage.getItem("user");
   const [view, setView] = useState<
     "login" | "register" | "dashboard" | "create"
-  >("login");
-  const [token, setToken] = useState<string | null>(
-    localStorage.getItem("token"),
-  );
+  >(storedToken ? "dashboard" : "login");
+
+  const [token, setToken] = useState<string | null>(storedToken);
+
   const [user, setUser] = useState<User | null>(
-    localStorage.getItem("user")
-      ? JSON.parse(localStorage.getItem("user")!)
-      : null,
+    storedUser ? JSON.parse(storedUser) : null,
   );
 
   const handleLoginSuccess = (tk: string, usr: User) => {

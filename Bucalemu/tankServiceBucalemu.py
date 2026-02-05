@@ -186,7 +186,6 @@ def monitorear_estanques():
         t_actual = datos["actual"]["tiempo"]
         t_anterior = datos["anterior"]["tiempo"]
 
-        # Condición 1: Nivel muy bajo y descendiendo
         if (actual < 1 and actual < anterior) and not (nombre == "Bucalemu Alto" or nombre == "Casuto" ):
             tiempo = calcular_tiempo_vaciado(actual, anterior, t_actual, t_anterior)
             mensaje = (
@@ -199,8 +198,7 @@ def monitorear_estanques():
             alerta_activa = True
             enviar_alerta(mensaje)
 
-        # Condición 2 y 3: Nivel alto y aumentando (rebalse)
-        elif ((nombre == 'Bucalemu Bajo' and actual > 4.30) or (nombre != 'Bucalemu Bajo' and actual > 4.25)) and actual > anterior:
+        elif (((nombre == 'Bucalemu Bajo' and actual > 4.30) or (nombre != 'Bucalemu Bajo' and actual > 4.25)) and (nombre != "Casuto")) and actual > anterior:
             mensaje = (
                 f"⚠️ ALERTA POSIBLE REBALSE ⚠️\n"
                 f"Estanque: {nombre}\n"
@@ -211,7 +209,18 @@ def monitorear_estanques():
             alerta_activa = True
             enviar_alerta(mensaje)
 
-        elif (actual < 2 and actual < anterior) and (nombre == "Bucalemu Alto" or nombre == "Casuto" ):
+        elif (((nombre == "Casuto" and actual/100 > 4.30)) and (actual > anterior)):
+            mensaje = (
+                f"⚠️ ALERTA POSIBLE REBALSE ⚠️\n"
+                f"Estanque: {nombre}\n"
+                f"Nivel Actual: {actual/100:.2f} m\n"
+                f"Condición: Sobrellenado en curso."
+            )
+            INTERVALO_MONITOREO_TEMP = max(INTERVALO_MONITOREO_TEMP, 1800)
+            alerta_activa = True
+            enviar_alerta(mensaje)
+
+        elif (actual < 2 and actual < anterior) and (nombre == "Bucalemu Alto"):
             tiempo = calcular_tiempo_vaciado(actual, anterior, t_actual, t_anterior)
             mensaje = (
                 f"⚠️ ALERTA NIVEL CRÍTICO ⚠️\n"
@@ -222,8 +231,20 @@ def monitorear_estanques():
             INTERVALO_MONITOREO_TEMP = max(INTERVALO_MONITOREO_TEMP, 1800)
             alerta_activa = True
             enviar_alerta(mensaje)
+            
+        elif (actual/100 < 2 and actual < anterior) and (nombre == "Casuto"):
+            tiempo = calcular_tiempo_vaciado(actual, anterior, t_actual, t_anterior)
+            mensaje = (
+                f"⚠️ ALERTA NIVEL CRÍTICO ⚠️\n"
+                f"Estanque: {nombre}\n"
+                f"Nivel Actual: {actual/100:.2f} m\n"
+                f"Tiempo Estimado de Vaciado: {tiempo if tiempo else 'N/A'}"
+            )
+            INTERVALO_MONITOREO_TEMP = max(INTERVALO_MONITOREO_TEMP, 1800)
+            alerta_activa = True
+            enviar_alerta(mensaje)
+            
 
-        # Condición 4: Estanque Vacío
         elif actual < 0.5 and anterior > actual:
             mensaje = (
                 f"⚠️ ALERTA ESTANQUE VACÍO ⚠️\n"
@@ -236,10 +257,8 @@ def monitorear_estanques():
             enviar_alerta(mensaje)
 
         else:
-            # Si no hay alerta, solo registrar el nivel
             logger.info(f"Estanque {nombre} en nivel normal ({actual:.2f} m).")
             
-    # Asignar el intervalo más largo si se activó una alerta, sino el valor por defecto
     if alerta_activa:
         INTERVALO_MONITOREO = INTERVALO_MONITOREO_TEMP
         logger.info(f"Alerta(s) activa(s). Intervalo de monitoreo ajustado a {INTERVALO_MONITOREO} segundos.")

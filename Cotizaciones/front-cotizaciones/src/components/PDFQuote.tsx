@@ -114,24 +114,21 @@ const styles = StyleSheet.create({
 
   closingSection: {
     flexDirection: "row",
-    justifyContent: "space-between", // Separa texto (izq) y firma (der)
-    alignItems: "flex-end", // Alinea todo abajo
-    marginTop: 50, // Mueve todo el bloque más abajo (separado de condiciones)
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    marginTop: 50,
     marginBottom: 20,
   },
-
-  // Área de Texto (Izquierda)
   contactArea: {
     width: "50%",
-    textAlign: "left", // <--- IMPORTANTE: Alinea el texto a la izquierda
+    textAlign: "left",
   },
 
-  // Área de Firma (Derecha)
   signatureArea: {
     width: "20%",
     height: "70%",
     justifyContent: "flex-end",
-    alignItems: "center", // Centra la imagen sobre su línea
+    alignItems: "center",
   },
 
   signatureImage: {
@@ -139,9 +136,8 @@ const styles = StyleSheet.create({
     height: "auto",
   },
 
-  // Estilos de texto
   atentamente: {
-    marginBottom: 15, // Espacio entre "Atentamente," y el Nombre
+    marginBottom: 15,
     fontSize: 10,
     color: COLORS.secondary,
   },
@@ -161,7 +157,6 @@ const styles = StyleSheet.create({
     color: COLORS.secondary,
   },
 
-  // Footer de paginación (se mantiene absoluto al final)
   pageFooter: {
     position: "absolute",
     bottom: 30,
@@ -190,8 +185,6 @@ export default function PDFQuote({ quote }: Props) {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {/* ... (Todo el contenido anterior: Header, Info Cliente, Tabla, Totales) ... */}
-
         <View style={styles.headerContainer}>
           <Image src={logo_jt2} style={styles.logo} />
           <View style={styles.headerTextContainer}>

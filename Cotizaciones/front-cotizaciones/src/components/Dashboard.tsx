@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { type Quote } from "../types";
-import { pdf } from "@react-pdf/renderer"; // Importante
-import PDFQuote from "./PDFQuote"; // Importamos el componente PDF
+import { pdf } from "@react-pdf/renderer";
+import PDFQuote from "./PDFQuote";
+import CreateQuote from "./CreateQuote";
+import DeleteConfirmModal from "./DeleteConfimModal";
 
 interface Props {
   token: string;
@@ -13,30 +15,51 @@ export default function Dashboard({ token, onCreateClick }: Props) {
   const [isGrid, setIsGrid] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
-  useEffect(() => {
+  const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
+  const [deletingQuote, setDeletingQuote] = useState<Quote | null>(null);
+
+  const fetchQuotes = () => {
     fetch("https://app.jteanalytics.cl/cotizaciones/quotes", {
-      // Ajusta la URL si es prod
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
       .then((data) => setQuotes(data))
       .catch(console.error);
-  }, [token]);
-
-  const handleDelete = (id: string) => {
-    // Implementar lógica de eliminación
-    console.log("Eliminar", id);
   };
 
-  // Función para manejar la descarga del PDF
+  useEffect(() => {
+    fetchQuotes();
+  }, [token]);
+
+  // Lógica para confirmar la eliminación
+  const handleConfirmDelete = async () => {
+    if (!deletingQuote) return;
+
+    try {
+      const res = await fetch(
+        `https://app.jteanalytics.cl/cotizaciones/quotes/${deletingQuote.id}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      if (res.ok) {
+        setDeletingQuote(null);
+        fetchQuotes();
+      } else {
+        alert("No se pudo eliminar la cotización");
+      }
+    } catch (error) {
+      alert("Error de conexión al eliminar");
+    }
+  };
+
   const handleDownloadPDF = async (quote: Quote) => {
     setDownloadingId(quote.id);
     try {
-      // Generamos el blob del PDF usando el componente PDFQuote
       const blob = await pdf(<PDFQuote quote={quote} />).toBlob();
       const url = URL.createObjectURL(blob);
-
-      // Creamos un link temporal para descargar
       const link = document.createElement("a");
       link.href = url;
       link.download = `Cotizacion_${quote.folio}.pdf`;
@@ -51,26 +74,70 @@ export default function Dashboard({ token, onCreateClick }: Props) {
     }
   };
 
-  const renderCard = (q: Quote) => (
-    <div className={`card mb-3 ${isGrid ? "h-100" : ""}`}>
-      <div className="card-body">
-        <h5 className="card-title">Folio: {q.folio}</h5>
-        <h6 className="card-subtitle mb-2 text-muted">{q.data.clientName}</h6>
-        <p className="card-text mb-1">
-          <small>Fecha: {new Date(q.created_at).toLocaleDateString()}</small>
-        </p>
-        <p className="card-text mb-1">
-          <small>Total: ${q.data.total.toLocaleString("es-CL")}</small>
-        </p>
-        <div className="mt-3">
-          <button
-            className="btn btn-sm btn-danger me-2"
-            onClick={() => handleDelete(q.id)}
-          >
-            <i className="bi bi-trash"></i>
-          </button>
+  // Si hay una cotización en edición, mostramos el formulario
+  if (editingQuote) {
+    return (
+      <CreateQuote
+        token={token}
+        initialQuote={editingQuote}
+        onCancel={() => setEditingQuote(null)}
+        onSuccess={() => {
+          setEditingQuote(null);
+          fetchQuotes();
+        }}
+      />
+    );
+  }
 
-          {/* Botón de Descarga */}
+  const renderCard = (q: Quote) => (
+    <div className={`card mb-3 shadow-sm ${isGrid ? "h-100" : ""}`}>
+      <div className="card-body">
+        <div className="d-flex justify-content-between align-items-start mb-2">
+          <h5 className="card-title text-primary fw-bold">{q.folio}</h5>
+          <span className="badge bg-light text-secondary border">
+            {new Date(q.created_at).toLocaleDateString()}
+          </span>
+        </div>
+
+        <h6 className="card-subtitle mb-2 text-dark fw-bold">
+          {q.data.clientName}
+        </h6>
+        <p
+          className="card-text mb-2 text-muted text-truncate"
+          title={q.data.project}
+        >
+          <small>
+            <i className="bi bi-folder2-open me-1"></i>
+            {q.data.project}
+          </small>
+        </p>
+        <p className="card-text mb-3">
+          <strong className="text-success fs-5">
+            ${q.data.total.toLocaleString("es-CL")}
+          </strong>
+        </p>
+
+        <div className="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+          <div className="btn-group">
+            {/* Botón Editar */}
+            <button
+              className="btn btn-outline-warning btn-sm"
+              onClick={() => setEditingQuote(q)}
+              title="Editar cotización"
+            >
+              <i className="bi bi-pencil-fill"></i>
+            </button>
+
+            {/* Botón Eliminar (Abre Modal) */}
+            <button
+              className="btn btn-outline-danger btn-sm"
+              onClick={() => setDeletingQuote(q)}
+              title="Eliminar cotización"
+            >
+              <i className="bi bi-trash-fill"></i>
+            </button>
+          </div>
+
           <button
             className="btn btn-sm btn-primary"
             onClick={() => handleDownloadPDF(q)}
@@ -83,7 +150,7 @@ export default function Dashboard({ token, onCreateClick }: Props) {
                 aria-hidden="true"
               ></span>
             ) : (
-              <i className="bi bi-file-earmark-pdf"></i>
+              <i className="bi bi-file-earmark-pdf me-1"></i>
             )}{" "}
             PDF
           </button>
@@ -94,35 +161,57 @@ export default function Dashboard({ token, onCreateClick }: Props) {
 
   return (
     <div>
+      {/* Renderizamos el Modal si hay una cotización para eliminar */}
+      {deletingQuote && (
+        <DeleteConfirmModal
+          quote={deletingQuote}
+          onCancel={() => setDeletingQuote(null)}
+          onConfirm={handleConfirmDelete}
+        />
+      )}
+
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Mis Cotizaciones</h2>
         <div>
           <button
             className="btn btn-outline-secondary me-2"
             onClick={() => setIsGrid(!isGrid)}
+            title="Cambiar vista"
           >
             <i className={`bi ${isGrid ? "bi-list" : "bi-grid"}`}></i>
           </button>
           <button
-            className="btn btn-success rounded-circle"
+            className="btn btn-success rounded-circle shadow"
             onClick={onCreateClick}
+            title="Nueva cotización"
           >
             <i className="bi bi-plus-lg"></i>
           </button>
         </div>
       </div>
 
-      <div className={isGrid ? "row row-cols-1 row-cols-md-3 g-4" : ""}>
-        {quotes.map((q) =>
-          isGrid ? (
-            <div className="col" key={q.id}>
-              {renderCard(q)}
-            </div>
-          ) : (
-            <div key={q.id}>{renderCard(q)}</div>
-          ),
-        )}
-      </div>
+      {quotes.length === 0 ? (
+        <div className="alert alert-info text-center p-5">
+          <i className="bi bi-inbox fs-1 d-block mb-3"></i>
+          No tienes cotizaciones creadas aún. ¡Crea la primera!
+        </div>
+      ) : (
+        <div
+          className={
+            isGrid ? "row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" : ""
+          }
+        >
+          {quotes.map((q) =>
+            isGrid ? (
+              <div className="col" key={q.id}>
+                {renderCard(q)}
+              </div>
+            ) : (
+              <div key={q.id}>{renderCard(q)}</div>
+            ),
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -2,16 +2,13 @@ import Card, { CardBody } from "../components/Card";
 import { useEffect, useState } from "react";
 import { TankLevelCircular } from "../components/Level";
 import Navbar from "../components/Navbar";
-import State, { StateBody } from "../components/States";
 import "../index.css";
 import Loading from "./Loading";
 import ToggleCardButton from "../components/ToggelCardButton";
 import DropdownCard from "../components/DropdownCard";
 import Error from "./Error";
-import DropdownCardv2 from "../components/DropDownCardv2";
 import DropdownCardv3 from "../components/DropDownCardv3";
 import ScadaDiagram from "../components/ScadaDiagram";
-import ExportModal from "../components/ExportModal";
 import logoJte from "../assets/logoJte.png";
 
 interface Metric {
@@ -63,7 +60,6 @@ function App() {
   const [isOpenBomba, setIsOpenBomba] = useState(false);
   const [chartData, setChartData] = useState<ChartData | null>(null);
   const [caudal, setCaudal] = useState<Metric[] | null>(null);
-  const [lastUpdate, setLastUpdate] = useState<string>("");
 
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1500);
 
@@ -104,14 +100,6 @@ function App() {
         const snapshotData: Datos = await snapshotRes.json();
         setData(snapshotData);
 
-        if (snapshotData) {
-          const latestMetric = Object.values(snapshotData).reduce(
-            (prev, current) =>
-              new Date(prev.time) > new Date(current.time) ? prev : current,
-          );
-          setLastUpdate(latestMetric.time);
-        }
-
         setTotalizador(await totalizadorRes.json());
         setChartData(await nivelRes.json());
         setCaudal(await caudalRes.json());
@@ -137,82 +125,11 @@ function App() {
       totalizador?.length > 0 ? totalizador[totalizador.length - 1].value : 0;
   }
 
-  const minutesToHHMM = (mins: number): string => {
-    const hours = Math.floor(mins / 60);
-    const minutes = mins % 60;
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
-      2,
-      "0",
-    )}`;
-  };
-
   // =====================
   // VISTA MÓVIL
   // =====================
   const VistaMovil = () => (
     <>
-      {/* Bucalemu Alto */}
-      <div className="col-12 mb-1">
-        <Card className="mb-2">
-          <CardBody
-            title="Bucalemu Alto"
-            text1={`Nivel: ${data.ssr_bucalemu_alto_nivel.value.toFixed(2)} m`}
-            text2={`Volumen Actual: ${(
-              (60 / 7) *
-              data.ssr_bucalemu_alto_nivel.value
-            ).toFixed(2)} m³`}
-            text3={lastUpdate}
-          />
-          <TankLevelCircular
-            nivelActual={data.ssr_bucalemu_alto_nivel.value}
-            nivelMaximo={3.5}
-          />
-          <ToggleCardButton
-            isOpen={isOpenAlto}
-            onToggle={() => setIsOpenAlto(!isOpenAlto)}
-          />
-        </Card>
-        <DropdownCard
-          className="mb-4"
-          isOpen={isOpenAlto}
-          title="Bucalemu Alto"
-          chartLabel="Nivel del Bucalemu Alto (m)"
-          data={chartData?.ssr_bucalemu_alto_nivel || []}
-          nivelAlarma={1.7}
-        />
-      </div>
-
-      {/* Bucalemu Bajo */}
-      <div className="col-12 mb-1">
-        <Card className="mb-2">
-          <CardBody
-            title="Bucalemu Bajo"
-            text1={`Nivel: ${data.ssr_bucalemu_bajo_nivel.value.toFixed(2)} m`}
-            text2={`Volumen Actual: ${(
-              (60 / 7) *
-              data.ssr_bucalemu_bajo_nivel.value
-            ).toFixed(2)} m³`}
-            text3={lastUpdate}
-          />
-          <TankLevelCircular
-            nivelActual={data.ssr_bucalemu_bajo_nivel.value}
-            nivelMaximo={3.5}
-          />
-          <ToggleCardButton
-            isOpen={isOpenBajo}
-            onToggle={() => setIsOpenBajo(!isOpenBajo)}
-          />
-        </Card>
-        <DropdownCard
-          className="mb-4"
-          isOpen={isOpenBajo}
-          title="Bucalemu Bajo"
-          chartLabel="Nivel del Bucalemu Bajo (m)"
-          data={chartData?.ssr_bucalemu_bajo_nivel || []}
-          nivelAlarma={1.7}
-        />
-      </div>
-
       {/* Nilahue */}
       <div className="col-12 mb-1">
         <Card className="mb-2">
@@ -223,11 +140,15 @@ function App() {
               (60 / 7) *
               data.ssr_nilahue_nivel.value
             ).toFixed(2)} m³`}
-            text3={lastUpdate}
+            text3={`T. Vaciado: ${
+              vData?.t_vaciado_nilahue_nivel == "0s"
+                ? "Llenando..."
+                : vData?.t_vaciado_nilahue_nivel
+            }`}
           />
           <TankLevelCircular
             nivelActual={data.ssr_nilahue_nivel.value}
-            nivelMaximo={3.5}
+            nivelMaximo={4.25}
           />
           <ToggleCardButton
             isOpen={isOpenNilahue}
@@ -240,7 +161,8 @@ function App() {
           title="Nilahue"
           chartLabel="Nivel del Nilahue (m)"
           data={chartData?.ssr_nilahue_nivel || []}
-          nivelAlarma={1.7}
+          nivelAlarma={1}
+          nivelMax={5}
         />
       </div>
 
@@ -254,11 +176,15 @@ function App() {
               (60 / 7) *
               data.ssr_casuto_nivel.value
             ).toFixed(2)} m³`}
-            text3={lastUpdate}
+            text3={`T. Vaciado: ${
+              vData?.t_vaciado_casuto_nivel == "0s"
+                ? "Llenando..."
+                : vData?.t_vaciado_casuto_nivel
+            }`}
           />
           <TankLevelCircular
             nivelActual={data.ssr_casuto_nivel.value}
-            nivelMaximo={3.5}
+            nivelMaximo={4.25}
           />
           <ToggleCardButton
             isOpen={isOpenCasuto}
@@ -271,7 +197,78 @@ function App() {
           title="Casuto"
           chartLabel="Nivel del Casuto (m)"
           data={chartData?.ssr_casuto_nivel || []}
-          nivelAlarma={1.7}
+          nivelAlarma={2}
+          nivelMax={5}
+        />
+      </div>
+      {/* Bucalemu Bajo */}
+      <div className="col-12 mb-1">
+        <Card className="mb-2">
+          <CardBody
+            title="Bucalemu Bajo"
+            text1={`Nivel: ${data.ssr_bucalemu_bajo_nivel.value.toFixed(2)} m`}
+            text2={`Volumen Actual: ${(
+              (60 / 7) *
+              data.ssr_bucalemu_bajo_nivel.value
+            ).toFixed(2)} m³`}
+            text3={`T. Vaciado: ${
+              vData?.t_vaciado_bucalemu_bajo_nivel == "0s"
+                ? "Llenando..."
+                : vData?.t_vaciado_bucalemu_bajo_nivel
+            }`}
+          />
+          <TankLevelCircular
+            nivelActual={data.ssr_bucalemu_bajo_nivel.value}
+            nivelMaximo={4.25}
+          />
+          <ToggleCardButton
+            isOpen={isOpenBajo}
+            onToggle={() => setIsOpenBajo(!isOpenBajo)}
+          />
+        </Card>
+        <DropdownCard
+          className="mb-4"
+          isOpen={isOpenBajo}
+          title="Bucalemu Bajo"
+          chartLabel="Nivel del Bucalemu Bajo (m)"
+          data={chartData?.ssr_bucalemu_bajo_nivel || []}
+          nivelAlarma={1}
+          nivelMax={5}
+        />
+      </div>
+      {/* Bucalemu Alto */}
+      <div className="col-12 mb-1">
+        <Card className="mb-2">
+          <CardBody
+            title="Bucalemu Alto"
+            text1={`Nivel: ${data.ssr_bucalemu_alto_nivel.value.toFixed(2)} m`}
+            text2={`Volumen Actual: ${(
+              (60 / 7) *
+              data.ssr_bucalemu_alto_nivel.value
+            ).toFixed(2)} m³`}
+            text3={`T. Vaciado: ${
+              vData?.t_vaciado_bucalemu_alto_nivel == "0s"
+                ? "Llenando..."
+                : vData?.t_vaciado_bucalemu_alto_nivel
+            }`}
+          />
+          <TankLevelCircular
+            nivelActual={data.ssr_bucalemu_alto_nivel.value}
+            nivelMaximo={4.25}
+          />
+          <ToggleCardButton
+            isOpen={isOpenAlto}
+            onToggle={() => setIsOpenAlto(!isOpenAlto)}
+          />
+        </Card>
+        <DropdownCard
+          className="mb-4"
+          isOpen={isOpenAlto}
+          title="Bucalemu Alto"
+          chartLabel="Nivel del Bucalemu Alto (m)"
+          data={chartData?.ssr_bucalemu_alto_nivel || []}
+          nivelAlarma={2}
+          nivelMax={5}
         />
       </div>
 
@@ -296,7 +293,7 @@ function App() {
           title="Caudal"
           chartLabel="Caudal de Impulsión (l/s)"
           data={caudal || []}
-          nivelMax={5}
+          nivelMax={30}
         />
         <div className="my-2">
           <DropdownCardv3
@@ -334,12 +331,11 @@ function App() {
 
       {/* Nivel Estanque (Col 3, Row 1) */}
       <div style={{ gridColumn: "3", gridRow: "1" }}>
-        <DropdownCard
+        <DropdownCardv3
           isOpen={true}
-          title="Estanque"
-          chartLabel="Nivel del Estanque (m)"
-          data={chartData?.ssr_bucalemu_alto_nivel || []}
-          nivelAlarma={1.7}
+          title="Totalizador Diario"
+          chartLabel="Totalizador en m³"
+          data={totalizador || []}
         />
       </div>
 
@@ -350,25 +346,57 @@ function App() {
           title="Caudal"
           chartLabel="Caudal de Impulsión (l/s)"
           data={caudal || []}
-          nivelMax={5}
+          nivelMax={30}
         />
       </div>
 
       {/* Fila Inferior Compartida (Horómetro y Totalizador) */}
       <div
         style={{
-          gridColumn: "1 / -1", // Abarca todo el ancho
-          gridRow: "3",
+          gridColumn: "1 / -1",
+          gridRow: "4",
           display: "flex",
           gap: "1rem",
         }}
       >
         <div style={{ flex: 1 }}>
-          <DropdownCardv3
+          <DropdownCard
             isOpen={true}
-            title="Totalizador Diario"
-            chartLabel="Totalizador en m³"
-            data={totalizador || []}
+            title="Nilahue"
+            chartLabel="Nivel del Nilahue (m)"
+            data={chartData?.ssr_nilahue_nivel || []}
+            nivelMax={5}
+            nivelAlarma={1}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <DropdownCard
+            isOpen={true}
+            title="Casuto"
+            chartLabel="Nivel del Casuto (m)"
+            data={chartData?.ssr_casuto_nivel || []}
+            nivelMax={5}
+            nivelAlarma={2}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <DropdownCard
+            isOpen={true}
+            title="Bucalemu Bajo"
+            chartLabel="Nivel del Bucalemu Bajo (m)"
+            data={chartData?.ssr_bucalemu_bajo_nivel || []}
+            nivelMax={5}
+            nivelAlarma={1}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <DropdownCard
+            isOpen={true}
+            title="Bucalemu Alto"
+            chartLabel="Nivel del Bucalemu Alto (m)"
+            data={chartData?.ssr_bucalemu_alto_nivel || []}
+            nivelMax={5}
+            nivelAlarma={2}
           />
         </div>
       </div>
@@ -382,7 +410,7 @@ function App() {
     <>
       <div className="container-fluid min-vh-100 p-0 d-flex flex-column align-items-center">
         <div className="mb-3 w-100" style={{ maxWidth: "5000px" }}>
-          <Navbar text={lastUpdate}></Navbar>
+          <Navbar />
         </div>
 
         <div className="flex-grow-1 w-100 d-flex flex-column align-items-center px-3">

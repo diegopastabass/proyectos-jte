@@ -7,6 +7,7 @@ interface PumpProps {
   image: string;
   isActive: boolean;
   style?: CSSProperties;
+  displaySize?: number;
 }
 
 const Pump: React.FC<PumpProps> = ({
@@ -16,27 +17,41 @@ const Pump: React.FC<PumpProps> = ({
   image,
   isActive,
   style,
+  displaySize = 200,
 }) => {
   const frameX = isActive ? 1 : 0;
+  const scale = displaySize / spriteWidth;
 
-  const pumpStyle: CSSProperties = {
+  // Contenedor principal con overflow hidden para recortar el sprite
+  const containerStyle: CSSProperties = {
     position: "absolute",
-    width: 300,
-    height: 300,
-    objectFit: "none",
-    objectPosition: `-${frameX * spriteWidth}px -${sentido * spriteHeight}px`,
+    width: displaySize,
+    height: displaySize,
+    overflow: "hidden",
     ...style,
   };
 
+  // Imagen escalada
+  const imgStyle: CSSProperties = {
+    width: spriteWidth,
+    height: spriteHeight,
+    objectFit: "none",
+    objectPosition: `-${frameX * spriteWidth}px -${sentido * spriteHeight}px`,
+    transform: `scale(${scale})`,
+    transformOrigin: "top left",
+    position: "absolute",
+    top: 0,
+    left: 0,
+  };
+
   return (
-    <div className="pump-container">
+    <div style={containerStyle}>
       <img
         src={image}
         alt="Pump status"
-        style={pumpStyle}
-        className="border-0"
-        width={300}
-        height={300}
+        style={imgStyle}
+        width={spriteWidth}
+        height={spriteHeight}
       />
     </div>
   );

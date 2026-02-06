@@ -1,8 +1,9 @@
 import React, { type CSSProperties } from "react";
 import Tank from "./Tank";
 import newTankImage from "../assets/newTank.png";
+import newPumpImage from "../assets/newPump.png";
+import newElbowImage from "../assets/newElbow.png";
 
-// Interfaces (sin cambios)
 interface Data {
   data: Datos;
   vaciado: DatosVaciado | null;
@@ -33,73 +34,128 @@ interface Metric {
 }
 
 const SPRITE_SIZE = 300;
-const GAP = 50; // Espacio entre tanques
+const RENDER_SIZE = 200;
+const GAP = 30;
 
 const ScadaDiagram: React.FC<Data> = ({ data, vaciado }) => {
   const imageAssets = {
     newTank: newTankImage,
+    newPump: newPumpImage,
+    newElbow: newElbowImage,
   };
 
-  // Contenedor Maestro
   const mainContainerStyle: CSSProperties = {
     position: "relative",
     width: "100%",
-    height: "600px", // Altura suficiente para tanque + texto
-    overflowX: "auto", // Por si la pantalla es muy chica
+    height: "590px",
+    overflowX: "auto",
   };
+
+  // Estilo específico para la etiqueta de la bomba
+  const pumpLabelStyle: CSSProperties = {
+    position: "absolute",
+    top: 380, // Ajustado para centrar verticalmente respecto a la bomba
+    left: 110, // (-100 de la bomba + 200 ancho + 10 margen)
+    zIndex: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    padding: "10px",
+    borderRadius: "8px",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+    minWidth: "180px", // Ancho mínimo garantizado
+    textAlign: "center",
+    border: "1px solid #dee2e6",
+  };
+
+  const getX = (index: number) => (RENDER_SIZE + GAP) * index + 100;
 
   return (
     <div style={mainContainerStyle}>
-      {/* Bucalemu Alto (X = 0) */}
-      <Tank
-        spriteWidth={SPRITE_SIZE}
-        spriteHeight={SPRITE_SIZE}
-        positionX={0}
-        positionY={0}
-        image={imageAssets.newTank}
-        volume={data.ssr_bucalemu_alto_nivel.value}
-        maxVolume={4.25}
-        name="Bucalemu Alto"
-        tiempoVaciado={vaciado?.t_vaciado_bucalemu_alto_nivel || "Llenando"}
-      />
+      {/* Etiqueta de la bomba (Renderizado independiente) */}
+      <div style={pumpLabelStyle}>
+        <div style={{ marginBottom: "4px" }}>
+          <span className="text-muted small d-block">Totalizador:</span>
+          <strong style={{ fontSize: "1.1em" }}>
+            {data.ssr_nilahue_totalizador.value.toFixed(2)} m³
+          </strong>
+        </div>
+        <div>
+          <span className="text-muted small d-block">Caudal:</span>
+          <strong style={{ fontSize: "1.1em" }}>
+            {data.ssr_nilahue_caudal.value.toFixed(2)} l/s
+          </strong>
+        </div>
+      </div>
 
-      {/* Bucalemu Bajo (X = 350) */}
       <Tank
         spriteWidth={SPRITE_SIZE}
         spriteHeight={SPRITE_SIZE}
-        positionX={SPRITE_SIZE + GAP}
+        displaySize={RENDER_SIZE}
+        positionX={getX(0)}
         positionY={0}
-        image={imageAssets.newTank}
-        volume={data.ssr_bucalemu_bajo_nivel.value}
-        maxVolume={4.25}
-        name="Bucalemu Bajo"
-        tiempoVaciado={vaciado?.t_vaciado_bucalemu_bajo_nivel || "Llenando"}
-      />
-
-      {/* Nilahue (X = 700) */}
-      <Tank
-        spriteWidth={SPRITE_SIZE}
-        spriteHeight={SPRITE_SIZE}
-        positionX={(SPRITE_SIZE + GAP) * 2}
-        positionY={0}
+        time={data.ssr_nilahue_nivel.time}
         image={imageAssets.newTank}
         volume={data.ssr_nilahue_nivel.value}
         maxVolume={4.25}
         name="Nilahue"
-        tiempoVaciado={vaciado?.t_vaciado_nilahue_nivel || "Llenando"}
+        tiempoVaciado={
+          vaciado?.t_vaciado_nilahue_nivel == "0s"
+            ? "Llenando"
+            : vaciado?.t_vaciado_nilahue_nivel
+        }
       />
 
-      {/* Casuto (X = 1050) */}
       <Tank
         spriteWidth={SPRITE_SIZE}
         spriteHeight={SPRITE_SIZE}
-        positionX={(SPRITE_SIZE + GAP) * 3}
+        displaySize={RENDER_SIZE}
+        positionX={getX(1)}
         positionY={0}
+        time={data.ssr_casuto_nivel.time}
         image={imageAssets.newTank}
         volume={data.ssr_casuto_nivel.value}
         maxVolume={4.25}
         name="Casuto"
-        tiempoVaciado={vaciado?.t_vaciado_casuto_nivel || "Llenando"}
+        tiempoVaciado={
+          vaciado?.t_vaciado_casuto_nivel == "0s"
+            ? "Llenando"
+            : vaciado?.t_vaciado_casuto_nivel
+        }
+      />
+
+      <Tank
+        spriteWidth={SPRITE_SIZE}
+        spriteHeight={SPRITE_SIZE}
+        displaySize={RENDER_SIZE}
+        positionX={getX(2)}
+        positionY={0}
+        time={data.ssr_bucalemu_bajo_nivel.time}
+        image={imageAssets.newTank}
+        volume={data.ssr_bucalemu_bajo_nivel.value}
+        maxVolume={4.25}
+        name="Bucalemu Bajo"
+        tiempoVaciado={
+          vaciado?.t_vaciado_bucalemu_bajo_nivel == "0s"
+            ? "Llenando"
+            : vaciado?.t_vaciado_bucalemu_bajo_nivel
+        }
+      />
+
+      <Tank
+        spriteWidth={SPRITE_SIZE}
+        spriteHeight={SPRITE_SIZE}
+        displaySize={RENDER_SIZE}
+        positionX={getX(3)}
+        positionY={0}
+        time={data.ssr_bucalemu_alto_nivel.time}
+        image={imageAssets.newTank}
+        volume={data.ssr_bucalemu_alto_nivel.value}
+        maxVolume={4.25}
+        name="Bucalemu Alto"
+        tiempoVaciado={
+          vaciado?.t_vaciado_bucalemu_alto_nivel == "0s"
+            ? "Llenando"
+            : vaciado?.t_vaciado_bucalemu_alto_nivel
+        }
       />
     </div>
   );

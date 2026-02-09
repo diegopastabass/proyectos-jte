@@ -134,6 +134,7 @@ function App() {
       <div className="col-12 mb-1">
         <Card className="mb-2">
           <CardBody
+            date={data.ssr_nilahue_nivel.time}
             title="Nilahue"
             text1={`Nivel: ${data.ssr_nilahue_nivel.value.toFixed(2)} m`}
             text2={`Volumen Actual: ${(
@@ -170,6 +171,7 @@ function App() {
       <div className="col-12 mb-1">
         <Card className="mb-2">
           <CardBody
+            date={data.ssr_casuto_nivel.time}
             title="Casuto"
             text1={`Nivel: ${data.ssr_casuto_nivel.value.toFixed(2)} m`}
             text2={`Volumen Actual: ${(
@@ -205,6 +207,7 @@ function App() {
       <div className="col-12 mb-1">
         <Card className="mb-2">
           <CardBody
+            date={data.ssr_bucalemu_bajo_nivel.time}
             title="Bucalemu Bajo"
             text1={`Nivel: ${data.ssr_bucalemu_bajo_nivel.value.toFixed(2)} m`}
             text2={`Volumen Actual: ${(
@@ -240,6 +243,7 @@ function App() {
       <div className="col-12 mb-1">
         <Card className="mb-2">
           <CardBody
+            date={data.ssr_bucalemu_alto_nivel.time}
             title="Bucalemu Alto"
             text1={`Nivel: ${data.ssr_bucalemu_alto_nivel.value.toFixed(2)} m`}
             text2={`Volumen Actual: ${(

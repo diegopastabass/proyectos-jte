@@ -64,12 +64,12 @@ export function CardBody(props: CardBodyProps) {
   }
   return (
     <>
-      <h6 className="card-title">{title}</h6>
       <div className="d-flex flex-column align-items-center text-lg-start flex-grow-1 order-2 order-lg-0">
         <span className={`badge rounded-pill ${freshnessClass}`}>
           {formattedDate}
         </span>
       </div>
+      <h6 className="card-title">{title}</h6>
       {text1 && <p className="card-text">{text1}</p>}
       {text2 && <p className="card-text">{text2}</p>}
       {text3 && <p className="card-text">{text3}</p>}

@@ -69,16 +69,16 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
   > {
     const metrics = await this.metricRepository
       .createQueryBuilder('metric')
-      .distinctOn(['metric.mt_name'])
-      .orderBy('metric.mt_name')
-      .addOrderBy('metric.mt_time_2', 'DESC')
+      .distinctOn(['metric.name'])
+      .orderBy('metric.name')
+      .addOrderBy('metric.time', 'DESC')
       .getMany();
 
     const result: Record<string, { value: number; time: Date }> = {};
     metrics.forEach((metric) => {
-      result[metric.mt_name] = {
-        value: Number(metric.mt_value),
-        time: metric.mt_time_2,
+      result[metric.name] = {
+        value: Number(metric.value),
+        time: metric.time,
       };
     });
 

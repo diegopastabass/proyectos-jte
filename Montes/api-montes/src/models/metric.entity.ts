@@ -1,16 +1,16 @@
-import { Entity, Column } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity({ name: 'montes' })
 export class Metric {
-  @Column({ name: 'mt_id', primary: true })
-  mt_id: number;
+  @PrimaryGeneratedColumn({ name: 'id' })
+  id: number;
 
-  @Column({ name: 'mt_name' })
-  mt_name: string;
+  @Column({ name: 'name' })
+  name: string;
 
-  @Column({ name: 'mt_value', type: 'float' })
-  mt_value: number;
+  @Column({ name: 'value', type: 'float' })
+  value: number;
 
-  @Column({ name: 'mt_time_2' })
-  mt_time_2: Date;
+  @Column({ name: 'time' })
+  time: Date;
 }

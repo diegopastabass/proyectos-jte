@@ -86,6 +86,7 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
   }
 
   async getDailyTotalizer(name: string, start: string, end: string) {
+    const startOfDay = `${start} 00:00:00`;
     const endOfDay = `${end} 23:59:59`;
 
     const rawData = await this.metricRepository
@@ -96,7 +97,10 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
         'usage',
       )
       .where('metric.name = :name', { name })
-      .andWhere('metric.time BETWEEN :start AND :end', { start, end: endOfDay })
+      .andWhere('metric.time BETWEEN :start AND :end', {
+        start: startOfDay,
+        end: endOfDay,
+      })
       .andWhere("metric.value ~ '^[0-9]+(\\.[0-9]+)?$'")
       .groupBy('DATE(metric.time)')
       .orderBy('date', 'ASC')
@@ -126,10 +130,8 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     const rawData = await this.metricRepository
       .createQueryBuilder('metric')
       .select("DATE_TRUNC('hour', metric.time)", 'hour_group')
-      .addSelect(
-        'MAX(metric.value::numeric) - MIN(metric.value::numeric)',
-        'usage',
-      )
+      .addSelect('MAX(metric.value::numeric)', 'max_val')
+      .addSelect('MIN(metric.value::numeric)', 'min_val')
       .where('metric.name = :name', { name })
       .andWhere('metric.time BETWEEN :start AND :end', {
         start: startDate,
@@ -140,10 +142,26 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
       .orderBy('hour_group', 'ASC')
       .getRawMany();
 
-    return rawData.map((item) => ({
-      value: parseFloat(item.usage),
-      time: new Date(item.hour_group).toISOString(),
-    }));
+    let previousMax = 0;
+
+    return rawData.map((item, index) => {
+      const currentMax = parseFloat(item.max_val);
+      const currentMin = parseFloat(item.min_val);
+      let usage = 0;
+
+      if (index === 0) {
+        usage = currentMax - currentMin;
+      } else {
+        usage = currentMax - previousMax;
+      }
+
+      previousMax = currentMax;
+
+      return {
+        value: usage > 0 ? usage : 0,
+        time: new Date(item.hour_group).toISOString(),
+      };
+    });
   }
 
   async getFlowRate(name: string, start?: string, end?: string) {

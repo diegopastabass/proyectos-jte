@@ -57,7 +57,7 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     if (this.metricsBuffer.length === 0) return;
 
     const dataToSave = [...this.metricsBuffer];
-    this.metricsBuffer = []; // Vaciar buffer
+    this.metricsBuffer = [];
 
     try {
       await this.metricRepository

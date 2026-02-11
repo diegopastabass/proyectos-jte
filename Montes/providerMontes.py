@@ -30,15 +30,15 @@ def insert_batch():
     
     riles = last_messages.get('MONTES_RILES', {})
     if 'CAUDAL_2' in riles:
-        data_to_insert.append(("montes_riles.caudal", riles['CAUDAL_2']))
+        data_to_insert.append(("montes_riles_caudal", riles['CAUDAL_2']))
     if 'TOTALIZADOR_2' in riles:
-        data_to_insert.append(("montes_riles.totalizador", riles['TOTALIZADOR_2']))
+        data_to_insert.append(("montes_riles_totalizador", riles['TOTALIZADOR_2']))
 
     general = last_messages.get('MONTES_GENERAL', {})
-    if 'CAUDAL' in general:
-        data_to_insert.append(("montes_general.caudal", general['CAUDAL']))
-    if 'TOTALIZADOR' in general:
-        data_to_insert.append(("montes_general.totalizador", general['TOTALIZADOR']))
+    if 'CAUDAL_1' in general:
+        data_to_insert.append(("montes_general_caudal", general['CAUDAL_1']))
+    if 'TOTALIZADOR_1' in general:
+        data_to_insert.append(("montes_general_totalizador", general['TOTALIZADOR_1']))
 
     if not data_to_insert:
         return

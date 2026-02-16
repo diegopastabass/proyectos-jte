@@ -1,5 +1,5 @@
 import { useState } from "react";
-import logo from "../assets/logoMontes.png";
+import logoJte from "../assets/logoJte.png";
 
 interface NavbarProps {
   text?: string;
@@ -58,10 +58,10 @@ function Navbar({ text, children }: NavbarProps) {
         <div className="d-none d-md-flex w-100 align-items-center justify-content-between">
           <a
             className="navbar-brand d-flex align-items-center gap-2 mb-0 me-lg-4"
-            href="/montes/"
+            href="/carracedo/"
           >
-            <img src={logo} alt="logo" width={100} />
-            <span className="h5 mb-0 text-secondary">Viña Montes</span>
+            <img src={logoJte} alt="logo" width={40} />
+            <span className="h5 mb-0 text-secondary">Dashboard Carracedo</span>
           </a>
 
           <div className="d-flex align-items-center gap-2">
@@ -93,7 +93,7 @@ function Navbar({ text, children }: NavbarProps) {
         {/* --- Vista en dispositivos móviles --- */}
         <div className="d-flex d-md-none w-100 justify-content-between align-items-center">
           <a className="navbar-brand mb-0" href="/undurraga/">
-            <img src="/src/assets/lgo.png" alt="logo" width={160} />
+            <img src={logoJte} alt="logo" width={40} />
           </a>
           <div>{children}</div>
         </div>

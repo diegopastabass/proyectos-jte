@@ -95,7 +95,7 @@ export class AraucariasService {
 
       const results = await this.repo.find({
         where: {
-          mt_name: 'ARAUCARIAS--slave.pozo',
+          mt_name: 'ARAUCARIAS--slave.freatico',
           mt_time_2: Between(start, end),
         },
         order: { mt_time_2: 'ASC' },
@@ -108,7 +108,7 @@ export class AraucariasService {
     }
 
     const results = await this.repo.find({
-      where: { mt_name: 'ARAUCARIAS--slave.pozo' },
+      where: { mt_name: 'ARAUCARIAS--slave.freatico' },
       order: { mt_time_2: 'DESC' },
       take: 300,
     });

@@ -13,6 +13,6 @@ export interface TimeSeriesChartProps {
 
 export interface Snapshot {
   caudal: Metric;
-  pozo: Metric;
+  freatico: Metric;
   totalizador: Metric;
 }

@@ -37,12 +37,12 @@ function Home() {
       try {
         const [snapshotRes, totalizadorRes, caudalRes, nivelRes] =
           await Promise.all([
-            fetch("https://app.jteanalytics.cl/carracedo/snapshot"),
+            fetch("https://app.jteanalytics.cl/araucarias/snapshot"),
             fetch(
-              `https://app.jteanalytics.cl/carracedo/totalizador?start=${start}&end=${end}`,
+              `https://app.jteanalytics.cl/araucarias/totalizador?start=${start}&end=${end}`,
             ),
-            fetch(`https://app.jteanalytics.cl/carracedo/caudal`),
-            fetch(`https://app.jteanalytics.cl/carracedo/nivel`),
+            fetch(`https://app.jteanalytics.cl/araucarias/caudal`),
+            fetch(`https://app.jteanalytics.cl/araucarias/nivel`),
           ]);
 
         const snapshotResJson = await snapshotRes.json();
@@ -108,7 +108,7 @@ function Home() {
             <div className="col-lg-4 col-md-12 col-sm-12">
               <MetricCard
                 title="Totalizador"
-                value={(snapshotData.totalizador.value / 10).toFixed(2)}
+                value={snapshotData.totalizador.value.toFixed(2)}
                 unit="m³"
                 barColor="danger"
               />
@@ -117,7 +117,7 @@ function Home() {
             <div className="col-lg-4 col-md-12 col-sm-12">
               <MetricCard
                 title="Nivel Pozo"
-                value={(snapshotData.pozo.value / 10).toFixed(2)}
+                value={(snapshotData.freatico.value / 100).toFixed(2)}
                 unit="m"
                 barColor="warning"
               />
@@ -131,7 +131,7 @@ function Home() {
               <TimeSeriesChart
                 title="Totalizador por día"
                 metrics={totalizadorData}
-                divisor={10}
+                divisor={1}
                 barColor="rgba(13, 110, 230, 0.5)"
                 chartType="bar"
               />
@@ -144,7 +144,7 @@ function Home() {
               <TimeSeriesChart
                 title="Caudal"
                 metrics={caudalData}
-                divisor={100}
+                divisor={1}
                 barColor="rgba(13, 110, 230, 1)"
                 chartType="line"
               />
@@ -157,7 +157,7 @@ function Home() {
               <TimeSeriesChart
                 title="Nivel Pozo"
                 metrics={nivelData}
-                divisor={10}
+                divisor={100}
                 nivelMax={80}
                 barColor="rgba(13, 110, 230, 1)"
                 chartType="line"

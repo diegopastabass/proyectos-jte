@@ -1,5 +1,6 @@
 import { useState } from "react";
 import logoJte from "../assets/logoJte.png";
+import logoAraucarias from "../assets/logoAraucarias.png";
 
 interface NavbarProps {
   text?: string;
@@ -61,7 +62,10 @@ function Navbar({ text, children }: NavbarProps) {
             href="/carracedo/"
           >
             <img src={logoJte} alt="logo" width={40} />
-            <span className="h5 mb-0 text-secondary">Loteo San Javier</span>
+            <img src={logoAraucarias} alt="logo" width={50} />
+            <span className="h5 mb-0 text-secondary">
+              Club de Golf las Araucarias
+            </span>
           </a>
 
           <div className="d-flex align-items-center gap-2">

@@ -145,10 +145,18 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
 
     const rows = await query;
 
-    return rows.map((r: any) => ({
-      value: Number(r.totalizador_diario),
-      time: r.day,
-    }));
+    const uniqueMap = new Map<string, TotalizadorResponse>();
+
+    rows.forEach((r: any) => {
+      const key = new Date(r.day).toISOString();
+
+      uniqueMap.set(key, {
+        value: Number(r.totalizador_diario),
+        time: r.day,
+      });
+    });
+
+    return Array.from(uniqueMap.values());
   }
 
   async getTotalizadorPiscina(

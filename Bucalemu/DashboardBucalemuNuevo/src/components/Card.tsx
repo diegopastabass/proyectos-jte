@@ -1,3 +1,5 @@
+import React from "react";
+
 interface CardProps {
   children: React.ReactNode;
   className?: string;
@@ -12,7 +14,7 @@ function Card(props: CardProps) {
         width: "100%",
         maxWidth: "1500px",
         minHeight: "50px",
-        maxHeight: "800px",
+        maxHeight: "430px",
       }}
     >
       <div className="card-body">{children}</div>
@@ -20,21 +22,36 @@ function Card(props: CardProps) {
   );
 }
 
+// Permitimos string o un arreglo [Label, Value]
+type TextContent = string | [string, string | number];
+
 interface CardBodyProps {
   title: string;
-  text1?: string;
-  text2?: string;
-  text3?: string;
-  text4?: string;
-  text5?: string;
-  text6?: string;
-  text7?: string;
+  text1?: TextContent;
+  text2?: TextContent;
+  text3?: TextContent;
+  text4?: TextContent;
+  text5?: TextContent;
+  text6?: TextContent;
+  text7?: TextContent;
+  text8?: TextContent;
   date?: string;
 }
 
 export function CardBody(props: CardBodyProps) {
-  const { title, text1, text2, text3, text4, text5, text6, text7, date } =
-    props;
+  const {
+    title,
+    text1,
+    text2,
+    text3,
+    text4,
+    text5,
+    text6,
+    text7,
+    text8,
+    date,
+  } = props;
+
   let timeDiffMinutes = null;
   let formattedDate = "Desconocida";
 
@@ -62,21 +79,36 @@ export function CardBody(props: CardBodyProps) {
       freshnessClass = "bg-danger text-white";
     }
   }
+
+  // Helper para renderizar texto o estructura Label: Value
+  const renderRow = (content?: TextContent) => {
+    if (!content) return null;
+    if (Array.isArray(content)) {
+      return (
+        <p className="card-text">
+          {content[0]}: <strong>{content[1]}</strong>
+        </p>
+      );
+    }
+    return <p className="card-text">{content}</p>;
+  };
+
   return (
     <>
-      <div className="d-flex flex-column align-items-center text-lg-start flex-grow-1 order-2 order-lg-0">
+      <h6 className="card-title">{title}</h6>
+      <div className="d-flex flex-column align-items-center text-lg-start flex-grow-1 order-2 order-lg-0 mb-2">
         <span className={`badge rounded-pill ${freshnessClass}`}>
           {formattedDate}
         </span>
       </div>
-      <h6 className="card-title">{title}</h6>
-      {text1 && <p className="card-text">{text1}</p>}
-      {text2 && <p className="card-text">{text2}</p>}
-      {text3 && <p className="card-text">{text3}</p>}
-      {text4 && <p className="card-text">{text4}</p>}
-      {text5 && <p className="card-text">{text5}</p>}
-      {text6 && <p className="card-text">{text6}</p>}
-      {text7 && <p className="card-text">{text7}</p>}
+      {renderRow(text1)}
+      {renderRow(text2)}
+      {renderRow(text3)}
+      {renderRow(text4)}
+      {renderRow(text5)}
+      {renderRow(text6)}
+      {renderRow(text7)}
+      {renderRow(text8)}
     </>
   );
 }

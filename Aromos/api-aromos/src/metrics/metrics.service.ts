@@ -6,7 +6,7 @@ import { DateRangeDto } from './models/dto/date-range.dto';
 import { MetricSnapshot, Metric } from './models/types';
 
 interface DailyQueryResult {
-  day: Date; 
+  day: Date;
   daily_value: number;
 }
 
@@ -98,9 +98,7 @@ export class SsrAromosService {
       return { tiempo, formatted };
     };
 
-    const estanque = await calcularTiempoVaciado(
-      'SSR_AROMOS--slave.estanque',
-    );
+    const estanque = await calcularTiempoVaciado('SSR_AROMOS--slave.estanque');
 
     return {
       snapshot,
@@ -140,7 +138,10 @@ export class SsrAromosService {
     );
 
     return results.map((row) => ({
-      time: typeof row.day === 'string' ? row.day : row.day.toISOString().split('T')[0],
+      time:
+        typeof row.day === 'string'
+          ? row.day
+          : row.day.toISOString().split('T')[0],
       value: Number(row.daily_value),
     }));
   }
@@ -176,7 +177,10 @@ export class SsrAromosService {
     );
 
     return results.map((row) => ({
-      time: typeof row.day === 'string' ? row.day : row.day.toISOString().split('T')[0],
+      time:
+        typeof row.day === 'string'
+          ? row.day
+          : row.day.toISOString().split('T')[0],
       value: Number(row.daily_value),
     }));
   }
@@ -188,7 +192,7 @@ export class SsrAromosService {
       const results = await this.repo.find({
         where: { mt_name: 'SSR_AROMOS--slave.estanque' },
         order: { mt_time_2: 'DESC' },
-        take: 100,
+        take: 300,
       });
 
       return results.reverse().map((row) => ({
@@ -223,7 +227,7 @@ export class SsrAromosService {
       const results = await this.repo.find({
         where: { mt_name: 'SSR_AROMOS--slave.estanque' },
         order: { mt_time_2: 'DESC' },
-        take: 100,
+        take: 300,
       });
 
       return results.reverse().map((row) => ({
@@ -259,7 +263,7 @@ export class SsrAromosService {
       const results = await this.repo.find({
         where: { mt_name: 'SSR_AROMOS--slave.caudal' },
         order: { mt_time_2: 'DESC' },
-        take: 100,
+        take: 300,
       });
 
       return results.reverse().map((row) => ({

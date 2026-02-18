@@ -22,16 +22,17 @@ ChartJS.register(
   PointElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
 );
 
-// Formateo de fecha y hora
 const formatDate = (isoString: string, includeTime: boolean): string => {
   const date = new Date(isoString);
-  const day = date.getUTCDate();
-  const month = date.getUTCMonth() + 1;
-  const hours = date.getUTCHours();
-  const minutes = date.getUTCMinutes();
+
+  // Usamos métodos locales en lugar de UTC
+  const day = date.getDate();
+  const month = date.getMonth() + 1;
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
 
   const pad = (num: number): string => String(num).padStart(2, "0");
   const datePart = `${pad(day)}-${pad(month)}`;
@@ -97,7 +98,9 @@ const TimeSeriesChart: React.FC<ExtendedTimeSeriesChartProps> = ({
     datasets: [
       {
         label: title,
-        data: metrics.map((m) => (title === "Nivel Pozo" ? m.value / 10 : m.value)),
+        data: metrics.map((m) =>
+          title === "Nivel Pozo" ? m.value / 10 : m.value,
+        ),
         backgroundColor: barColor,
         barPercentage: 0.8,
         categoryPercentage: 1.0,
@@ -111,7 +114,9 @@ const TimeSeriesChart: React.FC<ExtendedTimeSeriesChartProps> = ({
     datasets: [
       {
         label: title,
-        data: metrics.map((m) => (title === "Nivel Pozo" ? m.value / 10 : m.value)),
+        data: metrics.map((m) =>
+          title === "Nivel Pozo" ? m.value / 10 : m.value,
+        ),
         borderColor: barColor,
         borderWidth: 2,
         pointRadius: 0,

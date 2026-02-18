@@ -80,10 +80,10 @@ function App() {
           await Promise.all([
             fetch("https://app.jteanalytics.cl/aromos/snapshot"),
             fetch(
-              `https://app.jteanalytics.cl/aromos/totalizador?start=${start}&end=${end}`
+              `https://app.jteanalytics.cl/aromos/totalizador?start=${start}&end=${end}`,
             ),
             fetch(
-              `https://app.jteanalytics.cl/aromos/horometro?start=${start}&end=${end}`
+              `https://app.jteanalytics.cl/aromos/horometro?start=${start}&end=${end}`,
             ),
             fetch(`https://app.jteanalytics.cl/aromos/nivel`),
           ]);
@@ -124,7 +124,7 @@ function App() {
     const minutes = mins % 60;
     return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
       2,
-      "0"
+      "0",
     )}`;
   };
 
@@ -169,14 +169,14 @@ function App() {
         <Card className="mb-2">
           <CardBody
             title="Bomba"
-            text1={`Caudal Impulsión: ${1 } l/s`}
+            text1={`Caudal Impulsión: ${1} l/s`}
             text2={`Nivel Freático: ${(
               data.snapshot.freatico.value / 100
             ).toFixed(2)} m`}
             text4={`Horómetro: ${minutesToHHMM(ultimoHorometro)}`}
             text5={`Totalizador Diario: ${ultimoTotalizador.toFixed(2)} m³`}
             text6={`Totalizador Total: ${data.snapshot.totalizador.value.toFixed(
-              2
+              2,
             )} m³`}
           />
           <ToggleCardButton
@@ -231,7 +231,9 @@ function App() {
       }}
     >
       {/* Diagrama SCADA (Cubre cols 1-2, rows 1-2) */}
-      <div style={{ gridColumn: "1 / 3", gridRow: "1 / 3", maxWidth: "2400px" }}>
+      <div
+        style={{ gridColumn: "1 / 3", gridRow: "1 / 3", maxWidth: "2400px" }}
+      >
         <div className="card w-100 p-4 justify-content-center">
           <ScadaDiagram
             data={data}
@@ -249,6 +251,7 @@ function App() {
           chartLabel="Nivel del Estanque (m)"
           data={nivelChartData}
           nivelAlarma={1.7}
+          nivelMax={3.5}
         />
       </div>
 

@@ -362,7 +362,7 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     }
 
     return results.map((row) => ({
-      time: this.formatDate(row.mt_time_2),
+      time: row.mt_time_2,
       value: Number(row.mt_value),
     }));
   }

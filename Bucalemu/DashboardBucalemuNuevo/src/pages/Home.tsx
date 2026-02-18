@@ -136,16 +136,19 @@ function App() {
           <CardBody
             date={data.ssr_nilahue_nivel.time}
             title="Nilahue"
-            text1={`Nivel: ${data.ssr_nilahue_nivel.value.toFixed(2)} m`}
-            text2={`Volumen Actual: ${(
-              (60 / 7) *
-              data.ssr_nilahue_nivel.value
-            ).toFixed(2)} m³`}
-            text3={`T. Vaciado: ${
-              vData?.t_vaciado_nilahue_nivel == "0s"
-                ? "Llenando..."
-                : vData?.t_vaciado_nilahue_nivel
-            }`}
+            text1={["Nivel", `${data.ssr_nilahue_nivel.value.toFixed(2)} m`]}
+            text2={[
+              "Volumen Actual",
+              `${((60 / 7) * data.ssr_nilahue_nivel.value).toFixed(2)} m³`,
+            ]}
+            text3={[
+              "T. Vaciado",
+              `${
+                vData?.t_vaciado_nilahue_nivel == "0s"
+                  ? "Llenando..."
+                  : vData?.t_vaciado_nilahue_nivel
+              }`,
+            ]}
           />
           <TankLevelCircular
             nivelActual={data.ssr_nilahue_nivel.value}
@@ -173,16 +176,19 @@ function App() {
           <CardBody
             date={data.ssr_casuto_nivel.time}
             title="Casuto"
-            text1={`Nivel: ${data.ssr_casuto_nivel.value.toFixed(2)} m`}
-            text2={`Volumen Actual: ${(
-              (60 / 7) *
-              data.ssr_casuto_nivel.value
-            ).toFixed(2)} m³`}
-            text3={`T. Vaciado: ${
-              vData?.t_vaciado_casuto_nivel == "0s"
-                ? "Llenando..."
-                : vData?.t_vaciado_casuto_nivel
-            }`}
+            text1={["Nivel", `${data.ssr_casuto_nivel.value.toFixed(2)} m`]}
+            text2={[
+              "Volumen Actual",
+              `${((60 / 7) * data.ssr_casuto_nivel.value).toFixed(2)} m³`,
+            ]}
+            text3={[
+              "T. Vaciado",
+              `${
+                vData?.t_vaciado_casuto_nivel == "0s"
+                  ? "Llenando..."
+                  : vData?.t_vaciado_casuto_nivel
+              }`,
+            ]}
           />
           <TankLevelCircular
             nivelActual={data.ssr_casuto_nivel.value}
@@ -209,16 +215,22 @@ function App() {
           <CardBody
             date={data.ssr_bucalemu_bajo_nivel.time}
             title="Bucalemu Bajo"
-            text1={`Nivel: ${data.ssr_bucalemu_bajo_nivel.value.toFixed(2)} m`}
-            text2={`Volumen Actual: ${(
-              (60 / 7) *
-              data.ssr_bucalemu_bajo_nivel.value
-            ).toFixed(2)} m³`}
-            text3={`T. Vaciado: ${
-              vData?.t_vaciado_bucalemu_bajo_nivel == "0s"
-                ? "Llenando..."
-                : vData?.t_vaciado_bucalemu_bajo_nivel
-            }`}
+            text1={[
+              "Nivel",
+              `${data.ssr_bucalemu_bajo_nivel.value.toFixed(2)} m`,
+            ]}
+            text2={[
+              "Volumen Actual",
+              `${((60 / 7) * data.ssr_bucalemu_bajo_nivel.value).toFixed(2)} m³`,
+            ]}
+            text3={[
+              "T. Vaciado",
+              `${
+                vData?.t_vaciado_bucalemu_bajo_nivel == "0s"
+                  ? "Llenando..."
+                  : vData?.t_vaciado_bucalemu_bajo_nivel
+              }`,
+            ]}
           />
           <TankLevelCircular
             nivelActual={data.ssr_bucalemu_bajo_nivel.value}
@@ -245,16 +257,22 @@ function App() {
           <CardBody
             date={data.ssr_bucalemu_alto_nivel.time}
             title="Bucalemu Alto"
-            text1={`Nivel: ${data.ssr_bucalemu_alto_nivel.value.toFixed(2)} m`}
-            text2={`Volumen Actual: ${(
-              (60 / 7) *
-              data.ssr_bucalemu_alto_nivel.value
-            ).toFixed(2)} m³`}
-            text3={`T. Vaciado: ${
-              vData?.t_vaciado_bucalemu_alto_nivel == "0s"
-                ? "Llenando..."
-                : vData?.t_vaciado_bucalemu_alto_nivel
-            }`}
+            text1={[
+              "Nivel",
+              `${data.ssr_bucalemu_alto_nivel.value.toFixed(2)} m`,
+            ]}
+            text2={[
+              "Volumen Actual",
+              `${((60 / 7) * data.ssr_bucalemu_alto_nivel.value).toFixed(2)} m³`,
+            ]}
+            text3={[
+              "T. Vaciado",
+              `${
+                vData?.t_vaciado_bucalemu_alto_nivel == "0s"
+                  ? "Llenando..."
+                  : vData?.t_vaciado_bucalemu_alto_nivel
+              }`,
+            ]}
           />
           <TankLevelCircular
             nivelActual={data.ssr_bucalemu_alto_nivel.value}
@@ -271,7 +289,7 @@ function App() {
           title="Bucalemu Alto"
           chartLabel="Nivel del Bucalemu Alto (m)"
           data={chartData?.ssr_bucalemu_alto_nivel || []}
-          nivelAlarma={2}
+          nivelAlarma={1}
           nivelMax={5}
         />
       </div>
@@ -281,11 +299,15 @@ function App() {
         <Card className="mb-2">
           <CardBody
             title="Bomba"
-            text1={`Caudal Impulsión: ${data.ssr_nilahue_caudal.value.toFixed(2)} l/s`}
-            text5={`Totalizador Diario: ${ultimoTotalizador.toFixed(2)} m³`}
-            text6={`Totalizador Total: ${data.ssr_nilahue_totalizador.value.toFixed(
-              2,
-            )} m³`}
+            text1={[
+              "Caudal Impulsión",
+              `${data.ssr_nilahue_caudal.value.toFixed(2)} l/s`,
+            ]}
+            text5={["Totalizador Diario", `${ultimoTotalizador.toFixed(2)} m³`]}
+            text6={[
+              "Totalizador Total",
+              `${data.ssr_nilahue_totalizador.value.toFixed(2)} m³`,
+            ]}
           />
           <ToggleCardButton
             isOpen={isOpenBomba}

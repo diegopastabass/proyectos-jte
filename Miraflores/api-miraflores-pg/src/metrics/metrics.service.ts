@@ -39,7 +39,8 @@ export class MirafloresService {
 
   // getTotalizador
   async getTotalizador(dto: DateRangeDto): Promise<Metric[]> {
-    if (!dto.start || !dto.end) throw new Error('Se requiere rango de fechas válido.');
+    if (!dto.start || !dto.end)
+      throw new Error('Se requiere rango de fechas válido.');
 
     const start = `${dto.start} 00:00:00`;
     const end = `${dto.end} 23:59:59`;
@@ -70,9 +71,10 @@ export class MirafloresService {
     );
 
     return results.map((row: any) => {
-      const dateStr = row.day instanceof Date 
-        ? row.day.toISOString().split('T')[0] 
-        : String(row.day);
+      const dateStr =
+        row.day instanceof Date
+          ? row.day.toISOString().split('T')[0]
+          : String(row.day);
 
       return {
         time: dateStr,
@@ -85,7 +87,7 @@ export class MirafloresService {
   async getNivel(dto: DateRangeDto): Promise<Metric[]> {
     const hasRange = dto.start && dto.end;
 
-    // TypeORM abstrae bien las diferencias aquí, 
+    // TypeORM abstrae bien las diferencias aquí,
     // pero nos aseguramos de crear objetos Date válidos.
     if (hasRange) {
       const start = new Date(`${dto.start}T00:00:00`);
@@ -96,11 +98,11 @@ export class MirafloresService {
           mt_name: 'POZO_MIRAFLORES--slave.pozo',
           mt_time_2: Between(start, end),
         },
-        order: { mt_time_2: 'ASC' }, 
+        order: { mt_time_2: 'ASC' },
       });
 
       return results.map((row) => ({
-        time: row.mt_time_2.toISOString(),
+        time: row.mt_time_2.toString(),
         value: Number(row.mt_value),
       }));
     }
@@ -108,11 +110,11 @@ export class MirafloresService {
     const results = await this.repo.find({
       where: { mt_name: 'POZO_MIRAFLORES--slave.pozo' },
       order: { mt_time_2: 'DESC' },
-      take: 300,
+      take: 600,
     });
 
     return results.reverse().map((row) => ({
-      time: row.mt_time_2.toISOString(),
+      time: row.mt_time_2.toString(),
       value: Number(row.mt_value),
     }));
   }
@@ -134,7 +136,7 @@ export class MirafloresService {
       });
 
       return results.map((row) => ({
-        time: row.mt_time_2.toISOString(),
+        time: row.mt_time_2.toString(),
         value: Number(row.mt_value),
       }));
     }
@@ -142,11 +144,11 @@ export class MirafloresService {
     const results = await this.repo.find({
       where: { mt_name: 'POZO_MIRAFLORES--slave.caudal' },
       order: { mt_time_2: 'DESC' },
-      take: 300,
+      take: 600,
     });
 
     return results.reverse().map((row) => ({
-      time: row.mt_time_2.toISOString(),
+      time: row.mt_time_2.toString(),
       value: Number(row.mt_value),
     }));
   }

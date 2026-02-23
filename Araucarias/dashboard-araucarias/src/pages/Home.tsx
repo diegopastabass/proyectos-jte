@@ -158,7 +158,7 @@ function Home() {
                 title="Nivel Pozo"
                 metrics={nivelData}
                 divisor={100}
-                nivelMax={80}
+                nivelMax={100}
                 barColor="rgba(13, 110, 230, 1)"
                 chartType="line"
               />

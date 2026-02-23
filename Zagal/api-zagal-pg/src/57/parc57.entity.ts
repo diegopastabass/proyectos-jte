@@ -1,11 +1,8 @@
 // 57/entities/parc57.entity.ts
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column } from 'typeorm';
 
 @Entity('parc_57_zagal')
 export class Parc57Zagal {
-  @PrimaryGeneratedColumn({ name: 'mt_id' })
-  mt_id: number;
-
   @Column()
   mt_name: string;
 

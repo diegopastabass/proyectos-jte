@@ -84,19 +84,19 @@ function App() {
         ] = await Promise.all([
           fetch("https://app.jteanalytics.cl/zuniga/snapshot"),
           fetch(
-            `https://app.jteanalytics.cl/zuniga/nivel?start=${date}&end=${date}`
+            `https://app.jteanalytics.cl/zuniga/nivel?start=${date}&end=${date}`,
           ),
           fetch(
-            `https://app.jteanalytics.cl/zuniga/nivel2?start=${date}&end=${date}`
+            `https://app.jteanalytics.cl/zuniga/nivel2?start=${date}&end=${date}`,
           ),
           fetch(
-            `https://app.jteanalytics.cl/zuniga/caudal?start=${date}&end=${date}`
+            `https://app.jteanalytics.cl/zuniga/caudal?start=${date}&end=${date}`,
           ),
           fetch(
-            `https://app.jteanalytics.cl/zuniga/horometro?start=${oldDate}&end=${date}`
+            `https://app.jteanalytics.cl/zuniga/horometro?start=${oldDate}&end=${date}`,
           ),
           fetch(
-            `https://app.jteanalytics.cl/zuniga/totalizador?start=${oldDate}&end=${date}`
+            `https://app.jteanalytics.cl/zuniga/totalizador?start=${oldDate}&end=${date}`,
           ),
         ]);
 
@@ -130,8 +130,10 @@ function App() {
   const cleanDate = data?.snapshot
     ? new Date(
         Math.max(
-          ...Object.values(data.snapshot).map((m) => new Date(m.time).getTime())
-        )
+          ...Object.values(data.snapshot).map((m) =>
+            new Date(m.time).getTime(),
+          ),
+        ),
       ).toISOString()
     : "";
   console.log(cleanDate);
@@ -161,7 +163,11 @@ function App() {
       >
         <div className="col-12 col-lg-8 d-flex flex-column order-2 order-lg-1">
           <div className="card w-100 p-4">
-            <ScadaDiagram data={data} horometro={horometro} totalizador={totalizador}/>
+            <ScadaDiagram
+              data={data}
+              horometro={horometro}
+              totalizador={totalizador}
+            />
           </div>
         </div>
 
@@ -237,10 +243,13 @@ function App() {
           <Card>
             <CardBody
               title="Estanque 350 m³"
-              text1={`Nivel: ${data.snapshot.estanque.value.toFixed(2)} m`}
-              text2={`Tiempo Vaciado: ${data.tiempo_vaciado_formatted}`}
+              text1={["Nivel", `${data.snapshot.estanque.value.toFixed(2)} m`]}
+              text2={["Tiempo Vaciado", `${data.tiempo_vaciado_formatted}`]}
             />
-            <TankLevelCircular nivelActual={data.snapshot.estanque.value} nivelMaximo={7} />
+            <TankLevelCircular
+              nivelActual={data.snapshot.estanque.value}
+              nivelMaximo={7}
+            />
             <ToggleCardButton
               isOpen={isOpenEstanque}
               onToggle={() => setIsOpenEstanque(!isOpenEstanque)}
@@ -264,9 +273,15 @@ function App() {
           <Card>
             <CardBody
               title="Estanque 2 m³"
-              text1={`Nivel: ${data.snapshot.estanque_2.value.toFixed(2)} m`}
+              text1={[
+                "Nivel",
+                `${data.snapshot.estanque_2.value.toFixed(2)} m`,
+              ]}
             />
-            <TankLevelCircular nivelActual={data.snapshot.estanque_2.value} nivelMaximo={2} />
+            <TankLevelCircular
+              nivelActual={data.snapshot.estanque_2.value}
+              nivelMaximo={2}
+            />
             <ToggleCardButton
               isOpen={isOpenEstanque2}
               onToggle={() => setIsOpenEstanque2(!isOpenEstanque2)}
@@ -289,14 +304,24 @@ function App() {
           <Card>
             <CardBody
               title="Bomba"
-              text1={`Caudal Impulsión: ${data.snapshot.caudal.value.toFixed(2)} l/s`}
-              text2={`Nivel Freático: ${(data.snapshot.freatico.value / 100).toFixed(2)} m`}
-              text3={`Presión: ${(data.snapshot.presion.value / 10).toFixed(1)} bar`}
-              text4={`Horómetro: ${horHoras}:${horMinutos} h`}
-              text5={`Totalizador Diario: ${latestTotalizador} m³`}
-              text6={`Totalizador Total: ${data.snapshot.totalizador.value.toFixed(
-                2
-              )} m³`}
+              text1={[
+                "Caudal Impulsión",
+                `${data.snapshot.caudal.value.toFixed(2)} l/s`,
+              ]}
+              text2={[
+                "Nivel Freático",
+                `${(data.snapshot.freatico.value / 100).toFixed(2)} m`,
+              ]}
+              text3={[
+                "Presión",
+                `${(data.snapshot.presion.value / 10).toFixed(1)} bar`,
+              ]}
+              text4={["Horómetro", `${horHoras}:${horMinutos} h`]}
+              text5={["Totalizador Diario", `${latestTotalizador} m³`]}
+              text6={[
+                "Totalizador Total",
+                `${data.snapshot.totalizador.value.toFixed(2)} m³`,
+              ]}
             />
             <ToggleCardButton
               isOpen={isOpenBomba}

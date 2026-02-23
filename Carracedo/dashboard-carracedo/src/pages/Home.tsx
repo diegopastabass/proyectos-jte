@@ -99,7 +99,7 @@ function Home() {
             <div className="col-lg-4 col-md-12 col-sm-12">
               <MetricCard
                 title="Caudal Instantáneo"
-                value={snapshotData.caudal.value.toFixed(2)}
+                value={(snapshotData.caudal.value / 100).toFixed(2)}
                 unit="l/s"
                 barColor="success"
               />

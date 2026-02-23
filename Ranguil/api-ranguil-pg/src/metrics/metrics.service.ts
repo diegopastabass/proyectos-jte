@@ -6,7 +6,7 @@ import { DateRangeDto } from './models/dto/date-range.dto';
 import { MetricSnapshot, Metric } from './models/types';
 
 interface DailyQueryResult {
-  day: Date; 
+  day: Date;
   daily_value: number;
 }
 
@@ -38,7 +38,8 @@ export class SsrRanguilService {
     tiempo_vaciado_est_2: number;
     tiempo_vaciado_est_2_formatted: string;
   }> {
-    const results = await this.repo.query(`
+    try {
+      const results = await this.repo.query(`
     SELECT t.mt_name, t.mt_value, t.mt_time_2
     FROM ssr_ranguil t
     INNER JOIN (
@@ -49,67 +50,79 @@ export class SsrRanguilService {
     ON t.mt_name = latest.mt_name AND t.mt_time_2 = latest.last_time
   `);
 
-    const prefix = 'SSR_RANGUIL--slave.';
+      const prefix = 'SSR_RANGUIL--slave.';
 
-    const snapshot: MetricSnapshot = results.reduce(
-      (acc: MetricSnapshot, row: any) => {
-        const key = row.mt_name.replace(prefix, '');
-        acc[key] = {
-          value: Number(row.mt_value),
-          time: new Date(row.mt_time_2).toISOString(),
-        };
-        return acc;
-      },
-      {},
-    );
+      const snapshot: MetricSnapshot = results.reduce(
+        (acc: MetricSnapshot, row: any) => {
+          const key = row.mt_name.replace(prefix, '');
+          acc[key] = {
+            value: Number(row.mt_value),
+            time: new Date(row.mt_time_2).toISOString(),
+          };
+          return acc;
+        },
+        {},
+      );
 
-    const calcularTiempoVaciado = async (nombreEstanque: string) => {
-      const mediciones = await this.repo.find({
-        where: { mt_name: nombreEstanque },
-        order: { mt_time_2: 'DESC' },
-        take: 2,
-      });
+      const calcularTiempoVaciado = async (nombreEstanque: string) => {
+        const mediciones = await this.repo.find({
+          where: { mt_name: nombreEstanque },
+          order: { mt_time_2: 'DESC' },
+          take: 2,
+        });
 
-      if (mediciones.length < 2) {
-        return { tiempo: 0, formatted: 'Llenando...' };
-      }
+        if (mediciones.length < 2) {
+          return { tiempo: 0, formatted: 'Llenando...' };
+        }
 
-      const [actual, anterior] = mediciones;
-      const nivel_actual = Number(actual.mt_value);
-      const nivel_anterior = Number(anterior.mt_value);
+        const [actual, anterior] = mediciones;
+        const nivel_actual = Number(actual.mt_value);
+        const nivel_anterior = Number(anterior.mt_value);
 
-      const t_actual = actual.mt_time_2.getTime() / 1000;
-      const t_anterior = anterior.mt_time_2.getTime() / 1000;
+        const t_actual = actual.mt_time_2.getTime() / 1000;
+        const t_anterior = anterior.mt_time_2.getTime() / 1000;
 
-      if (!(nivel_actual < nivel_anterior && t_actual > t_anterior)) {
-        return { tiempo: 0, formatted: 'Llenando...' };
-      }
+        if (!(nivel_actual < nivel_anterior && t_actual > t_anterior)) {
+          return { tiempo: 0, formatted: 'Llenando...' };
+        }
 
-      const tasa_vaciado =
-        (nivel_anterior - nivel_actual) / (t_actual - t_anterior);
-      const tiempo = Math.round(nivel_actual / tasa_vaciado);
+        const tasa_vaciado =
+          (nivel_anterior - nivel_actual) / (t_actual - t_anterior);
+        const tiempo = Math.round(nivel_actual / tasa_vaciado);
 
-      const h = Math.floor(tiempo / 3600);
-      const m = Math.floor((tiempo % 3600) / 60);
-      const s = tiempo % 60;
+        const h = Math.floor(tiempo / 3600);
+        const m = Math.floor((tiempo % 3600) / 60);
+        const s = tiempo % 60;
 
-      const formatted = `${h.toString().padStart(2, '0')} h ${m
-        .toString()
-        .padStart(2, '0')} m ${s.toString().padStart(2, '0')} s`;
+        const formatted = `${h.toString().padStart(2, '0')} h ${m
+          .toString()
+          .padStart(2, '0')} m ${s.toString().padStart(2, '0')} s`;
 
-      return { tiempo, formatted };
-    };
+        return { tiempo, formatted };
+      };
 
-    const est_1 = await calcularTiempoVaciado('SSR_RANGUIL--slave.estanque');
-    const est_2 = await calcularTiempoVaciado('SSR_RANGUIL--slave.estanque_2');
+      const est_1 = await calcularTiempoVaciado('SSR_RANGUIL--slave.estanque');
+      const est_2 = await calcularTiempoVaciado(
+        'SSR_RANGUIL--slave.estanque_2',
+      );
 
-    return {
-      snapshot,
-      tiempo_vaciado_est_1: est_1.tiempo,
-      tiempo_vaciado_est_1_formatted: est_1.formatted,
-      tiempo_vaciado_est_2: est_2.tiempo,
-      tiempo_vaciado_est_2_formatted: est_2.formatted,
-    };
+      return {
+        snapshot,
+        tiempo_vaciado_est_1: est_1.tiempo,
+        tiempo_vaciado_est_1_formatted: est_1.formatted,
+        tiempo_vaciado_est_2: est_2.tiempo,
+        tiempo_vaciado_est_2_formatted: est_2.formatted,
+      };
+    } catch (error) {
+      console.error('Error al obtener datos:' + error);
+      return {
+        snapshot: {},
+        tiempo_vaciado_est_1: 0,
+        tiempo_vaciado_est_1_formatted: 'Error al calcular tiempo de vaciado',
+        tiempo_vaciado_est_2: 0,
+        tiempo_vaciado_est_2_formatted: 'Error al calcular tiempo de vaciado',
+      };
+    }
   }
 
   // Totalizador
@@ -143,7 +156,10 @@ export class SsrRanguilService {
     );
 
     return results.map((row) => ({
-      time: typeof row.day === 'string' ? row.day : row.day.toISOString().split('T')[0],
+      time:
+        typeof row.day === 'string'
+          ? row.day
+          : row.day.toISOString().split('T')[0],
       value: Number(row.daily_value),
     }));
   }
@@ -179,7 +195,10 @@ export class SsrRanguilService {
     );
 
     return results.map((row) => ({
-      time: typeof row.day === 'string' ? row.day : row.day.toISOString().split('T')[0],
+      time:
+        typeof row.day === 'string'
+          ? row.day
+          : row.day.toISOString().split('T')[0],
       value: Number(row.daily_value),
     }));
   }

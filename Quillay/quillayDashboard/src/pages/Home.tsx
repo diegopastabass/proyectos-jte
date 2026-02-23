@@ -88,10 +88,10 @@ function App() {
         ] = await Promise.all([
           fetch("https://app.jteanalytics.cl/quillay/snapshot"),
           fetch(
-            `https://app.jteanalytics.cl/quillay/totalizador?start=${start}&end=${end}`
+            `https://app.jteanalytics.cl/quillay/totalizador?start=${start}&end=${end}`,
           ),
           fetch(
-            `https://app.jteanalytics.cl/quillay/horometro?start=${start}&end=${end}`
+            `https://app.jteanalytics.cl/quillay/horometro?start=${start}&end=${end}`,
           ),
           fetch(`https://app.jteanalytics.cl/quillay/nivel`),
           fetch(`https://app.jteanalytics.cl/quillay/nivel2`),
@@ -137,7 +137,7 @@ function App() {
     const minutes = mins % 60;
     return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
       2,
-      "0"
+      "0",
     )}`;
   };
 
@@ -151,14 +151,17 @@ function App() {
         <Card>
           <CardBody
             title="Estanque Hormigón"
-            text1={`Nivel: ${data.snapshot.estanque_hormigon.value.toFixed(
-              2
-            )} m`}
-            text2={`Volumen Actual: ${(
-              (60 / 7) *
-              data.snapshot.estanque_hormigon.value
-            ).toFixed(2)} m³`}
-            text3={data.tiempo_vaciado_hormigon_formatted}
+            text1={[
+              "Nivel",
+              `${data.snapshot.estanque_hormigon.value.toFixed(2)} m`,
+            ]}
+            text2={[
+              "Volumen Actual",
+              `${((60 / 7) * data.snapshot.estanque_hormigon.value).toFixed(
+                2,
+              )} m³`,
+            ]}
+            text3={["Tiempo Vaciado", data.tiempo_vaciado_hormigon_formatted]}
           />
           <TankLevelCircular
             nivelActual={data.snapshot.estanque_hormigon.value}
@@ -185,14 +188,17 @@ function App() {
         <Card>
           <CardBody
             title="Estanque Metalico"
-            text1={`Nivel: ${data.snapshot.estanque_metalico.value.toFixed(
-              2
-            )} m`}
-            text2={`Volumen Actual: ${(
-              (60 / 7) *
-              data.snapshot.estanque_metalico.value
-            ).toFixed(2)} m³`}
-            text3={data.tiempo_vaciado_metalico_formatted}
+            text1={[
+              "Nivel",
+              `${data.snapshot.estanque_metalico.value.toFixed(2)} m`,
+            ]}
+            text2={[
+              "Volumen Actual",
+              `${((60 / 7) * data.snapshot.estanque_metalico.value).toFixed(
+                2,
+              )} m³`,
+            ]}
+            text3={["Tiempo Vaciado", data.tiempo_vaciado_metalico_formatted]}
             date={data.snapshot.estanque_metalico.time}
           />
           <TankLevelCircular
@@ -220,20 +226,27 @@ function App() {
         <Card>
           <CardBody
             title="Bomba"
-            text1={`Caudal Impulsión: ${data.snapshot.caudal.value.toFixed(
-              2
-            )} l/s`}
-            text2={`Nivel Freático Pozo: ${(
-              data.snapshot.freatico_pozo.value / 100
-            ).toFixed(2)} m`}
-            text3={`Nivel Freático Sentina: ${(
-              data.snapshot.freatico_sentina.value / 100
-            ).toFixed(2)} m`}
-            text4={`Horómetro por Día: ${minutesToHHMM(ultimoHorometro)}`}
-            text5={`Totalizador por Día: ${ultimoTotalizador.toFixed(2)} m³`}
-            text6={`Totalizador: ${data.snapshot.totalizador.value.toFixed(
-              2
-            )} m³`}
+            text1={[
+              "Caudal Impulsión",
+              `${data.snapshot.caudal.value.toFixed(2)} l/s`,
+            ]}
+            text2={[
+              "Nivel Freático Pozo",
+              `${(data.snapshot.freatico_pozo.value / 100).toFixed(2)} m`,
+            ]}
+            text3={[
+              "Nivel Freático Sentina",
+              `${(data.snapshot.freatico_sentina.value / 100).toFixed(2)} m`,
+            ]}
+            text4={["Horómetro por Día", minutesToHHMM(ultimoHorometro)]}
+            text5={[
+              "Totalizador por Día",
+              `${ultimoTotalizador.toFixed(2)} m³`,
+            ]}
+            text6={[
+              "Totalizador",
+              `${data.snapshot.totalizador.value.toFixed(2)} m³`,
+            ]}
           />
           <ToggleCardButton
             isOpen={isOpenBomba}

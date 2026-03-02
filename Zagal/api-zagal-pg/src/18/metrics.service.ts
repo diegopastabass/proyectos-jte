@@ -137,7 +137,7 @@ export class MetricsService {
       throw new InternalServerErrorException('Error fetching last update');
     }
   }
-
+  // findIrrigationInterval
   async findIrrigationInterval() {
     try {
       const intervalRows = await this.repo.query(
@@ -153,27 +153,6 @@ export class MetricsService {
         return sum + (this.sectorAreas[name] || 0);
       }, 0);
 
-      let totalGlobal = 0;
-
-      if (activeNames.length > 0) {
-        const startTimes = activeSectors.map((r: any) =>
-          new Date(r.since).getTime(),
-        );
-        const minStart = new Date(Math.min(...startTimes));
-
-        const totalRow = await this.repo.query(
-          `
-          SELECT COALESCE(MAX(mt_value::numeric) - MIN(mt_value::numeric), 0) as total
-          FROM parc_18_zagal
-          WHERE mt_name = 'PARC_18_ZAGAL--slave.totalizador'
-          AND mt_time_2 >= $1
-        `,
-          [minStart],
-        );
-
-        totalGlobal = totalRow[0] ? Number(totalRow[0].total) : 0;
-      }
-
       const allSectors = Object.keys(this.sectorMap);
       const now = new Date().getTime();
 
@@ -188,10 +167,16 @@ export class MetricsService {
         if (is_active) {
           tiempo_riego_segundos = Math.floor((now - sinceTime) / 1000);
 
+          const first = row.first_totalizador
+            ? Number(row.first_totalizador)
+            : 0;
+          const last = row.last_totalizador ? Number(row.last_totalizador) : 0;
+          const rawDelta = Math.max(0, last - first);
+
           if (totalActiveArea > 0) {
             const sectorArea = this.sectorAreas[mt_name] || 0;
             const ratio = sectorArea / totalActiveArea;
-            sectorTotalizer = totalGlobal * ratio;
+            sectorTotalizer = rawDelta * ratio;
           }
         }
 
@@ -203,7 +188,6 @@ export class MetricsService {
         };
       });
     } catch (error) {
-      console.error('Error fetching irrigation interval:', error);
       throw new InternalServerErrorException(
         'Error fetching irrigation interval',
       );

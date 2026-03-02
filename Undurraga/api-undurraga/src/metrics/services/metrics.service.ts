@@ -27,7 +27,7 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
   onModuleInit() {
     this.flushInterval = setInterval(() => {
       this.flushMetrics();
-    }, 30000);
+    }, 120000);
   }
 
   onModuleDestroy() {

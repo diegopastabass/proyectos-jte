@@ -2,6 +2,8 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  OnModuleDestroy,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -16,29 +18,63 @@ interface MetricsRow {
 }
 
 @Injectable()
-export class MetricsService {
+export class MetricsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MetricsService.name);
+
+  private metricsBuffer: CreateMetricDto[] = [];
+  private flushInterval: NodeJS.Timeout;
 
   constructor(
     @InjectRepository(Metric)
     private readonly metricRepository: Repository<Metric>,
   ) {}
 
+  onModuleInit() {
+    this.flushInterval = setInterval(() => this.flushMetrics(), 120000);
+  }
+
+  onModuleDestroy() {
+    clearInterval(this.flushInterval);
+    this.flushMetrics();
+  }
+
+  private async flushMetrics() {
+    if (this.metricsBuffer.length === 0) return;
+
+    const dataToSave = [...this.metricsBuffer];
+    this.metricsBuffer = [];
+
+    try {
+      await this.metricRepository
+        .createQueryBuilder()
+        .insert()
+        .into('ssr_olivar_bajo_metrics')
+        .values(dataToSave)
+        .execute();
+
+      this.logger.log(`Bulk inserted ${dataToSave.length} metrics`);
+    } catch (error) {
+      this.logger.error('Error in bulk insert', error);
+    }
+  }
+
+  async findLatestMetrics(limit: number): Promise<Metric[]> {
+    return this.metricRepository.find({
+      order: { time: 'DESC' },
+      take: limit,
+    });
+  }
+
   async createMetric(
     dto: CreateMetricDto,
-  ): Promise<{ success: boolean; insertedId: number }> {
-    try {
-      dto.value = Number(dto.value);
+  ): Promise<{ success: boolean; message: string }> {
+    this.metricsBuffer.push(dto);
 
-      const metric = this.metricRepository.create(dto);
-      const result = await this.metricRepository.save(metric);
-      this.logger.log(`Inserted metric with id ${result.id}`);
-      return { success: true, insertedId: result.id };
-    } catch (error) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      this.logger.error('Error inserting metric', error.stack);
-      throw new InternalServerErrorException('Error inserting metric');
+    if (this.metricsBuffer.length >= 100) {
+      await this.flushMetrics();
     }
+
+    return { success: true, message: 'Metric buffered' };
   }
 
   async findLatestForEachSensor(): Promise<

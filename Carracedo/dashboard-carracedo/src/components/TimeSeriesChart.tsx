@@ -28,10 +28,10 @@ ChartJS.register(
 
 const formatDate = (isoString: string, includeTime: boolean): string => {
   const date = new Date(isoString);
-  const day = date.getUTCDate();
-  const month = date.getUTCMonth() + 1;
-  const hours = date.getUTCHours();
-  const minutes = date.getUTCMinutes();
+  const day = date.getDate();
+  const month = date.getMonth() + 1;
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
 
   const pad = (num: number): string => String(num).padStart(2, "0");
   const datePart = `${pad(day)}-${pad(month)}`;

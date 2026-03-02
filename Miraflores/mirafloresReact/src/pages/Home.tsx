@@ -14,7 +14,7 @@ function Home() {
   const [loading, setLoading] = useState(true);
 
   const [snapshotData, setSnapshotData] = useState<Snapshot>({} as Snapshot);
-  const [totalizadorData, setTotalizadorData] = useState<Metric[]>([]); 
+  const [totalizadorData, setTotalizadorData] = useState<Metric[]>([]);
   const [caudalData, setCaudalData] = useState<Metric[]>([]);
   const [nivelData, setNivelData] = useState<Metric[]>([]);
 
@@ -25,7 +25,7 @@ function Home() {
     const formatter = new Intl.DateTimeFormat("en-CA", {
       timeZone: "America/Santiago",
       year: "numeric",
-      month: "2-digit", // Se añade el mes con dos dígitos
+      month: "2-digit",
       day: "2-digit",
     });
 
@@ -37,17 +37,15 @@ function Home() {
 
     const fetchData = async () => {
       try {
-        const [
-          snapshotRes,
-          totalizadorRes,
-          caudalRes,
-          nivelRes,
-        ] = await Promise.all([
-          fetch("https://app.jteanalytics.cl/miraflores/snapshot"),
-          fetch(`https://app.jteanalytics.cl/miraflores/totalizador?start=${start}&end=${end}`),
-          fetch(`https://app.jteanalytics.cl/miraflores/caudal`),
-          fetch(`https://app.jteanalytics.cl/miraflores/nivel`),
-        ]);
+        const [snapshotRes, totalizadorRes, caudalRes, nivelRes] =
+          await Promise.all([
+            fetch("https://app.jteanalytics.cl/miraflores/snapshot"),
+            fetch(
+              `https://app.jteanalytics.cl/miraflores/totalizador?start=${start}&end=${end}`,
+            ),
+            fetch(`https://app.jteanalytics.cl/miraflores/caudal`),
+            fetch(`https://app.jteanalytics.cl/miraflores/nivel`),
+          ]);
 
         const snapshotResJson = await snapshotRes.json();
         setSnapshotData(snapshotResJson);
@@ -81,7 +79,7 @@ function Home() {
   const snapshotArray: Metric[] = Object.values(snapshotData);
 
   const lastMetric = snapshotArray.reduce((a, b) =>
-    new Date(a.time) > new Date(b.time) ? a : b
+    new Date(a.time) > new Date(b.time) ? a : b,
   );
 
   return (
@@ -121,7 +119,7 @@ function Home() {
             <div className="col-lg-4 col-md-12 col-sm-12">
               <MetricCard
                 title="Nivel Pozo"
-                value={(snapshotData.pozo.value /10).toFixed(2)}
+                value={(snapshotData.pozo.value / 10).toFixed(2)}
                 unit="m"
                 barColor="warning"
               />
@@ -169,12 +167,7 @@ function Home() {
         {/* Footer */}
         <footer className="mt-4 w-75 d-flex flex-wrap justify-content-between align-items-center py-3 px-4 border-top border-secondary">
           <p className="text-body-secondary">&copy; 2025 JTE Analytics.</p>
-          <img
-            src={logoJte}
-            alt="logo"
-            width={40}
-            height={24}
-          />
+          <img src={logoJte} alt="logo" width={40} height={24} />
         </footer>
       </div>
       <ExportModal show={isOpenExport} onClose={() => setIsOpenExport(false)} />

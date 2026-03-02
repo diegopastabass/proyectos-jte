@@ -2,16 +2,20 @@ import { useState, useEffect } from "react";
 import { type QuoteItem, type QuoteData, type Quote } from "../types";
 import SaveSummaryModal from "./SaveSummaryModal";
 
+// Interfaces
 interface Props {
   token: string;
   initialQuote?: Quote | null;
+  isDuplicate?: boolean;
   onCancel: () => void;
   onSuccess: () => void;
 }
 
+// Component
 export default function CreateQuote({
   token,
   initialQuote,
+  isDuplicate,
   onCancel,
   onSuccess,
 }: Props) {
@@ -42,7 +46,9 @@ export default function CreateQuote({
   });
 
   const [showSummary, setShowSummary] = useState(false);
+  const isEditingMode = initialQuote && !isDuplicate;
 
+  // Effects
   useEffect(() => {
     const sub = form.items.reduce(
       (acc, item) => acc + item.qty * item.unitPrice,
@@ -52,6 +58,7 @@ export default function CreateQuote({
     setForm((f) => ({ ...f, subtotal: sub, iva: iva, total: sub + iva }));
   }, [form.items]);
 
+  // Handlers
   const addItem = () => {
     if (!newItem.detail) return;
     setForm({ ...form, items: [...form.items, newItem] });
@@ -90,11 +97,11 @@ export default function CreateQuote({
   };
 
   const handleFinalSave = async () => {
-    const url = initialQuote
+    const url = isEditingMode
       ? `https://app.jteanalytics.cl/cotizaciones/quotes/${initialQuote.id}`
       : `https://app.jteanalytics.cl/cotizaciones/quotes`;
 
-    const method = initialQuote ? "PATCH" : "POST";
+    const method = isEditingMode ? "PATCH" : "POST";
 
     try {
       const res = await fetch(url, {
@@ -125,7 +132,7 @@ export default function CreateQuote({
       {showSummary && (
         <SaveSummaryModal
           data={form}
-          isEditing={!!initialQuote}
+          isEditing={!!isEditingMode}
           onConfirm={handleFinalSave}
           onCancel={() => setShowSummary(false)}
         />
@@ -134,9 +141,11 @@ export default function CreateQuote({
       <div className="card shadow mb-4">
         <div className="card-header d-flex justify-content-between align-items-center bg-primary text-white">
           <h4 className="mb-0">
-            {initialQuote
+            {isEditingMode
               ? `Editar Cotización: ${initialQuote.folio}`
-              : "Nueva Cotización"}
+              : isDuplicate
+                ? "Duplicar Cotización"
+                : "Nueva Cotización"}
           </h4>
           <button
             className="btn btn-close btn-close-white"
@@ -304,7 +313,6 @@ export default function CreateQuote({
                   </tr>
                 </tbody>
               </table>
-              <small className="text-muted fst-italic"></small>
             </div>
 
             <div className="d-flex justify-content-end mb-3 mt-3">
@@ -374,7 +382,7 @@ export default function CreateQuote({
 
             <div className="d-grid gap-2">
               <button type="submit" className="btn btn-success btn-lg">
-                {initialQuote ? "Revisar y Actualizar" : "Revisar y Guardar"}
+                {isEditingMode ? "Revisar y Actualizar" : "Revisar y Guardar"}
               </button>
             </div>
           </form>

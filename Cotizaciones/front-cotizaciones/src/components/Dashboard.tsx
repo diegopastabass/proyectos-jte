@@ -5,11 +5,13 @@ import PDFQuote from "./PDFQuote";
 import CreateQuote from "./CreateQuote";
 import DeleteConfirmModal from "./DeleteConfimModal";
 
+// Interfaces
 interface Props {
   token: string;
   onCreateClick: () => void;
 }
 
+// Component
 export default function Dashboard({ token, onCreateClick }: Props) {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [isGrid, setIsGrid] = useState(false);
@@ -17,7 +19,9 @@ export default function Dashboard({ token, onCreateClick }: Props) {
 
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   const [deletingQuote, setDeletingQuote] = useState<Quote | null>(null);
+  const [duplicatingQuote, setDuplicatingQuote] = useState<Quote | null>(null);
 
+  // Methods
   const fetchQuotes = () => {
     fetch("https://app.jteanalytics.cl/cotizaciones/quotes", {
       headers: { Authorization: `Bearer ${token}` },
@@ -31,7 +35,6 @@ export default function Dashboard({ token, onCreateClick }: Props) {
     fetchQuotes();
   }, [token]);
 
-  // Lógica para confirmar la eliminación
   const handleConfirmDelete = async () => {
     if (!deletingQuote) return;
 
@@ -74,15 +77,20 @@ export default function Dashboard({ token, onCreateClick }: Props) {
     }
   };
 
-  // Si hay una cotización en edición, mostramos el formulario
-  if (editingQuote) {
+  // Renderers
+  if (editingQuote || duplicatingQuote) {
     return (
       <CreateQuote
         token={token}
-        initialQuote={editingQuote}
-        onCancel={() => setEditingQuote(null)}
+        initialQuote={editingQuote || duplicatingQuote}
+        isDuplicate={!!duplicatingQuote}
+        onCancel={() => {
+          setEditingQuote(null);
+          setDuplicatingQuote(null);
+        }}
         onSuccess={() => {
           setEditingQuote(null);
+          setDuplicatingQuote(null);
           fetchQuotes();
         }}
       />
@@ -119,7 +127,6 @@ export default function Dashboard({ token, onCreateClick }: Props) {
 
         <div className="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
           <div className="btn-group">
-            {/* Botón Editar */}
             <button
               className="btn btn-outline-warning btn-sm"
               onClick={() => setEditingQuote(q)}
@@ -128,7 +135,14 @@ export default function Dashboard({ token, onCreateClick }: Props) {
               <i className="bi bi-pencil-fill"></i>
             </button>
 
-            {/* Botón Eliminar (Abre Modal) */}
+            <button
+              className="btn btn-outline-info btn-sm"
+              onClick={() => setDuplicatingQuote(q)}
+              title="Duplicar cotización"
+            >
+              <i className="bi bi-copy"></i>
+            </button>
+
             <button
               className="btn btn-outline-danger btn-sm"
               onClick={() => setDeletingQuote(q)}
@@ -161,7 +175,6 @@ export default function Dashboard({ token, onCreateClick }: Props) {
 
   return (
     <div>
-      {/* Renderizamos el Modal si hay una cotización para eliminar */}
       {deletingQuote && (
         <DeleteConfirmModal
           quote={deletingQuote}

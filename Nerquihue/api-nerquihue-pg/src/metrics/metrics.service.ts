@@ -6,7 +6,7 @@ import { DateRangeDto } from './models/dto/date-range.dto';
 import { MetricSnapshot, Metric } from './models/types';
 
 interface DailyQueryResult {
-  day: Date; 
+  day: Date;
   daily_value: number;
 }
 
@@ -140,7 +140,10 @@ export class SsrNerquihueService {
     );
 
     return results.map((row) => ({
-      time: typeof row.day === 'string' ? row.day : row.day.toISOString().split('T')[0],
+      time:
+        typeof row.day === 'string'
+          ? row.day
+          : row.day.toISOString().split('T')[0],
       value: Number(row.daily_value),
     }));
   }
@@ -176,7 +179,10 @@ export class SsrNerquihueService {
     );
 
     return results.map((row) => ({
-      time: typeof row.day === 'string' ? row.day : row.day.toISOString().split('T')[0],
+      time:
+        typeof row.day === 'string'
+          ? row.day
+          : row.day.toISOString().split('T')[0],
       value: Number(row.daily_value),
     }));
   }

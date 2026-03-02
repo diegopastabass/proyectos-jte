@@ -5,6 +5,16 @@ import { Telemetria } from './models/metrics.entity';
 import { DateRangeDto } from './models/dto/date-range.dto';
 import { MetricSnapshot, Metric } from './models/types';
 
+// formatDBDate
+const formatDBDate = (date: string | Date): string => {
+  const d = new Date(date);
+  const offset = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - offset)
+    .toISOString()
+    .slice(0, 19)
+    .replace('T', ' ');
+};
+
 @Injectable()
 export class CarracedoService {
   constructor(
@@ -31,7 +41,7 @@ export class CarracedoService {
       const key = row.mt_name.replace(prefix, '');
       acc[key] = {
         value: Number(row.mt_value),
-        time: new Date(row.mt_time_2).toISOString(),
+        time: formatDBDate(row.mt_time_2),
       };
       return acc;
     }, {});
@@ -87,8 +97,6 @@ export class CarracedoService {
   async getNivel(dto: DateRangeDto): Promise<Metric[]> {
     const hasRange = dto.start && dto.end;
 
-    // TypeORM abstrae bien las diferencias aquí,
-    // pero nos aseguramos de crear objetos Date válidos.
     if (hasRange) {
       const start = new Date(`${dto.start}T00:00:00`);
       const end = new Date(`${dto.end}T23:59:59`);
@@ -102,7 +110,7 @@ export class CarracedoService {
       });
 
       return results.map((row) => ({
-        time: row.mt_time_2.toISOString(),
+        time: formatDBDate(row.mt_time_2),
         value: Number(row.mt_value),
       }));
     }
@@ -114,7 +122,7 @@ export class CarracedoService {
     });
 
     return results.reverse().map((row) => ({
-      time: row.mt_time_2.toISOString(),
+      time: formatDBDate(row.mt_time_2),
       value: Number(row.mt_value),
     }));
   }
@@ -136,7 +144,7 @@ export class CarracedoService {
       });
 
       return results.map((row) => ({
-        time: row.mt_time_2.toISOString(),
+        time: formatDBDate(row.mt_time_2),
         value: Number(row.mt_value),
       }));
     }
@@ -148,7 +156,7 @@ export class CarracedoService {
     });
 
     return results.reverse().map((row) => ({
-      time: row.mt_time_2.toISOString(),
+      time: formatDBDate(row.mt_time_2),
       value: Number(row.mt_value),
     }));
   }

@@ -5,14 +5,18 @@ import PDFQuote from "./PDFQuote";
 import CreateQuote from "./CreateQuote";
 import DeleteConfirmModal from "./DeleteConfimModal";
 
-// Interfaces
 interface Props {
   token: string;
   onCreateClick: () => void;
+  onAuthError: () => void;
 }
 
 // Component
-export default function Dashboard({ token, onCreateClick }: Props) {
+export default function Dashboard({
+  token,
+  onCreateClick,
+  onAuthError,
+}: Props) {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [isGrid, setIsGrid] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
@@ -21,14 +25,29 @@ export default function Dashboard({ token, onCreateClick }: Props) {
   const [deletingQuote, setDeletingQuote] = useState<Quote | null>(null);
   const [duplicatingQuote, setDuplicatingQuote] = useState<Quote | null>(null);
 
-  // Methods
+  // fetchQuotes
   const fetchQuotes = () => {
     fetch("https://app.jteanalytics.cl/cotizaciones/quotes", {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((res) => res.json())
-      .then((data) => setQuotes(data))
-      .catch(console.error);
+      .then((res) => {
+        if (res.status === 401 || res.status === 403) {
+          onAuthError();
+          throw new Error("Token expirado");
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setQuotes(data);
+        } else {
+          setQuotes([]);
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+        setQuotes([]);
+      });
   };
 
   useEffect(() => {

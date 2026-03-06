@@ -56,6 +56,7 @@ function App() {
               <Dashboard
                 token={token!}
                 onCreateClick={() => setView("create")}
+                onAuthError={handleLogout}
               />
             )}
 

@@ -75,6 +75,12 @@ export default function ExportReports({ user, onLogout, onBack }: Props) {
       return;
     }
 
+    const first = rows[0];
+    const last = rows[rows.length - 1];
+
+    const getDiff = (key: string) =>
+      ((last[key] || 0) - (first[key] || 0)).toFixed(2);
+
     const sum = (key: string) =>
       rows.reduce((acc, curr) => acc + (curr[key] || 0), 0);
     const count = (key: string) =>
@@ -84,11 +90,10 @@ export default function ExportReports({ user, onLogout, onBack }: Props) {
       return c > 0 ? (sum(key) / c).toFixed(2) : 0;
     };
 
-    // Cálculos específicos solicitados
     const statsObj = {
-      horometroTotal: sum("horometro").toFixed(2), // Sumatoria
-      caudalimetroFin: rows[rows.length - 1].caudalimetro || 0, // Último valor
-      energiaProm: avg("energia"),
+      horometroTotal: getDiff("horometro"),
+      caudalimetroFin: getDiff("caudalimetro"),
+      energiaProm: getDiff("energia"),
       estaticoProm: avg("estatico"),
       dinamicoProm: avg("dinamico"),
       cloroBombaProm: avg("cloroBomba"),
@@ -306,19 +311,17 @@ export default function ExportReports({ user, onLogout, onBack }: Props) {
                 <div className="card-body">
                   <div className="row text-center">
                     <div className="col-md-3 mb-3">
-                      <div className="text-muted small">Horómetro Total</div>
+                      <div className="text-muted small">Horómetro </div>
                       <div className="fs-5 fw-bold">{stats.horometroTotal}</div>
                     </div>
                     <div className="col-md-3 mb-3">
-                      <div className="text-muted small">
-                        Caudalímetro (Último)
-                      </div>
+                      <div className="text-muted small">Caudalímetro</div>
                       <div className="fs-5 fw-bold">
                         {stats.caudalimetroFin}
                       </div>
                     </div>
                     <div className="col-md-3 mb-3">
-                      <div className="text-muted small">Energía Prom.</div>
+                      <div className="text-muted small">Energía.</div>
                       <div className="fs-5 fw-bold">
                         {stats.energiaProm} kWh
                       </div>

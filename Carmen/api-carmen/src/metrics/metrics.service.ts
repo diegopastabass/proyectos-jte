@@ -32,9 +32,11 @@ export class SsrCarmenService {
 
   // Snapshot
   async getSnapshot(): Promise<{
-    snapshot: MetricSnapshot;
-    tiempo_vaciado: number;
-    tiempo_vaciado_formatted: string;
+    snapshot: { POZO: MetricSnapshot; SENTINA: MetricSnapshot };
+    tiempo_vaciado_pozo: number;
+    tiempo_vaciado_formatted_pozo: string;
+    tiempo_vaciado_sentina: number;
+    tiempo_vaciado_formatted_sentina: string;
   }> {
     const results = await this.repo.query(`
     SELECT t.mt_name, t.mt_value, t.mt_time_2
@@ -47,20 +49,37 @@ export class SsrCarmenService {
     ON t.mt_name = latest.mt_name AND t.mt_time_2 = latest.last_time
   `);
 
-    const prefix = 'SSR_CARMEN_BAJO_POZO--slave.';
+    const PREFIX_POZO = 'SSR_CARMEN_BAJO_POZO--slave.';
+    const PREFIX_SENTINA = 'SSR_CARMEN_BAJO_SENTINA--slave.';
 
-    const snapshot: MetricSnapshot = results.reduce(
-      (acc: MetricSnapshot, row: any) => {
-        const key = row.mt_name.replace(prefix, '');
-        acc[key] = {
-          value: Number(row.mt_value),
-          time: new Date(row.mt_time_2).toISOString(),
-        };
+    const snapshot = results.reduce(
+      (acc, row: any) => {
+        const name = row.mt_name as string;
+        let category: 'POZO' | 'SENTINA' | null = null;
+        let cleanKey = '';
+
+        // Identificar categoría y limpiar prefijo
+        if (name.startsWith(PREFIX_POZO)) {
+          category = 'POZO';
+          cleanKey = name.replace(PREFIX_POZO, '');
+        } else if (name.startsWith(PREFIX_SENTINA)) {
+          category = 'SENTINA';
+          cleanKey = name.replace(PREFIX_SENTINA, '');
+        }
+
+        if (category) {
+          acc[category][cleanKey] = {
+            value: Number(row.mt_value),
+            time: new Date(row.mt_time_2).toISOString(),
+          };
+        }
+
         return acc;
       },
-      {},
+      { POZO: {}, SENTINA: {} },
     );
 
+    // Funciones internas de cálculo
     const calcularTiempoVaciado = async (nombreEstanque: string) => {
       const mediciones = await this.repo.find({
         where: { mt_name: nombreEstanque },
@@ -98,58 +117,24 @@ export class SsrCarmenService {
       return { tiempo, formatted };
     };
 
-    const estanque = await calcularTiempoVaciado(
+    const estanquePozo = await calcularTiempoVaciado(
       'SSR_CARMEN_BAJO_POZO--slave.nivel',
+    );
+    const estanqueSentina = await calcularTiempoVaciado(
+      'SSR_CARMEN_BAJO_SENTINA--slave.nivel',
     );
 
     return {
       snapshot,
-      tiempo_vaciado: estanque.tiempo,
-      tiempo_vaciado_formatted: estanque.formatted,
+      tiempo_vaciado_pozo: estanquePozo.tiempo,
+      tiempo_vaciado_formatted_pozo: estanquePozo.formatted,
+      tiempo_vaciado_sentina: estanqueSentina.tiempo,
+      tiempo_vaciado_formatted_sentina: estanqueSentina.formatted,
     };
   }
 
-  // Totalizador
-  async getTotalizador(dto: DateRangeDto): Promise<Metric[]> {
-    const range = dto;
-    if (!range) throw new Error('Se requiere rango de fechas válido.');
-
-    const start = range.start + ' 00:00:00';
-    const end = range.end + ' 23:59:59';
-
-    const results: DailyQueryResult[] = await this.repo.query(
-      `
-        WITH bounds AS (
-          SELECT mt_time_2::DATE AS day, MIN(mt_time_2) AS first_ts, MAX(mt_time_2) AS last_ts
-          FROM ssr_carmen_bajo
-          WHERE mt_name = 'SSR_CARMEN_BAJO_POZO--slave.totalizador'
-          AND mt_time_2 BETWEEN $1 AND $2
-          GROUP BY mt_time_2::DATE
-        )
-        SELECT b.day,
-          (MAX(CAST(s_last.mt_value AS NUMERIC(30,6))) - MIN(CAST(s_first.mt_value AS NUMERIC(30,6)))) AS daily_value
-        FROM bounds b
-        LEFT JOIN ssr_carmen_bajo s_first
-          ON s_first.mt_name = 'SSR_CARMEN_BAJO_POZO--slave.totalizador' AND s_first.mt_time_2 = b.first_ts
-        LEFT JOIN ssr_carmen_bajo s_last
-          ON s_last.mt_name = 'SSR_CARMEN_BAJO_POZO--slave.totalizador' AND s_last.mt_time_2 = b.last_ts
-        GROUP BY b.day
-        ORDER BY b.day ASC
-      `,
-      [start, end],
-    );
-
-    return results.map((row) => ({
-      time:
-        typeof row.day === 'string'
-          ? row.day
-          : row.day.toISOString().split('T')[0],
-      value: Number(row.daily_value),
-    }));
-  }
-
   // Horometro
-  async getHorometro(dto: DateRangeDto): Promise<Metric[]> {
+  async getHorometroBajo(dto: DateRangeDto): Promise<Metric[]> {
     const range = dto;
     if (!range) throw new Error('Se requiere rango de fechas válido.');
 
@@ -187,8 +172,46 @@ export class SsrCarmenService {
     }));
   }
 
+  async getHorometroSentina(dto: DateRangeDto): Promise<Metric[]> {
+    const range = dto;
+    if (!range) throw new Error('Se requiere rango de fechas válido.');
+
+    const start = range.start + ' 00:00:00';
+    const end = range.end + ' 23:59:59';
+
+    const results: DailyQueryResult[] = await this.repo.query(
+      `
+        WITH bounds AS (
+          SELECT mt_time_2::DATE AS day, MIN(mt_time_2) AS first_ts, MAX(mt_time_2) AS last_ts
+          FROM ssr_carmen_bajo
+          WHERE mt_name = 'SSR_CARMEN_BAJO_SENTINA--slave.horometro'
+          AND mt_time_2 BETWEEN $1 AND $2
+          GROUP BY mt_time_2::DATE
+        )
+        SELECT b.day,
+          (MAX(CAST(s_last.mt_value AS NUMERIC(30,6))) - MIN(CAST(s_first.mt_value AS NUMERIC(30,6)))) AS daily_value
+        FROM bounds b
+        LEFT JOIN ssr_carmen_bajo s_first
+          ON s_first.mt_name = 'SSR_CARMEN_BAJO_SENTINA--slave.horometro' AND s_first.mt_time_2 = b.first_ts
+        LEFT JOIN ssr_carmen_bajo s_last
+          ON s_last.mt_name = 'SSR_CARMEN_BAJO_SENTINA--slave.horometro' AND s_last.mt_time_2 = b.last_ts
+        GROUP BY b.day
+        ORDER BY b.day ASC
+      `,
+      [start, end],
+    );
+
+    return results.map((row) => ({
+      time:
+        typeof row.day === 'string'
+          ? row.day
+          : row.day.toISOString().split('T')[0],
+      value: Number(row.daily_value),
+    }));
+  }
+
   // Nivel
-  async getNivel(dto: DateRangeDto): Promise<Metric[]> {
+  async getNivelBajo(dto: DateRangeDto): Promise<Metric[]> {
     const range = this.normalizeDateRange(dto);
     if (!range) {
       const results = await this.repo.find({
@@ -223,11 +246,11 @@ export class SsrCarmenService {
   }
 
   // Nivel 2
-  async getNivel2(dto: DateRangeDto): Promise<Metric[]> {
+  async getNivelSentina(dto: DateRangeDto): Promise<Metric[]> {
     const range = this.normalizeDateRange(dto);
     if (!range) {
       const results = await this.repo.find({
-        where: { mt_name: 'SSR_CARMEN_BAJO_POZO--slave.nivel' },
+        where: { mt_name: 'SSR_CARMEN_BAJO_SENTINA--slave.nivel' },
         order: { mt_time_2: 'DESC' },
         take: 100,
       });
@@ -242,7 +265,7 @@ export class SsrCarmenService {
 
     const results = await this.repo.find({
       where: {
-        mt_name: 'SSR_CARMEN_BAJO_POZO--slave.nivel',
+        mt_name: 'SSR_CARMEN_BAJO_SENTINA--slave.nivel',
         mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
           start,
           end,
@@ -252,55 +275,6 @@ export class SsrCarmenService {
     });
 
     return results.map((row) => ({
-      time: row.mt_time_2.toISOString(),
-      value: Number(row.mt_value),
-    }));
-  }
-
-  // Caudal
-  async getCaudal(dto: DateRangeDto): Promise<Metric[]> {
-    const range = this.normalizeDateRange(dto);
-
-    if (!range) {
-      const results = await this.repo.find({
-        where: { mt_name: 'SSR_CARMEN--slave.caudal' },
-        order: { mt_time_2: 'DESC' },
-        take: 100,
-      });
-
-      return results.reverse().map((row) => ({
-        time: row.mt_time_2.toISOString(),
-        value: Number(row.mt_value),
-      }));
-    }
-
-    const { start, end } = range;
-
-    const results = await this.repo.find({
-      where: {
-        mt_name: 'SSR_CARMEN_BAJO_POZO--slave.caudal',
-        mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
-          start,
-          end,
-        }),
-      },
-      order: { mt_time_2: 'ASC' },
-    });
-
-    return results.map((row) => ({
-      time: row.mt_time_2.toISOString(),
-      value: Number(row.mt_value),
-    }));
-  }
-
-  async getLastTwoLevels(): Promise<Metric[]> {
-    const results = await this.repo.find({
-      where: { mt_name: 'SSR_CARMEN_BAJO_POZO--slave.nivel' },
-      order: { mt_time_2: 'DESC' },
-      take: 2,
-    });
-
-    return results.reverse().map((row) => ({
       time: row.mt_time_2.toISOString(),
       value: Number(row.mt_value),
     }));

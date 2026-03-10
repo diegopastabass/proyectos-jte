@@ -1,66 +1,42 @@
-import psycopg2
-import requests
 import time
 import logging
+import requests
+import psycopg2
 import os
 from datetime import datetime
-from psycopg2.extras import RealDictCursor
-from psycopg2 import pool
-from logging.handlers import RotatingFileHandler
 from dotenv import load_dotenv
 
-# ================== RUTAS ==================
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-LOG_FILE = os.path.join(BASE_DIR, "monitoreo_estanques.log")
-ENV_FILE = os.path.join(BASE_DIR, ".env")
+load_dotenv()
 
-# ================== CONFIGURACION ==================
-load_dotenv(ENV_FILE)
-
+# --- Configuración ---
 DB_CONFIG = {
     "host": os.getenv("DB_HOST"),
-    "port": os.getenv("DB_PORT", 5432),
+    "port": os.getenv("DB_PORT"),
     "user": os.getenv("DB_USER"),
     "password": os.getenv("DB_PASS"),
     "dbname": os.getenv("DB_NAME"),
-    "sslmode": os.getenv("DB_SSLMODE", "require")
+    "sslmode": os.getenv("DB_SSLMODE", "require"),
 }
 
 API_URL = os.getenv("API_URL")
 TOKEN = os.getenv("API_TOKEN")
 TO = os.getenv("API_TO")
+INTERVALO_MINUTOS = 5
 
-def get_dynamic_config():
-    return {
-        "INTERVALO_MINUTOS": int(os.getenv("INTERVALO_MINUTOS", 1)),
-        "NIVEL_ALERTA_CARMEN": float(os.getenv("NIVEL_ALERTA", 1.5)),
-    }
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+LOG_FILE = os.path.join(BASE_DIR, "logs.txt")
 
 SENSOR_CARMEN = "SSR_CARMEN_BAJO_POZO--slave.nivel"
 SENSOR_SENTINA = "SSR_CARMEN_BAJO_SENTINA--slave.nivel"
 
-# ================== LOGGING ==================
-logger = logging.getLogger("MonitoreoEstanques")
-logger.setLevel(logging.INFO)
-file_handler = RotatingFileHandler(LOG_FILE, maxBytes=5_000_000, backupCount=5)
-console_handler = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
-file_handler.setFormatter(formatter)
-console_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
-logger.addHandler(console_handler)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.FileHandler(LOG_FILE, encoding="utf-8", mode="a")]
+)
 
-# ================== POOL ==================
-try:
-    connection_pool = psycopg2.pool.SimpleConnectionPool(1, 10, **DB_CONFIG)
-    if connection_pool:
-        logger.info("Pool de conexiones a PostgreSQL inicializado.")
-except Exception as e:
-    logger.critical(f"Error inicializando el pool: {e}")
-    raise
-
-# ================== OBTENER NIVELES ==================
-def obtener_niveles(nombre_sensor, factor_division=1):
+# --- Funciones ---
+def obtener_niveles(sensor):
     query = """
         SELECT mt_value, mt_time_2 
         FROM ssr_carmen_bajo
@@ -68,30 +44,28 @@ def obtener_niveles(nombre_sensor, factor_division=1):
         ORDER BY mt_time_2 DESC
         LIMIT 2;
     """
-    conn = None
+    
     try:
-        conn = connection_pool.getconn()
+        conn = psycopg2.connect(**DB_CONFIG)
         cursor = conn.cursor()
-        cursor.execute(query, (nombre_sensor,))
+        cursor.execute(query, (sensor,))
         rows = cursor.fetchall()
         cursor.close()
-    except Exception as e:
-        logger.error(f"Error en consulta: {e}")
-        return None, None, None, None
-    finally:
-        if conn:
-            connection_pool.putconn(conn)
+        conn.close()
 
-    if len(rows) < 2:
-        logger.warning(f"Datos insuficientes para {nombre_sensor}.")
-        return None, None, None, None
+        if len(rows) < 2:
+            logging.warning("No hay suficientes datos en la BD.")
+            return None, None, None, None
 
-    val_actual = float(rows[0][0]) / factor_division
-    val_anterior = float(rows[1][0]) / factor_division
+        nivel_actual, time_actual = rows[0]
+        nivel_anterior, time_anterior = rows[1]
+
+        return float(nivel_actual), float(nivel_anterior), time_actual, time_anterior
     
-    return val_actual, val_anterior, rows[0][1], rows[1][1]
+    except Exception as e:
+        logging.error(f"Error de conexión a BD: {e}")
+        return None, None, None, None
 
-# ================== CALCULAR TIEMPO ==================
 def calcular_tiempo_vaciado(nivel_actual, nivel_anterior, time_actual, time_anterior):
     delta_nivel = nivel_actual - nivel_anterior
     delta_tiempo = (time_actual - time_anterior).total_seconds()
@@ -102,85 +76,59 @@ def calcular_tiempo_vaciado(nivel_actual, nivel_anterior, time_actual, time_ante
     tasa_descenso = abs(delta_nivel) / delta_tiempo
     tiempo_restante_segundos = nivel_actual / tasa_descenso
 
-    horas = int(tiempo_restante_segundos // 3600)
-    minutos = int((tiempo_restante_segundos % 3600) // 60)
-    segundos = int(tiempo_restante_segundos % 60)
-    
-    return f"{horas:02d}:{minutos:02d}:{segundos:02d}"
+    # Corrección para compatibilidad con datetime
+    return str(datetime.utcfromtimestamp(tiempo_restante_segundos).strftime("%H:%M:%S"))
 
-# ================== ENVIAR ALERTA ==================
-def enviar_alerta(mensaje: str):
-    data = {"token": TOKEN, "to": TO, "body": mensaje}
+def enviar_alerta(nivel_actual, tiempo_vaciado):
+    body_msg1 = (
+        f"⚠️ Nivel de Estanque crítico\n"
+        f"Nivel Actual: {nivel_actual:.2f} m\n"
+        f"Tiempo Estimado de Vaciado: {tiempo_vaciado} Hrs"
+    )
+    body_msg2 = (
+        f"⚠️ Nivel de Estanque en Rebalse\n"
+        f"Nivel Actual: {nivel_actual:.2f} m"
+    )
+    if (tiempo_vaciado is not None):
+        data1 = {"token": TOKEN, "to": TO, "body": body_msg1}
+    else:
+        data2 = {"token": TOKEN, "to": TO, "body": body_msg2}
+
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+
     try:
-        response = requests.post(API_URL, data=data, timeout=10)
-        if response.status_code == 200:
-            logger.info(f"Alerta enviada: {mensaje[:30]}...")
-    except Exception as e:
-        logger.error(f"Error en envío de alerta: {e}")
+        response = requests.post(API_URL, data=data, headers=headers, timeout=10)
+        logging.info(f"Respuesta API (status {response.status_code}): {response.text}")
+        response.raise_for_status()
+    except requests.RequestException as e:
+        logging.error(f"Error al enviar alerta: {e}")
 
-# ================== PROCESAR ESTANQUE ==================
-def procesar_estanque(sensor, nombre_publico, nivel_vaciado, nivel_rebalse, factor=1, umbral_inclusivo=False):
-    res = obtener_niveles(sensor, factor)
-    if res[0] is None:
-        return False
+def monitorear(nivel_min, nivel_max, sensor, divisor):
+    logging.info("Consultando datos de estanque...")
+    nivel_actual, nivel_anterior, time_actual, time_anterior = obtener_niveles(sensor)
 
-    n_act, n_ant, t_act, t_ant = res
-    logger.info(f"[{nombre_publico}] Nivel Actual: {n_act:.2f} m | Nivel Anterior: {n_ant:.2f} m | Hora: {t_act}")
-
-    condicion_v = (n_act <= nivel_vaciado) if umbral_inclusivo else (n_act < nivel_vaciado)
-
-    if n_act < n_ant and condicion_v:
-        tiempo = calcular_tiempo_vaciado(n_act, n_ant, t_act, t_ant)
-        mensaje = (
-            f"🚨 ALERTA NIVEL CRÍTICO 🚨\n"
-            f"Estanque: {nombre_publico}\n"
-            f"Nivel: {n_act:.2f} m\n"
-            f"Vaciado estimado: {tiempo if tiempo else 'Calculando...'}"
-        )
-        enviar_alerta(mensaje)
-        return True
-
-    elif n_act > n_ant and n_act > nivel_rebalse:
-        mensaje = (
-            f"🚨 ALERTA REBALSE 🚨\n"
-            f"Estanque: {nombre_publico}\n"
-            f"Nivel: {n_act:.2f} m"
-        )
-        enviar_alerta(mensaje)
-        return True
-    
-    return False
-
-# ================== MONITOREAR ==================
-def monitorear():
-    logger.info("Servicio de monitoreo iniciado.")
-    while True:
-        cfg = get_dynamic_config()
-        
-        alerta_carmen = procesar_estanque(
-            SENSOR_CARMEN, 
-            "Estanque Carmen", 
-            cfg["NIVEL_ALERTA_CARMEN"], 
-            nivel_rebalse=3.4,
-            factor=1,
-            umbral_inclusivo=False
-        )
-
-        alerta_sentina = procesar_estanque(
-            SENSOR_SENTINA,
-            "Estanque Sentina",
-            nivel_vaciado=1.0,
-            nivel_rebalse=2.2,
-            factor=100,
-            umbral_inclusivo=True
-        )
-
-        hay_alerta = alerta_carmen or alerta_sentina
-        intervalo = cfg["INTERVALO_MINUTOS"] if hay_alerta else 1
-        time.sleep(intervalo * 60)
+    if nivel_actual is not None and nivel_anterior is not None:
+        if nivel_actual / divisor < nivel_anterior / divisor and nivel_actual / divisor < nivel_min:
+            tiempo_vaciado = calcular_tiempo_vaciado(
+                nivel_actual / divisor, nivel_anterior / divisor, time_actual, time_anterior
+            )
+            if tiempo_vaciado:
+                enviar_alerta(nivel_actual / divisor, tiempo_vaciado)
+            else:
+                logging.info("No se pudo calcular tiempo de vaciado.")
+        if nivel_actual / divisor > nivel_anterior / divisor and nivel_actual / divisor > nivel_max:
+            enviar_alerta(nivel_actual / divisor, None)
+        else:
+            logging.info("Condiciones no cumplidas. Todo normal. Nivel actual: {} m | Nivel anterior: {} m | Sensor: {}".format(nivel_actual / divisor, nivel_anterior / divisor, sensor))
+    else:
+        logging.warning("No se obtuvieron datos válidos.")
 
 if __name__ == "__main__":
     try:
-        monitorear()
+        while True:
+            monitorear(1.5, 3.4, SENSOR_CARMEN, 1)
+            monitorear(1, 2.2, SENSOR_SENTINA, 100)
+            logging.info(f"Esperando {INTERVALO_MINUTOS} minutos para la siguiente consulta...")
+            time.sleep(INTERVALO_MINUTOS * 60)
     except KeyboardInterrupt:
-        logger.info("Cierre detectado.")
+        logging.info("Servicio detenido manualmente.")

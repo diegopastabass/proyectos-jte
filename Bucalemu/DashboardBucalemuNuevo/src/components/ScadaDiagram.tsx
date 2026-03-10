@@ -3,6 +3,7 @@ import Tank from "./Tank";
 import newTankImage from "../assets/newTank.png";
 import newPumpImage from "../assets/newPump.png";
 import newElbowImage from "../assets/newElbow.png";
+import Tank2 from "./Tank2";
 
 interface Data {
   data: Datos;
@@ -140,7 +141,7 @@ const ScadaDiagram: React.FC<Data> = ({ data, vaciado }) => {
         }
       />
 
-      <Tank
+      <Tank2
         spriteWidth={SPRITE_SIZE}
         spriteHeight={SPRITE_SIZE}
         displaySize={RENDER_SIZE}

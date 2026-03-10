@@ -11,23 +11,23 @@ export class SsrCarmenController {
     return this.service.getSnapshot();
   }
 
-  @Get('totalizador')
-  getTotalizador(@Query() dto: DateRangeDto) {
-    return this.service.getTotalizador(dto);
+  @Get('horometro_bajo')
+  getHorometroBajo(@Query() dto: DateRangeDto) {
+    return this.service.getHorometroBajo(dto);
   }
 
-  @Get('horometro')
-  getHorometro(@Query() dto: DateRangeDto) {
-    return this.service.getHorometro(dto);
+  @Get('horometro_sentina')
+  getHorometroSentina(@Query() dto: DateRangeDto) {
+    return this.service.getHorometroSentina(dto);
   }
 
-  @Get('nivel')
-  getNivel(@Query() dto: DateRangeDto) {
-    return this.service.getNivel(dto);
+  @Get('nivel_bajo')
+  getNivelBajo(@Query() dto: DateRangeDto) {
+    return this.service.getNivelBajo(dto);
   }
 
-  @Get('caudal')
-  getCaudal(@Query() dto: DateRangeDto) {
-    return this.service.getCaudal(dto);
+  @Get('nivel_sentina')
+  getNivelSentina(@Query() dto: DateRangeDto) {
+    return this.service.getNivelSentina(dto);
   }
 }

@@ -3,20 +3,24 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
 // Tipos para el combobox
-type ExportDataType = "nivel" | "caudal" | "horometro" | "totalizador";
+type ExportDataType =
+  | "nivelPozo"
+  | "horometroPozo"
+  | "nivelSentina"
+  | "horometroSentina";
 
 const EXPORT_OPTIONS = {
-  nivel: "Nivel Estanque",
-  caudal: "Caudal",
-  horometro: "Horómetro",
-  totalizador: "Totalizador",
+  nivelPozo: "Nivel Estanque Pozo",
+  horometroPozo: "Horómetro Estanque Pozo",
+  nivelSentina: "Nivel Estanque Sentina",
+  horometroSentina: "Horómetro Estanque Sentina",
 };
 
 const ENDPOINT_MAP: Record<ExportDataType, string> = {
-  nivel: "nivel",
-  caudal: "caudal",
-  horometro: "horometro",
-  totalizador: "totalizador",
+  nivelPozo: "nivel",
+  horometroPozo: "horometro",
+  nivelSentina: "nivel",
+  horometroSentina: "horometro",
 };
 
 function Export() {
@@ -24,7 +28,7 @@ function Export() {
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(today);
   const [loading, setLoading] = useState(false);
-  const [exportType, setExportType] = useState<ExportDataType>("nivel");
+  const [exportType, setExportType] = useState<ExportDataType>("nivelPozo");
 
   const handleExport = async () => {
     if (!startDate || !endDate || !exportType) {
@@ -77,7 +81,7 @@ function Export() {
       alert(
         `Hubo un error al exportar el historial. Detalle: ${
           err instanceof Error ? err.message : "Error desconocido"
-        }`
+        }`,
       );
     } finally {
       setLoading(false);

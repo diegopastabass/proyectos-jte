@@ -18,13 +18,14 @@ ChartJS.register(
   LineElement,
   Tooltip,
   Legend,
-  Title
+  Title,
 );
 
 interface DropdownCardProps {
   isOpen: boolean;
   title: string;
   chartLabel: string;
+  divisor?: number;
   data: {
     time: string;
     value: number;
@@ -43,24 +44,22 @@ function DropdownCard({
   date,
   nivelMax = 3,
   nivelAlarma,
+  divisor = 1,
 }: DropdownCardProps) {
   const labels = data.map((d) =>
     new Date(d.time).toLocaleTimeString("es-CL", {
       hour: "2-digit",
       minute: "2-digit",
-    })
+    }),
   );
 
-  // Divisor solo para Estanque Nuevo
-  const divisor = title === "Estanque Nuevo" ? 100 : 1;
   const values = data.map((d) => d.value / divisor);
 
-  // Línea horizontal de alarma SOLO si viene el valor
   const alarmaDataset =
     nivelAlarma !== undefined
       ? {
           label: "Nivel de alarma",
-          data: Array(values.length).fill(nivelAlarma / divisor),
+          data: Array(values.length).fill(nivelAlarma),
           borderColor: "rgba(255, 0, 0, 0.7)",
           borderWidth: 1.5,
           pointRadius: 0,
@@ -109,7 +108,7 @@ function DropdownCard({
       y: {
         beginAtZero: true,
         min: 0, // nivel mínimo fijo
-        max: nivelMax / divisor, // máximo dinámico o default 3
+        max: nivelMax, // máximo dinámico o default 3
         ticks: {
           color: "#555",
         },

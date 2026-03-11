@@ -14,7 +14,7 @@ function Card(props: CardProps) {
         width: "100%",
         maxWidth: "1500px",
         minHeight: "50px",
-        maxHeight: "430px",
+        maxHeight: "480px",
       }}
     >
       <div className="card-body">{children}</div>

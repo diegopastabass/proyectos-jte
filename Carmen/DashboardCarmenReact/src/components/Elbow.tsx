@@ -46,10 +46,10 @@ const Elbow: React.FC<ElbowProps> = ({
       <div
         className="text-center alert alert-light "
         style={{
-          maxWidth: "300px",
+          maxWidth: "350px",
           position: "absolute",
-          top: 320,
-          left: 310,
+          top: 350,
+          left: 100,
           zIndex: 10,
         }}
       >

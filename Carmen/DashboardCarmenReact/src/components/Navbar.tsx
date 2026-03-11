@@ -1,15 +1,15 @@
-import { useState } from "react"; // Necesitas importar useState si aún no está importado
+// Imports
+import { useState } from "react";
 import lgoJte from "../assets/logoJte.png";
-import logoA from "../assets/logo_A.png";
-import logoB from "../assets/logo_B.png";
-import logoInacap from "../assets/logo_inacap.png";
-import lgon from "../assets/lgon.png";
+import logoCarmen from "../assets/logoCarmen.png";
 
+// NavbarProps
 interface NavbarProps {
   text?: string;
   children?: React.ReactNode;
 }
 
+// Navbar
 function Navbar(props: NavbarProps) {
   const { text, children } = props;
 
@@ -40,31 +40,25 @@ function Navbar(props: NavbarProps) {
     }
   }
 
-  // Lógica para alternar el modo de pantalla completa
+  // toggleFullScreen
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
-      // Entrar a pantalla completa
       document.documentElement
         .requestFullscreen()
         .then(() => {
           setIsFullScreen(true);
         })
         .catch((err) => {
-          console.error(
-            `Error al intentar activar pantalla completa: ${err.message}`
-          );
+          console.error(err.message);
         });
     } else {
-      // Salir de pantalla completa
       document
         .exitFullscreen()
         .then(() => {
           setIsFullScreen(false);
         })
         .catch((err) => {
-          console.error(
-            `Error al intentar desactivar pantalla completa: ${err.message}`
-          );
+          console.error(err.message);
         });
     }
   };
@@ -75,14 +69,15 @@ function Navbar(props: NavbarProps) {
       style={{ width: "98%", maxWidth: "100%" }}
     >
       <div className="container-fluid d-flex flex-wrap align-items-center justify-content-between gap-3">
-        {/* 1. Logo Principal (Marca) */}
         <a
           className="navbar-brand d-flex align-items-center gap-2 mb-0 me-lg-4"
-          href="/nerquihue/"
+          href="/carmen/"
         >
           <img src={lgoJte} alt="logo" width={50} height={34} />
-          <img src={lgon} alt="logoNerquihue" width={100} />
-          <span className="h5 mb-0 d-md-inline">SSR Nerquihue</span>
+          <img src={logoCarmen} alt="logo" width={100} />
+          <span className="h5 mb-0 d-none d-md-inline">
+            El Carmen Bajo - La Media Luna
+          </span>
         </a>
 
         <div className="d-flex align-items-center gap-2 flex-grow-1">
@@ -91,27 +86,6 @@ function Navbar(props: NavbarProps) {
               {formattedDate}
             </span>
           </div>
-        </div>
-
-        <div className="d-flex align-items-center gap-2">
-          <img
-            src={logoA}
-            alt="logoProOhiggins"
-            width={100}
-            className="d-none d-md-block"
-          />
-          <img
-            src={logoB}
-            alt="logoSecundarioB"
-            width={250}
-            className="d-none d-md-block"
-          />
-          <img
-            src={logoInacap}
-            alt="logoSecundarioC"
-            width={100}
-            className="d-none d-md-block"
-          />
         </div>
       </div>
 
@@ -137,4 +111,5 @@ function Navbar(props: NavbarProps) {
   );
 }
 
+// Export
 export default Navbar;

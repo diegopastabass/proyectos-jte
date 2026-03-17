@@ -194,6 +194,7 @@ function App() {
           chartLabel="Nivel del Estanque (m)"
           data={nivelChartDataPozo}
           nivelAlarma={1.5}
+          nivelMax={4}
         />
         <div className="my-2">
           <DropdownCardv2

@@ -30,7 +30,8 @@ export class SsrIdahueService {
     return { start: startDate, end: endDate };
   }
 
-  // Snapshot
+  // getSnapshot
+  // getSnapshot
   async getSnapshot(): Promise<{
     snapshot: { P1: MetricSnapshot; P2: MetricSnapshot };
     tiempo_vaciado_p1: number;
@@ -38,99 +39,113 @@ export class SsrIdahueService {
     tiempo_vaciado_p2: number;
     tiempo_vaciado_formatted_p2: string;
   }> {
-    const results = await this.repo.query(`
-    SELECT t.mt_name, t.mt_value, t.mt_time_2
-    FROM ssr_idahue t
-    INNER JOIN (
-      SELECT mt_name, MAX(mt_time_2) AS last_time
-      FROM ssr_idahue
-      GROUP BY mt_name
-    ) latest
-    ON t.mt_name = latest.mt_name AND t.mt_time_2 = latest.last_time
-  `);
+    try {
+      const results = await this.repo.query(`
+        SELECT t.mt_name, t.mt_value, t.mt_time_2
+        FROM ssr_idahue t
+        INNER JOIN (
+          SELECT mt_name, MAX(mt_time_2) AS last_time
+          FROM ssr_idahue
+          GROUP BY mt_name
+        ) latest
+        ON t.mt_name = latest.mt_name AND t.mt_time_2 = latest.last_time
+      `);
 
-    const PREFIX_PLANTA1 = 'PLANTA1_IDAHUE-slave.';
-    const PREFIX_PLANTA2 = 'PLANTA2_IDAHUE-slave.';
+      const PREFIX_PLANTA1 = 'PLANTA1_IDAHUE--slave.';
+      const PREFIX_PLANTA2 = 'PLANTA2_IDAHUE--slave.';
 
-    const snapshot = results.reduce(
-      (acc, row: any) => {
-        const name = row.mt_name as string;
-        let category: 'P1' | 'P2' | null = null;
-        let cleanKey = '';
+      const snapshot = results.reduce(
+        (acc, row: any) => {
+          const name = row.mt_name as string;
+          let category: 'P1' | 'P2' | null = null;
+          let cleanKey = '';
 
-        // Identificar categoría y limpiar prefijo
-        if (name.startsWith(PREFIX_PLANTA1)) {
-          category = 'P1';
-          cleanKey = name.replace(PREFIX_PLANTA1, '');
-        } else if (name.startsWith(PREFIX_PLANTA2)) {
-          category = 'P2';
-          cleanKey = name.replace(PREFIX_PLANTA2, '');
+          if (name.startsWith(PREFIX_PLANTA1)) {
+            category = 'P1';
+            cleanKey = name.replace(PREFIX_PLANTA1, '');
+          } else if (name.startsWith(PREFIX_PLANTA2)) {
+            category = 'P2';
+            cleanKey = name.replace(PREFIX_PLANTA2, '');
+          }
+
+          if (category) {
+            acc[category][cleanKey] = {
+              value: Number(row.mt_value),
+              time: new Date(row.mt_time_2).toISOString(),
+            };
+          }
+
+          return acc;
+        },
+        { P1: {}, P2: {} },
+      );
+
+      // calcularTiempoVaciado
+      const calcularTiempoVaciado = async (nombreEstanque: string) => {
+        const mediciones = await this.repo.find({
+          where: { mt_name: nombreEstanque },
+          order: { mt_time_2: 'DESC' },
+          take: 2,
+        });
+
+        if (mediciones.length < 2) {
+          return { tiempo: 0, formatted: 'Llenando...' };
         }
 
-        if (category) {
-          acc[category][cleanKey] = {
-            value: Number(row.mt_value),
-            time: new Date(row.mt_time_2).toISOString(),
-          };
+        const [actual, anterior] = mediciones;
+        const nivel_actual = Number(actual.mt_value);
+        const nivel_anterior = Number(anterior.mt_value);
+
+        const t_actual = actual.mt_time_2.getTime() / 1000;
+        const t_anterior = anterior.mt_time_2.getTime() / 1000;
+
+        if (!(nivel_actual < nivel_anterior && t_actual > t_anterior)) {
+          return { tiempo: 0, formatted: 'Llenando...' };
         }
 
-        return acc;
-      },
-      { P1: {}, P2: {} },
-    );
+        const tasa_vaciado =
+          (nivel_anterior - nivel_actual) / (t_actual - t_anterior);
+        const tiempo = Math.round(nivel_actual / tasa_vaciado);
 
-    // Funciones internas de cálculo
-    const calcularTiempoVaciado = async (nombreEstanque: string) => {
-      const mediciones = await this.repo.find({
-        where: { mt_name: nombreEstanque },
-        order: { mt_time_2: 'DESC' },
-        take: 2,
-      });
+        const h = Math.floor(tiempo / 3600);
+        const m = Math.floor((tiempo % 3600) / 60);
+        const s = tiempo % 60;
 
-      if (mediciones.length < 2) {
-        return { tiempo: 0, formatted: 'Llenando...' };
-      }
+        const formatted = `${h.toString().padStart(2, '0')} h ${m
+          .toString()
+          .padStart(2, '0')} m ${s.toString().padStart(2, '0')} s`;
 
-      const [actual, anterior] = mediciones;
-      const nivel_actual = Number(actual.mt_value);
-      const nivel_anterior = Number(anterior.mt_value);
+        return { tiempo, formatted };
+      };
 
-      const t_actual = actual.mt_time_2.getTime() / 1000;
-      const t_anterior = anterior.mt_time_2.getTime() / 1000;
+      const estanquePlanta1 = await calcularTiempoVaciado(
+        'PLANTA1_IDAHUE--slave.nivel',
+      );
+      const estanquePlanta2 = await calcularTiempoVaciado(
+        'PLANTA2_IDAHUE--slave.nivel',
+      );
 
-      if (!(nivel_actual < nivel_anterior && t_actual > t_anterior)) {
-        return { tiempo: 0, formatted: 'Llenando...' };
-      }
+      return {
+        snapshot,
+        tiempo_vaciado_p1: estanquePlanta1.tiempo,
+        tiempo_vaciado_formatted_p1: estanquePlanta1.formatted,
+        tiempo_vaciado_p2: estanquePlanta2.tiempo,
+        tiempo_vaciado_formatted_p2: estanquePlanta2.formatted,
+      };
+    } catch (error) {
+      console.error('ERROR EN GET_SNAPSHOT:', error);
 
-      const tasa_vaciado =
-        (nivel_anterior - nivel_actual) / (t_actual - t_anterior);
-      const tiempo = Math.round(nivel_actual / tasa_vaciado);
-
-      const h = Math.floor(tiempo / 3600);
-      const m = Math.floor((tiempo % 3600) / 60);
-      const s = tiempo % 60;
-
-      const formatted = `${h.toString().padStart(2, '0')} h ${m
-        .toString()
-        .padStart(2, '0')} m ${s.toString().padStart(2, '0')} s`;
-
-      return { tiempo, formatted };
-    };
-
-    const estanquePlanta1 = await calcularTiempoVaciado(
-      'PLANTA1_IDAHUE-slave.nivel',
-    );
-    const estanquePlanta2 = await calcularTiempoVaciado(
-      'PLANTA2_IDAHUE-slave.nivel',
-    );
-
-    return {
-      snapshot,
-      tiempo_vaciado_p1: estanquePlanta1.tiempo,
-      tiempo_vaciado_formatted_p1: estanquePlanta1.formatted,
-      tiempo_vaciado_p2: estanquePlanta2.tiempo,
-      tiempo_vaciado_formatted_p2: estanquePlanta2.formatted,
-    };
+      return {
+        snapshot: {
+          P1: {},
+          P2: {},
+        },
+        tiempo_vaciado_p1: 0,
+        tiempo_vaciado_formatted_p1: 'Llenando...',
+        tiempo_vaciado_p2: 0,
+        tiempo_vaciado_formatted_p2: 'Llenando...',
+      };
+    }
   }
 
   // Horometro

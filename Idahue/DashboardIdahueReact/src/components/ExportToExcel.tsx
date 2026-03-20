@@ -4,23 +4,23 @@ import { saveAs } from "file-saver";
 
 // Tipos para el combobox
 type ExportDataType =
-  | "nivelPozo"
-  | "horometroPozo"
-  | "nivelSentina"
-  | "horometroSentina";
+  | "nivel_planta1"
+  | "horometro_planta1"
+  | "nivel_planta2"
+  | "horometro_planta2";
 
 const EXPORT_OPTIONS = {
-  nivelPozo: "Nivel Estanque Pozo",
-  horometroPozo: "Horómetro Estanque Pozo",
-  nivelSentina: "Nivel Estanque Sentina",
-  horometroSentina: "Horómetro Estanque Sentina",
+  nivel_planta1: "Nivel Estanque Planta 1",
+  horometro_planta1: "Horómetro Estanque Planta 1",
+  nivel_planta2: "Nivel Estanque Planta 2",
+  horometro_planta2: "Horómetro Estanque Planta 2",
 };
 
 const ENDPOINT_MAP: Record<ExportDataType, string> = {
-  nivelPozo: "nivel",
-  horometroPozo: "horometro",
-  nivelSentina: "nivel",
-  horometroSentina: "horometro",
+  nivel_planta1: "nivel_planta1",
+  horometro_planta1: "horometro_planta1",
+  nivel_planta2: "nivel_planta2",
+  horometro_planta2: "horometro_planta2",
 };
 
 function Export() {
@@ -28,7 +28,7 @@ function Export() {
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(today);
   const [loading, setLoading] = useState(false);
-  const [exportType, setExportType] = useState<ExportDataType>("nivelPozo");
+  const [exportType, setExportType] = useState<ExportDataType>("nivel_planta1");
 
   const handleExport = async () => {
     if (!startDate || !endDate || !exportType) {
@@ -42,10 +42,10 @@ function Export() {
       const endpoint = ENDPOINT_MAP[exportType];
       const sheetName = EXPORT_OPTIONS[exportType];
       let apiUrl = "";
-      if (startDate == endDate && (endpoint == "nivel" || "caudal")) {
-        apiUrl = `https://app.jteanalytics.cl/nerquihue/${endpoint}`;
+      if (startDate === endDate && (endpoint.includes("nivel") || endpoint.includes("caudal"))) {
+        apiUrl = `https://app.jteanalytics.cl/idahue/${endpoint}`;
       } else {
-        apiUrl = `https://app.jteanalytics.cl/nerquihue/${endpoint}?start=${startDate}&end=${endDate}`;
+        apiUrl = `https://app.jteanalytics.cl/idahue/${endpoint}?start=${startDate}&end=${endDate}`;
       }
 
       const res = await fetch(apiUrl);
@@ -61,7 +61,15 @@ function Export() {
         return;
       }
 
-      const ws = XLSX.utils.json_to_sheet(data);
+      let exportData = data;
+      if (exportType.includes("nivel")) {
+        exportData = data.map((item: any) => ({
+          ...item,
+          value: typeof item.value === "number" ? item.value / 100 : item.value,
+        }));
+      }
+
+      const ws = XLSX.utils.json_to_sheet(exportData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
 

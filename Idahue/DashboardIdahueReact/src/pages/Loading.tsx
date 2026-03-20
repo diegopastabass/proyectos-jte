@@ -1,5 +1,5 @@
 import lgoJte from "../assets/logoJte.png";
-import logoCarmen from "../assets/logoCarmen.png";
+import logoApr from "../assets/logoapr.jpeg";
 
 const Loading = () => {
   return (
@@ -10,7 +10,7 @@ const Loading = () => {
 
       <p className="mt-3 fs-5 fw-semibold">Cargando...</p>
       <img className="mb-5" src={lgoJte} alt="logo" width={45} height={30} />
-      <img className="mb-5" src={logoCarmen} alt="logo" width={200} />
+      <img className="mb-5" src={logoApr} alt="logoApr" width={150} />
       <footer className="d-flex flex-wrap justify-content-between align-items-center py-3 px-4 border-top">
         <p className="mb-0 text-body-secondary">&copy; 2025 JTE Analytics.</p>
       </footer>

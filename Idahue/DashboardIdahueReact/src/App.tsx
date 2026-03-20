@@ -4,7 +4,7 @@ import Home from "./pages/Home";
 function App() {
   return (
     <Routes>
-      <Route path="/carmen/" element={<Home />} />
+      <Route path="/idahue/" element={<Home />} />
     </Routes>
   );
 }

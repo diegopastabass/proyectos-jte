@@ -8,8 +8,6 @@ interface ElbowProps {
   image: string;
   hasWaterFlow: boolean;
   style?: CSSProperties;
-  freatico?: number;
-  presion?: number;
 
   horometro_total: number;
   horometro_diario: number;
@@ -22,7 +20,6 @@ const Elbow: React.FC<ElbowProps> = ({
   b,
   image,
   style,
-  freatico,
   horometro_diario,
   horometro_total,
 }) => {
@@ -49,16 +46,10 @@ const Elbow: React.FC<ElbowProps> = ({
           maxWidth: "350px",
           position: "absolute",
           top: 350,
-          left: 100,
+          left: 80,
           zIndex: 10,
         }}
       >
-        <div className="mb-2">
-          <span className="text-muted small">Freático:</span>{" "}
-          <strong>
-            <h6>{(freatico ? freatico / 100 : 0).toFixed(2)} m</h6>
-          </strong>
-        </div>
         <div className="mb-2">
           <span className="text-muted small">Horómetro:</span>{" "}
           <strong>

@@ -1,49 +1,14 @@
 import React, { type CSSProperties } from "react";
 import Tank from "./Tank";
-import Pipe from "./Pipe";
 import Pump from "./Pump";
 import Elbow from "./Elbow";
-import Sentina from "./Sentina";
 import States from "./States";
 
-import pozoTankImage from "../assets/newTank.png";
-import sentinaTankImage from "../assets/newTank2.png";
+import TankImage from "../assets/newTank2.png";
 import newPipeImage from "../assets/newPipe.png";
 import newElbowImage from "../assets/newElbow.png";
 import newPumpImage from "../assets/newPump.png";
 import newSentinaImage from "../assets/sentina.png";
-
-// Interfaces
-interface Snapshot {
-  snapshot: Datos;
-  tiempo_vaciado_pozo: number;
-  tiempo_vaciado_formatted_pozo: string;
-  tiempo_vaciado_sentina: number;
-  tiempo_vaciado_formatted_sentina: string;
-}
-
-interface Datos {
-  POZO: Pozo;
-  SENTINA: Sentina;
-}
-
-interface Pozo {
-  falla: Metric;
-  freatico: Metric;
-  automatico: Metric;
-  horometro: Metric;
-  nivel: Metric;
-  bomba: Metric;
-}
-
-interface Sentina {
-  automatico: Metric;
-  horometro: Metric;
-  nivel: Metric;
-  solar: Metric; // Dividir entre 1000
-  bomba: Metric;
-  AI23: Metric;
-}
 
 interface Metric {
   value: number;
@@ -51,24 +16,38 @@ interface Metric {
 }
 
 interface ScadaDiagramProps {
-  data: Snapshot;
-  horPoz: string;
-  horSen: string;
+  automatico: Metric;
+  horometro: number;
+  nivel: Metric;
+  solar?: number;
+  bomba: Metric;
+  name: string;
+  tiempo_vaciado_formatted: string;
+  nivel_max: number;
+  divisor_nivel: number;
+  horometro_diario: number;
+  date?: string;
 }
 
 const SPRITE_SIZE = 300;
 
 const ScadaDiagram: React.FC<ScadaDiagramProps> = ({
-  data,
-  horPoz,
-  horSen,
+  automatico,
+  horometro,
+  horometro_diario,
+  nivel,
+  solar,
+  bomba,
+  tiempo_vaciado_formatted,
+  name,
+  nivel_max,
+  divisor_nivel,
+  date,
 }) => {
-  const hasWaterFlow = data.snapshot.POZO.bomba.value === 1;
-  const hasWaterFlowSentina = data.snapshot.SENTINA.bomba.value === 1;
+  const hasWaterFlow = bomba.value === 1;
 
   const imageAssets = {
-    pozoTank: pozoTankImage,
-    sentinaTank: sentinaTankImage,
+    pozoTank: TankImage,
     newPipe: newPipeImage,
     newElbow: newElbowImage,
     newPump: newPumpImage,
@@ -82,29 +61,51 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({
     borderRadius: "8px",
   };
 
+  let timeDiffMinutes = null;
+  let formattedDate = "Desconocida";
+
+  if (date) {
+    const timestamp = new Date(date);
+    const now = new Date();
+    const diffMs = now.getTime() - timestamp.getTime();
+    timeDiffMinutes = Math.floor(diffMs / 60000);
+
+    const day = String(timestamp.getDate()).padStart(2, "0");
+    const month = String(timestamp.getMonth() + 1).padStart(2, "0");
+    const hours = String(timestamp.getHours()).padStart(2, "0");
+    const minutes = String(timestamp.getMinutes()).padStart(2, "0");
+
+    formattedDate = `${day}-${month} ${hours}:${minutes}`;
+  }
+
+  let freshnessClass = "";
+  if (timeDiffMinutes !== null) {
+    if (timeDiffMinutes <= 10) {
+      freshnessClass = "bg-success text-white";
+    } else if (timeDiffMinutes <= 20) {
+      freshnessClass = "bg-warning text-dark";
+    } else {
+      freshnessClass = "bg-danger text-white";
+    }
+  }
+
   return (
     <div>
       <div style={containerStyle}>
-        <States
-          style={{
-            maxWidth: "250px",
-            maxHeight: "150px",
-            marginBottom: "8px",
-          }}
-          title="Estado Tablero Pozo"
-          automatico={data.snapshot.POZO.automatico.value.toString()}
-          bomba={data.snapshot.POZO.bomba.value.toString()}
-          falla={data.snapshot.POZO.falla.value.toString()}
-        />
+        <div className="d-flex flex-column align-items-center text-lg-start flex-grow-1 order-2 order-lg-0 mb-2">
+          <span className={`badge rounded-pill ${freshnessClass}`}>
+            {formattedDate}
+          </span>
+        </div>
         <States
           style={{
             maxWidth: "250px",
             maxHeight: "120px",
             marginBottom: "8px",
           }}
-          title="Estado Tablero Sentina"
-          automatico={data.snapshot.SENTINA.automatico.value.toString()}
-          bomba={data.snapshot.SENTINA.bomba.value.toString()}
+          title={`Estado Tablero ${name}`}
+          automatico={automatico.value.toString()}
+          bomba={bomba.value.toString()}
         />
 
         {/* 1. Bomba - Posición (0, 300) */}
@@ -114,7 +115,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({
           sentido={0}
           image={imageAssets.newPump}
           isActive={hasWaterFlow}
-          style={{ top: 340, left: -260 }}
+          style={{ top: 340, left: 0 }}
         />
 
         {/* 2. Codo - Posición (0, 0) */}
@@ -125,20 +126,9 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({
           b={0}
           image={imageAssets.newElbow}
           hasWaterFlow={hasWaterFlow}
-          style={{ top: 40, left: -260 }}
-          freatico={data.snapshot.POZO.freatico.value}
-          horometro_diario={Number(horPoz)}
-          horometro_total={data.snapshot.POZO.horometro.value}
-        />
-
-        {/* 3. Tubería - Posición (300, 0) */}
-        <Pipe
-          spriteWidth={SPRITE_SIZE}
-          spriteHeight={SPRITE_SIZE}
-          sentido={1}
-          image={imageAssets.newPipe}
-          hasWaterFlow={hasWaterFlow}
-          style={{ top: 40, left: 40 }}
+          style={{ top: 40, left: 0 }}
+          horometro_diario={horometro_diario}
+          horometro_total={horometro}
         />
 
         {/* 4. Tanque Principal - Posición (600, 0). Max Volume: 7 */}
@@ -148,39 +138,14 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({
           positionX={600}
           positionY={0}
           image={imageAssets.pozoTank}
-          volume={data.snapshot.POZO.nivel.value}
-          maxVolume={3.5}
-          style={{ top: 40, left: 340 }}
-          name="Estanque Pozo"
-          labelX={400}
-          labelY={50}
-          tiempoVaciado={data.tiempo_vaciado_formatted_pozo}
-        />
-
-        {/* 5. Sentina - Posición (900, 0) */}
-        <Sentina
-          image={imageAssets.newSentina}
-          style={{ top: 40, left: 640 }}
-          isActive={hasWaterFlowSentina}
-          horometro_diario={Number(horSen)}
-          horometro_total={data.snapshot.SENTINA.horometro.value}
-          AI23={data.snapshot.SENTINA.AI23.value / 100}
-        />
-
-        <Tank
-          spriteWidth={SPRITE_SIZE}
-          spriteHeight={SPRITE_SIZE}
-          positionX={600}
-          positionY={0}
-          image={imageAssets.sentinaTank}
-          volume={data.snapshot.SENTINA.nivel.value / 100}
-          maxVolume={2.2}
-          style={{ top: -10.6, left: 940 }}
-          name="Estanque Cerro"
-          labelX={990}
-          labelY={-200}
-          tiempoVaciado={data.tiempo_vaciado_formatted_sentina}
-          solar={data.snapshot.SENTINA.solar.value / 1000}
+          volume={nivel.value / divisor_nivel}
+          maxVolume={nivel_max}
+          style={{ top: 40, left: 300 }}
+          name={`Estanque ${name}`}
+          labelX={350}
+          labelY={180}
+          solar={solar}
+          tiempoVaciado={tiempo_vaciado_formatted}
         />
       </div>
     </div>

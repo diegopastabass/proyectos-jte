@@ -1,13 +1,13 @@
 import React, { useState, useEffect, type CSSProperties } from "react";
 
 interface TankProps {
-  spriteWidth: number; // Ancho de un frame del sprite (e.g., 300)
-  spriteHeight: number; // Alto de un frame del sprite (e.g., 300)
-  positionX: number; // Posición X en el canvas original
-  positionY: number; // Posición Y en el canvas original
-  image: string; // URL de la imagen del sprite
-  volume: number; // Volumen actual (para el nivel de agua)
-  maxVolume: number; // Volumen máximo
+  spriteWidth: number;
+  spriteHeight: number;
+  positionX: number;
+  positionY: number;
+  image: string;
+  volume: number;
+  maxVolume: number;
   style?: CSSProperties;
   name?: string;
   labelX?: number;
@@ -75,7 +75,7 @@ const Tank: React.FC<TankProps> = ({
       >
         <h5>{name}</h5>
 
-        {solar && <h6>☼ {solar.toFixed(2)} V</h6>}
+        {solar !== undefined && <h6>☼ {solar.toFixed(2)} V</h6>}
         <h6>{volume.toFixed(2)} m</h6>
         <h6>{((60 / 7) * volume).toFixed(2)} m³</h6>
         <p>{Math.round(percentage * 100)}%</p>

@@ -17,10 +17,10 @@ import logoJte from "../assets/logoJte.png";
 // Interfaces
 interface Snapshot {
   snapshot: Datos;
-  tiempo_vaciado_pozo: number;
-  tiempo_vaciado_formatted_pozo: string;
-  tiempo_vaciado_sentina: number;
-  tiempo_vaciado_formatted_sentina: string;
+  tiempo_vaciado_p1: number;
+  tiempo_vaciado_formatted_p1: string;
+  tiempo_vaciado_p2: number;
+  tiempo_vaciado_formatted_p2: string;
 }
 
 interface Datos {
@@ -39,7 +39,7 @@ interface P2 {
   automatico: Metric;
   horometro: Metric;
   nivel: Metric;
-  solar: Metric; // Dividir entre 1000
+  solar: Metric;
   bomba: Metric;
 }
 
@@ -58,8 +58,8 @@ function App() {
     [],
   );
   const [horometroChartDataP2, setHorometroChartDataP2] = useState<Metric[]>(
-    Metric[]
-  >([]);
+    [],
+  );
 
   // Estados de UI
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1500);
@@ -101,13 +101,13 @@ function App() {
         ] = await Promise.all([
           fetch("https://app.jteanalytics.cl/idahue/snapshot"),
           fetch(
-            `https://app.jteanalytics.cl/idahue/horometro_p1?start=${start}&end=${end}`,
+            `https://app.jteanalytics.cl/idahue/horometro_planta1?start=${start}&end=${end}`,
           ),
           fetch(
-            `https://app.jteanalytics.cl/idahue/horometro_p2?start=${start}&end=${end}`,
+            `https://app.jteanalytics.cl/idahue/horometro_planta2?start=${start}&end=${end}`,
           ),
-          fetch(`https://app.jteanalytics.cl/idahue/nivel_p1`),
-          fetch(`https://app.jteanalytics.cl/idahue/nivel_p2`),
+          fetch(`https://app.jteanalytics.cl/idahue/nivel_planta1`),
+          fetch(`https://app.jteanalytics.cl/idahue/nivel_planta2`),
         ]);
 
         const snapshotData: Snapshot = await snapshotRes.json();
@@ -142,6 +142,19 @@ function App() {
       ? horometroChartDataP2[horometroChartDataP2.length - 1].value
       : 0;
 
+  const lastUpdateP1 = [
+    data.snapshot.P1.automatico.time,
+    data.snapshot.P1.horometro.time,
+    data.snapshot.P1.nivel.time,
+    data.snapshot.P1.bomba.time,
+  ].reduce((a, b) => (new Date(a) > new Date(b) ? a : b));
+  const lastUpdateP2 = [
+    data.snapshot.P2.automatico.time,
+    data.snapshot.P2.horometro.time,
+    data.snapshot.P2.nivel.time,
+    data.snapshot.P2.bomba.time,
+  ].reduce((a, b) => (new Date(a) > new Date(b) ? a : b));
+
   const minutesToHHMM = (mins: number): string => {
     const hours = Math.floor(mins / 60);
     const minutes = mins % 60;
@@ -156,21 +169,25 @@ function App() {
   // =====================
   const VistaMovil = () => (
     <>
-      {/* Estanque Pozo*/}
+      {/* Estanque Planta 1*/}
       <div className="col-12 mb-1">
         <Card className="mb-2">
           <CardBody
-            title="Estanque Pozo"
-            text1={["Nivel", `${data.snapshot.P1.nivel.value.toFixed(2)} m`]}
+            title="Estanque Planta 1"
+            text1={[
+              "Nivel",
+              `${(data.snapshot.P1.nivel.value / 100).toFixed(2)} m`,
+            ]}
             text2={[
               "Volumen Actual",
-              `${((60 / 7) * data.snapshot.P1.nivel.value).toFixed(2)} m³`,
+              `${((60 / 7) * (data.snapshot.P1.nivel.value / 100)).toFixed(2)} m³`,
             ]}
-            text3={["Tiempo de Vacío", data.tiempo_vaciado_formatted_pozo]}
+            text3={["Tiempo de Vacío", data.tiempo_vaciado_formatted_p1]}
             text4={["Horómetro", `${minutesToHHMM(ultimoHorometroP1)} h`]}
+            date={lastUpdateP1}
           />
           <TankLevelCircular
-            nivelActual={data.snapshot.P1.nivel.value}
+            nivelActual={data.snapshot.P1.nivel.value / 100}
             nivelMaximo={3.4}
           />
           <ToggleCardButton
@@ -181,35 +198,36 @@ function App() {
         <DropdownCard
           className="mb-4"
           isOpen={isOpenEstanqueP1}
-          title="Estanque Pozo"
+          title="Estanque Planta 1"
           chartLabel="Nivel del Estanque (m)"
           data={nivelChartDataP1}
           nivelAlarma={1.5}
-          nivelMax={4}
+          nivelMax={5}
+          divisor={100}
         />
         <div className="my-2">
           <DropdownCardv2
             isOpen={isOpenEstanqueP1}
-            title="Horómetro Diario"
+            title="Horómetro Diario Planta 1"
             chartLabel="Horómetro"
             data={horometroChartDataP1}
           />
         </div>
       </div>
-      {/* Estados Pozo */}
+      {/* Estados Planta 1 */}
       <div className="col-12 mb-4">
         <States
-          title="Estado Tablero Pozo"
+          title="Estado Tablero Planta 1"
           automatico={data.snapshot.P1.automatico.value.toString()}
           bomba={data.snapshot.P1.bomba.value.toString()}
         />
       </div>
 
-      {/* Estanque Sentina*/}
+      {/* Estanque Planta 2*/}
       <div className="col-12 mb-1">
         <Card className="mb-2">
           <CardBody
-            title="Estanque Cerro"
+            title="Estanque Planta 2"
             text1={[
               "Nivel",
               `${(data.snapshot.P2.nivel.value / 100).toFixed(2)} m`,
@@ -224,6 +242,7 @@ function App() {
               "Solar",
               ` ${(data.snapshot.P2.solar.value / 1000).toFixed(2)} V`,
             ]}
+            date={lastUpdateP2}
           />
           <TankLevelCircular
             nivelActual={data.snapshot.P2.nivel.value / 100}
@@ -237,25 +256,27 @@ function App() {
         <DropdownCard
           className="mb-4"
           isOpen={isOpenEstanqueP2}
-          title="Estanque Cerro"
+          title="Estanque Planta 2"
           chartLabel="Nivel del Estanque (m)"
           data={nivelChartDataP2}
-          nivelAlarma={1}
+          nivelAlarma={2}
+          nivelMax={5}
           divisor={100}
         />
         <div className="my-2">
           <DropdownCardv2
             isOpen={isOpenEstanqueP2}
-            title="Horómetro Diario"
+            title="Horómetro Diario Planta 2"
             chartLabel="Horómetro"
             data={horometroChartDataP2}
           />
         </div>
       </div>
-      {/* Estados Sentina */}
+
+      {/* Estados Planta 2 */}
       <div className="col-12">
         <States
-          title="Estado Tablero Sentina"
+          title="Estado Tablero Planta 2"
           automatico={data.snapshot.P2.automatico.value.toString()}
           bomba={data.snapshot.P2.bomba.value.toString()}
         />
@@ -270,62 +291,81 @@ function App() {
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(6, 1fr)",
-        gridTemplateRows: "1fr 1fr auto",
-        gap: "1rem",
+        gridTemplateColumns: "1fr 1fr",
+        gap: "2rem",
         width: "100%",
         maxWidth: "2400px",
         margin: "0 auto",
       }}
     >
-      {/* SCADA */}
-      <div style={{ gridColumn: "span 4", gridRow: "span 2" }}>
-        <div className="card w-100 h-100 p-4 justify-content-center">
+      {/* Planta 1 */}
+      <div className="d-flex flex-column gap-3">
+        <div
+          className="card w-100 p-4 justify-content-center"
+          style={{ minHeight: "650px" }}
+        >
           <ScadaDiagram
-            data={data}
-            horSen={ultimoHorometroP2.toFixed(2)}
-            horPoz={ultimoHorometroP1.toFixed(2)}
+            horometro={data.snapshot.P1.horometro.value}
+            horometro_diario={ultimoHorometroP1}
+            name="Planta 1"
+            tiempo_vaciado_formatted={data.tiempo_vaciado_formatted_p1}
+            automatico={data.snapshot.P1.automatico}
+            nivel={data.snapshot.P1.nivel}
+            bomba={data.snapshot.P1.bomba}
+            nivel_max={5}
+            divisor_nivel={100}
+            date={lastUpdateP1}
           />
         </div>
-      </div>
-
-      {/* Niveles */}
-      <div style={{ gridColumn: "span 2", gridRow: "1" }}>
         <DropdownCard
           isOpen={true}
-          title="Estanque Pozo"
+          title="Estanque Planta 1"
           chartLabel="Nivel del Estanque (m)"
           data={nivelChartDataP1}
-          nivelAlarma={1.7}
-          nivelMax={4}
-        />
-      </div>
-
-      <div style={{ gridColumn: "span 2", gridRow: "2" }}>
-        <DropdownCard
-          isOpen={true}
-          title="Estanque Cerro"
-          chartLabel="Nivel del Estanque (m)"
+          nivelAlarma={1.5}
+          nivelMax={5}
           divisor={100}
-          data={nivelChartDataP2}
-          nivelAlarma={1.7}
         />
-      </div>
-
-      {/* Horómetros */}
-      <div style={{ gridColumn: "span 3", gridRow: "3" }}>
         <DropdownCardv2
           isOpen={true}
-          title="Horómetro Diario Pozo"
+          title="Horómetro Diario Planta 1"
           chartLabel="Horómetro"
           data={horometroChartDataP1}
         />
       </div>
 
-      <div style={{ gridColumn: "span 3", gridRow: "3" }}>
+      {/* Planta 2 */}
+      <div className="d-flex flex-column gap-3">
+        <div
+          className="card w-100 p-4 justify-content-center"
+          style={{ minHeight: "650px" }}
+        >
+          <ScadaDiagram
+            horometro={data.snapshot.P2.horometro.value}
+            horometro_diario={ultimoHorometroP2}
+            name="Planta 2"
+            tiempo_vaciado_formatted={data.tiempo_vaciado_formatted_p2}
+            automatico={data.snapshot.P2.automatico}
+            nivel={data.snapshot.P2.nivel}
+            solar={data.snapshot.P2.solar.value / 1000}
+            bomba={data.snapshot.P2.bomba}
+            divisor_nivel={100}
+            nivel_max={5}
+            date={lastUpdateP2}
+          />
+        </div>
+        <DropdownCard
+          isOpen={true}
+          title="Estanque Planta 2"
+          chartLabel="Nivel del Estanque (m)"
+          divisor={100}
+          data={nivelChartDataP2}
+          nivelAlarma={2}
+          nivelMax={5}
+        />
         <DropdownCardv2
           isOpen={true}
-          title="Horómetro Diario Cerro"
+          title="Horómetro Diario Planta 2"
           chartLabel="Horómetro"
           data={horometroChartDataP2}
         />
@@ -340,7 +380,7 @@ function App() {
     <>
       <div className="container-fluid min-vh-100 p-0 d-flex flex-column align-items-center">
         <div className="mb-3 w-100" style={{ maxWidth: "5000px" }}>
-          <Navbar text={data?.snapshot.P1.nivel.time}>
+          <Navbar text={lastUpdateP1}>
             <button
               className="btn btn-outline-primary bi bi-save"
               onClick={() => setIsOpenExport(true)}

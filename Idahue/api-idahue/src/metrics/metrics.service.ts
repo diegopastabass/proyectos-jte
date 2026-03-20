@@ -31,7 +31,6 @@ export class SsrIdahueService {
   }
 
   // getSnapshot
-  // getSnapshot
   async getSnapshot(): Promise<{
     snapshot: { P1: MetricSnapshot; P2: MetricSnapshot };
     tiempo_vaciado_p1: number;
@@ -161,7 +160,7 @@ export class SsrIdahueService {
         WITH bounds AS (
           SELECT mt_time_2::DATE AS day, MIN(mt_time_2) AS first_ts, MAX(mt_time_2) AS last_ts
           FROM ssr_idahue
-          WHERE mt_name = 'PLANTA1_IDAHUE-slave.horometro'
+          WHERE mt_name = 'PLANTA1_IDAHUE--slave.horometro'
           AND mt_time_2 BETWEEN $1 AND $2
           GROUP BY mt_time_2::DATE
         )
@@ -169,9 +168,9 @@ export class SsrIdahueService {
           (MAX(CAST(s_last.mt_value AS NUMERIC(30,6))) - MIN(CAST(s_first.mt_value AS NUMERIC(30,6)))) AS daily_value
         FROM bounds b
         LEFT JOIN ssr_idahue s_first
-          ON s_first.mt_name = 'PLANTA1_IDAHUE-slave.horometro' AND s_first.mt_time_2 = b.first_ts
+          ON s_first.mt_name = 'PLANTA1_IDAHUE--slave.horometro' AND s_first.mt_time_2 = b.first_ts
         LEFT JOIN ssr_idahue s_last
-          ON s_last.mt_name = 'PLANTA1_IDAHUE-slave.horometro' AND s_last.mt_time_2 = b.last_ts
+          ON s_last.mt_name = 'PLANTA1_IDAHUE--slave.horometro' AND s_last.mt_time_2 = b.last_ts
         GROUP BY b.day
         ORDER BY b.day ASC
       `,
@@ -199,7 +198,7 @@ export class SsrIdahueService {
         WITH bounds AS (
           SELECT mt_time_2::DATE AS day, MIN(mt_time_2) AS first_ts, MAX(mt_time_2) AS last_ts
           FROM ssr_idahue 
-          WHERE mt_name = 'PLANTA2_IDAHUE-slave.horometro'
+          WHERE mt_name = 'PLANTA2_IDAHUE--slave.horometro'
           AND mt_time_2 BETWEEN $1 AND $2
           GROUP BY mt_time_2::DATE
         )
@@ -207,9 +206,9 @@ export class SsrIdahueService {
           (MAX(CAST(s_last.mt_value AS NUMERIC(30,6))) - MIN(CAST(s_first.mt_value AS NUMERIC(30,6)))) AS daily_value
         FROM bounds b
         LEFT JOIN ssr_idahue s_first
-          ON s_first.mt_name = 'PLANTA2_IDAHUE-slave.horometro' AND s_first.mt_time_2 = b.first_ts
+          ON s_first.mt_name = 'PLANTA2_IDAHUE--slave.horometro' AND s_first.mt_time_2 = b.first_ts
         LEFT JOIN ssr_idahue s_last
-          ON s_last.mt_name = 'PLANTA2_IDAHUE-slave.horometro' AND s_last.mt_time_2 = b.last_ts
+          ON s_last.mt_name = 'PLANTA2_IDAHUE--slave.horometro' AND s_last.mt_time_2 = b.last_ts
         GROUP BY b.day
         ORDER BY b.day ASC
       `,
@@ -230,7 +229,7 @@ export class SsrIdahueService {
     const range = this.normalizeDateRange(dto);
     if (!range) {
       const results = await this.repo.find({
-        where: { mt_name: 'PLANTA1_IDAHUE-slave.nivel' },
+        where: { mt_name: 'PLANTA1_IDAHUE--slave.nivel' },
         order: { mt_time_2: 'DESC' },
         take: 100,
       });
@@ -245,7 +244,7 @@ export class SsrIdahueService {
 
     const results = await this.repo.find({
       where: {
-        mt_name: 'PLANTA1_IDAHUE-slave.nivel',
+        mt_name: 'PLANTA1_IDAHUE--slave.nivel',
         mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
           start,
           end,
@@ -265,7 +264,7 @@ export class SsrIdahueService {
     const range = this.normalizeDateRange(dto);
     if (!range) {
       const results = await this.repo.find({
-        where: { mt_name: 'PLANTA2_IDAHUE-slave.nivel' },
+        where: { mt_name: 'PLANTA2_IDAHUE--slave.nivel' },
         order: { mt_time_2: 'DESC' },
         take: 100,
       });
@@ -280,7 +279,7 @@ export class SsrIdahueService {
 
     const results = await this.repo.find({
       where: {
-        mt_name: 'PLANTA2_IDAHUE-slave.nivel',
+        mt_name: 'PLANTA2_IDAHUE--slave.nivel',
         mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
           start,
           end,

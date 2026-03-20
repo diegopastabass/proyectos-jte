@@ -1,7 +1,7 @@
 // Imports
 import { useState } from "react";
 import lgoJte from "../assets/logoJte.png";
-import logoCarmen from "../assets/logoCarmen.png";
+import logoApr from "../assets/logoapr.jpeg";
 
 // NavbarProps
 interface NavbarProps {
@@ -71,13 +71,11 @@ function Navbar(props: NavbarProps) {
       <div className="container-fluid d-flex flex-wrap align-items-center justify-content-between gap-3">
         <a
           className="navbar-brand d-flex align-items-center gap-2 mb-0 me-lg-4"
-          href="/carmen/"
+          href="/idahue/"
         >
           <img src={lgoJte} alt="logo" width={50} height={34} />
-          <img src={logoCarmen} alt="logo" width={100} />
-          <span className="h5 mb-0 d-none d-md-inline">
-            El Carmen Bajo - La Media Luna
-          </span>
+          <img src={logoApr} alt="logo" width={50} />
+          <span className="h5 mb-0 d-none d-md-inline">SSR Idahue</span>
         </a>
 
         <div className="d-flex align-items-center gap-2 flex-grow-1">

@@ -3,12 +3,12 @@ import logging
 import requests
 import psycopg2
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# --- Configuración ---
+# Configuración
 DB_CONFIG = {
     "host": os.getenv("DB_HOST"),
     "port": os.getenv("DB_PORT"),
@@ -19,14 +19,15 @@ DB_CONFIG = {
 }
 
 API_URL = os.getenv("API_URL")
-TOKEN = os.getenv("API_TOKEN")
-TO = os.getenv("API_TO")
+TOKEN = os.getenv("TOKEN")
+TO = os.getenv("TO")
 INTERVALO_MINUTOS = 5
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_FILE = os.path.join(BASE_DIR, "logs.txt")
 
 SENSOR_NIVEL_P1 = "PLANTA1_IDAHUE--slave.nivel"
+SENSOR_NIVEL_P2 = "PLANTA2_IDAHUE--slave.nivel"
 
 logging.basicConfig(
     level=logging.INFO,
@@ -34,7 +35,7 @@ logging.basicConfig(
     handlers=[logging.FileHandler(LOG_FILE, encoding="utf-8", mode="a")]
 )
 
-# --- Funciones ---
+# Funciones
 def obtener_niveles(sensor):
     query = """
         SELECT mt_value, mt_time_2 
@@ -75,23 +76,25 @@ def calcular_tiempo_vaciado(nivel_actual, nivel_anterior, time_actual, time_ante
     tasa_descenso = abs(delta_nivel) / delta_tiempo
     tiempo_restante_segundos = nivel_actual / tasa_descenso
 
-    # Corrección para compatibilidad con datetime
-    return str(datetime.utcfromtimestamp(tiempo_restante_segundos).strftime("%H:%M:%S"))
+    return str(datetime.fromtimestamp(tiempo_restante_segundos, timezone.utc).strftime("%H:%M:%S"))
 
-def enviar_alerta(nivel_actual, tiempo_vaciado):
+def enviar_alerta(nivel_actual, tiempo_vaciado, sensor):
     body_msg1 = (
         f"⚠️ Nivel de Estanque crítico\n"
         f"Nivel Actual: {nivel_actual:.2f} m\n"
-        f"Tiempo Estimado de Vaciado: {tiempo_vaciado} Hrs"
+        f"Tiempo Estimado de Vaciado: {tiempo_vaciado} Hrs\n"
+        f"Sensor: {sensor}"
     )
     body_msg2 = (
         f"⚠️ Nivel de Estanque en Rebalse\n"
-        f"Nivel Actual: {nivel_actual:.2f} m"
+        f"Nivel Actual: {nivel_actual:.2f} m\n"
+        f"Sensor: {sensor}"
     )
-    if (tiempo_vaciado is not None):
-        data1 = {"token": TOKEN, "to": TO, "body": body_msg1}
+    
+    if tiempo_vaciado is not None:
+        data = {"token": TOKEN, "to": TO, "body": body_msg1}
     else:
-        data2 = {"token": TOKEN, "to": TO, "body": body_msg2}
+        data = {"token": TOKEN, "to": TO, "body": body_msg2}
 
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
@@ -102,9 +105,10 @@ def enviar_alerta(nivel_actual, tiempo_vaciado):
     except requests.RequestException as e:
         logging.error(f"Error al enviar alerta: {e}")
 
-def monitorear(nivel_min, nivel_max, sensor, divisor):
+def monitorear(nivel_min, nivel_max, sensor, divisor, planta):
     logging.info("Consultando datos de estanque...")
     nivel_actual, nivel_anterior, time_actual, time_anterior = obtener_niveles(sensor)
+    tiempo_vaciado = None
 
     if nivel_actual is not None and nivel_anterior is not None:
         if nivel_actual / divisor < nivel_anterior / divisor and nivel_actual / divisor < nivel_min:
@@ -112,11 +116,13 @@ def monitorear(nivel_min, nivel_max, sensor, divisor):
                 nivel_actual / divisor, nivel_anterior / divisor, time_actual, time_anterior
             )
             if tiempo_vaciado:
-                enviar_alerta(nivel_actual / divisor, tiempo_vaciado)
+                enviar_alerta(nivel_actual / divisor, tiempo_vaciado, planta)
+                logging.info("Alerta enviada. Nivel actual: {} m | Nivel anterior: {} m | Sensor: {} | Tiempo de vaciado: {} Hrs".format(nivel_actual / divisor, nivel_anterior / divisor, sensor, tiempo_vaciado))
             else:
                 logging.info("No se pudo calcular tiempo de vaciado.")
-        if nivel_actual / divisor > nivel_anterior / divisor and nivel_actual / divisor > nivel_max:
-            enviar_alerta(nivel_actual / divisor, None)
+        elif nivel_actual / divisor > nivel_anterior / divisor and nivel_actual / divisor > nivel_max:
+            enviar_alerta(nivel_actual / divisor, None, planta)
+            logging.info("Alerta enviada. Nivel actual: {} m | Nivel anterior: {} m | Sensor: {}".format(nivel_actual / divisor, nivel_anterior / divisor, sensor))
         else:
             logging.info("Condiciones no cumplidas. Todo normal. Nivel actual: {} m | Nivel anterior: {} m | Sensor: {}".format(nivel_actual / divisor, nivel_anterior / divisor, sensor))
     else:
@@ -125,7 +131,8 @@ def monitorear(nivel_min, nivel_max, sensor, divisor):
 if __name__ == "__main__":
     try:
         while True:
-            monitorear(1.5, 5, SENSOR_NIVEL_P1, 100)
+            monitorear(1.5, 5, SENSOR_NIVEL_P1, 100, "PLANTA 1")
+            monitorear(1.5, 5, SENSOR_NIVEL_P2, 100, "PLANTA 2")
             logging.info(f"Esperando {INTERVALO_MINUTOS} minutos para la siguiente consulta...")
             time.sleep(INTERVALO_MINUTOS * 60)
     except KeyboardInterrupt:

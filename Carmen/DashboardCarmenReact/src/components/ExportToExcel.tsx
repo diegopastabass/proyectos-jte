@@ -43,9 +43,9 @@ function Export() {
       const sheetName = EXPORT_OPTIONS[exportType];
       let apiUrl = "";
       if (startDate == endDate && (endpoint == "nivel" || "caudal")) {
-        apiUrl = `https://app.jteanalytics.cl/nerquihue/${endpoint}`;
+        apiUrl = `https://app.jteanalytics.cl/carmen/${endpoint}`;
       } else {
-        apiUrl = `https://app.jteanalytics.cl/nerquihue/${endpoint}?start=${startDate}&end=${endDate}`;
+        apiUrl = `https://app.jteanalytics.cl/carmen/${endpoint}?start=${startDate}&end=${endDate}`;
       }
 
       const res = await fetch(apiUrl);

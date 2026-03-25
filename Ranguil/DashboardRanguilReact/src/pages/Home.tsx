@@ -31,6 +31,7 @@ interface Datos {
   falla: Metric;
   freatico: Metric;
   horometro: Metric;
+  solar: Metric;
   totalizador: Metric;
 }
 

@@ -203,6 +203,45 @@ export class SsrRanguilService {
     }));
   }
 
+  // Kwh
+  async getKwh(dto: DateRangeDto): Promise<Metric[]> {
+    const range = dto;
+    if (!range) throw new Error('Se requiere rango de fechas válido.');
+
+    const start = range.start + ' 00:00:00';
+    const end = range.end + ' 23:59:59';
+
+    const results: DailyQueryResult[] = await this.repo.query(
+      `
+        WITH bounds AS (
+          SELECT mt_time_2::DATE AS day, MIN(mt_time_2) AS first_ts, MAX(mt_time_2) AS last_ts
+          FROM ssr_ranguil
+          WHERE mt_name = 'SSR_RANGUIL--slave.kwh'
+          AND mt_time_2 BETWEEN $1 AND $2
+          GROUP BY mt_time_2::DATE
+        )
+        SELECT b.day,
+          (MAX(CAST(s_last.mt_value AS NUMERIC(30,6))) - MIN(CAST(s_first.mt_value AS NUMERIC(30,6)))) AS daily_value
+        FROM bounds b
+        LEFT JOIN ssr_ranguil s_first
+          ON s_first.mt_name = 'SSR_RANGUIL--slave.kwh' AND s_first.mt_time_2 = b.first_ts
+        LEFT JOIN ssr_ranguil s_last
+          ON s_last.mt_name = 'SSR_RANGUIL--slave.kwh' AND s_last.mt_time_2 = b.last_ts
+        GROUP BY b.day
+        ORDER BY b.day ASC
+      `,
+      [start, end],
+    );
+
+    return results.map((row) => ({
+      time:
+        typeof row.day === 'string'
+          ? row.day
+          : row.day.toISOString().split('T')[0],
+      value: Number(row.daily_value),
+    }));
+  }
+
   // Nivel
   async getNivel(dto: DateRangeDto): Promise<Metric[]> {
     const range = this.normalizeDateRange(dto);

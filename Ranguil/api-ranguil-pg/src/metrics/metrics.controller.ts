@@ -35,4 +35,9 @@ export class SsrRanguilController {
   getCaudal(@Query() dto: DateRangeDto) {
     return this.service.getCaudal(dto);
   }
+
+  @Get('kwh')
+  getKwh(@Query() dto: DateRangeDto) {
+    return this.service.getKwh(dto);
+  }
 }

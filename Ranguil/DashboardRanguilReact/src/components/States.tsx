@@ -174,23 +174,23 @@ export default function States(props: StatesProps) {
 
         {/* Tablero Eléctrico */}
         <StateRow
-          label="Corriente 1"
+          label="Corriente L1"
           value={props.corriente1}
           type="corriente"
         />
         <StateRow
-          label="Corriente 2"
+          label="Corriente L2"
           value={props.corriente2}
           type="corriente"
         />
         <StateRow
-          label="Corriente 3"
+          label="Corriente L3"
           value={props.corriente3}
           type="corriente"
         />
-        <StateRow label="Voltaje 1" value={props.voltaje1} type="voltaje" />
-        <StateRow label="Voltaje 2" value={props.voltaje2} type="voltaje" />
-        <StateRow label="Voltaje 3" value={props.voltaje3} type="voltaje" />
+        <StateRow label="Voltaje L1" value={props.voltaje1} type="voltaje" />
+        <StateRow label="Voltaje L2" value={props.voltaje2} type="voltaje" />
+        <StateRow label="Voltaje L3" value={props.voltaje3} type="voltaje" />
         <StateRow label="kWh" value={props.kwh} type="kwh" />
       </div>
     </div>

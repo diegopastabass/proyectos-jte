@@ -73,14 +73,14 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
     <div>
       <div style={containerStyle}>
         <States
-          style={{ maxWidth: "230px", maxHeight: "200px" }}
+          style={{ maxWidth: "245px", maxHeight: "200px" }}
           title="Estado Tablero"
           automatico={data.snapshot.automatico.value.toString()}
           falla={data.snapshot.falla.value.toString()}
           bomba={data.snapshot.bomba.value.toString()}
         />
         <States
-          style={{ maxWidth: "230px", maxHeight: "280px" }}
+          style={{ maxWidth: "245px", maxHeight: "280px" }}
           title="Tablero Eléctrico"
           corriente1={(data.snapshot.i1.value / 100).toString()}
           corriente2={(data.snapshot.i2.value / 100).toString()}
@@ -97,7 +97,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           sentido={0}
           image={imageAssets.newPump}
           isActive={hasWaterFlow}
-          style={{ top: 300, left: 50 }}
+          style={{ top: 300, left: 20 }}
         />
 
         {/* 2. Codo - Posición (0, 0) */}
@@ -108,7 +108,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           b={0}
           image={imageAssets.newElbow}
           hasWaterFlow={hasWaterFlow}
-          style={{ top: 0, left: 50 }}
+          style={{ top: 0, left: 20 }}
           freatico={data.snapshot.freatico.value}
           horometro_diario={Number(hor)}
           horometro_total={data.snapshot.horometro.value}
@@ -121,7 +121,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           sentido={1}
           image={imageAssets.newPipe}
           hasWaterFlow={hasWaterFlow}
-          style={{ top: 0, left: 350 }}
+          style={{ top: 0, left: 320 }}
           caudal={data.snapshot.caudal.value}
           totalizador_diario={Number(tot)}
           totalizador_total={data.snapshot.totalizador.value}
@@ -136,10 +136,10 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           image={imageAssets.newTank}
           volume={data.snapshot.estanque.value / 100}
           maxVolume={3.2}
-          style={{ top: 0, left: 650 }}
+          style={{ top: 0, left: 620 }}
           name="Estanque Nuevo"
-          labelX={700}
-          labelY={-160}
+          labelX={680}
+          labelY={-200}
           tiempoVaciado={data.tiempo_vaciado_est_1_formatted}
           solar={data.snapshot.solar.value / 1000}
         />
@@ -153,10 +153,10 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           image={imageAssets.newTank2}
           volume={data.snapshot.estanque_2.value}
           maxVolume={3.2}
-          style={{ top: 0, left: 950 }}
+          style={{ top: 0, left: 920 }}
           name="Estanque Viejo"
-          labelX={1000}
-          labelY={-400}
+          labelX={970}
+          labelY={-430}
           tiempoVaciado={data.tiempo_vaciado_est_2_formatted}
         />
       </div>

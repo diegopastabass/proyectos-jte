@@ -1,10 +1,132 @@
-interface StateProps {
-  children: React.ReactNode;
+import React from "react";
+
+interface StatesProps {
+  title?: string;
   style?: React.CSSProperties;
+  // Planta 1
+  falla_vdf1_p1?: string;
+  falla_vdf2_p1?: string;
+  presion?: string;
+  // Planta 1
+  automatico_p1?: string;
+  asimetria_p1?: string;
+  bomba_p1?: string;
+  falla_p1?: string;
+  // Planta 2
+  automatico?: string;
+  bomba?: string;
+  falla?: string;
+  falla_asimetria?: string;
+
+  // Tablero Eléctrico
+  corriente1?: string;
+  corriente2?: string;
+  corriente3?: string;
+  voltaje1?: string;
+  voltaje2?: string;
+  voltaje3?: string;
+  kwh?: string;
 }
 
-function State(props: StateProps) {
-  const { children, style } = props;
+// Estilos Base
+const indicadorBase: React.CSSProperties = {
+  display: "inline-block",
+  marginLeft: "10px",
+  padding: "2px 10px", // Grosor vertical reducido
+  color: "white",
+  borderRadius: "12px",
+  fontSize: "0.8rem",
+  minWidth: "100px",
+  textAlign: "center",
+};
+
+// Helper de Estilos
+const getBadgeStyle = (
+  valor: string | undefined,
+  tipo:
+    | "automatico"
+    | "bomba"
+    | "falla"
+    | "info"
+    | "corriente"
+    | "voltaje"
+    | "kwh",
+): React.CSSProperties => {
+  if (tipo === "info" || tipo === "corriente" || tipo === "voltaje") {
+    return { ...indicadorBase, backgroundColor: "#17a2b8" }; // Color informativo (ej. azul)
+  }
+
+  const activo = valor === "1";
+  let color = "gray";
+
+  if (tipo === "falla") {
+    color = activo ? "orange" : "gray"; // Falla activa = Naranja
+  } else {
+    color = activo ? "green" : "gray"; // Estado activo = Verde
+  }
+
+  return { ...indicadorBase, backgroundColor: color };
+};
+
+// Helper de Textos
+const getLabel = (
+  valor: string | undefined,
+  tipo:
+    | "automatico"
+    | "bomba"
+    | "falla"
+    | "info"
+    | "corriente"
+    | "voltaje"
+    | "kwh",
+): string => {
+  if (tipo === "info") return valor ? `${valor} bar` : "-";
+  if (tipo === "corriente") return valor ? `${valor} A` : "-";
+  if (tipo === "voltaje") return valor ? `${valor} V` : "-";
+  if (tipo === "kwh") return valor ? `${valor} kWh` : "-";
+
+  const activo = valor === "1";
+  switch (tipo) {
+    case "automatico":
+      return activo ? "Automático" : "Apagado";
+    case "bomba":
+      return activo ? "Encendida" : "Apagada";
+    case "falla":
+      return activo ? "Con falla" : "Sin falla";
+    default:
+      return "-";
+  }
+};
+
+// Componente de Fila
+const StateRow = ({
+  label,
+  value,
+  type,
+}: {
+  label: string;
+  value?: string;
+  type:
+    | "automatico"
+    | "bomba"
+    | "falla"
+    | "info"
+    | "corriente"
+    | "voltaje"
+    | "kwh";
+}) => {
+  if (value === undefined) return null;
+  return (
+    <div className="d-flex justify-content-between align-items-center mb-2">
+      <span>{label}:</span>
+      <span style={getBadgeStyle(value, type)}>{getLabel(value, type)}</span>
+    </div>
+  );
+};
+
+export default function States(props: StatesProps) {
+  const { title, style } = props;
+
   return (
     <div
       className="card h-100 w-100"
@@ -15,92 +137,62 @@ function State(props: StateProps) {
         ...style,
       }}
     >
-      <div className="card-body">{children}</div>
+      <div className="card-body p-1">
+        {title && (
+          <h6
+            className="card-title mb-3"
+            style={{ fontSize: "1rem", fontWeight: "bold" }}
+          >
+            {title}
+          </h6>
+        )}
+
+        {/* Props Originales */}
+        <StateRow label="Modo" value={props.automatico} type="automatico" />
+        <StateRow label="Bomba" value={props.bomba} type="bomba" />
+        <StateRow
+          label="Falla Asimetría"
+          value={props.falla_asimetria}
+          type="falla"
+        />
+        <StateRow label="Falla Térmica" value={props.falla} type="falla" />
+
+        {/* Props Planta 1 */}
+        <StateRow label="Falla VDF1" value={props.falla_vdf1_p1} type="falla" />
+        <StateRow label="Falla VDF3" value={props.falla_vdf2_p1} type="falla" />
+        <StateRow label="Presión" value={props.presion} type="info" />
+
+        {/* Props Planta 2 */}
+        <StateRow label="Modo" value={props.automatico_p1} type="automatico" />
+        <StateRow label="Bomba" value={props.bomba_p1} type="bomba" />
+        <StateRow
+          label="Falla Asimetría"
+          value={props.asimetria_p1}
+          type="falla"
+        />
+        <StateRow label="Falla Térmica" value={props.falla_p1} type="falla" />
+
+        {/* Tablero Eléctrico */}
+        <StateRow
+          label="Corriente 1"
+          value={props.corriente1}
+          type="corriente"
+        />
+        <StateRow
+          label="Corriente 2"
+          value={props.corriente2}
+          type="corriente"
+        />
+        <StateRow
+          label="Corriente 3"
+          value={props.corriente3}
+          type="corriente"
+        />
+        <StateRow label="Voltaje 1" value={props.voltaje1} type="voltaje" />
+        <StateRow label="Voltaje 2" value={props.voltaje2} type="voltaje" />
+        <StateRow label="Voltaje 3" value={props.voltaje3} type="voltaje" />
+        <StateRow label="kWh" value={props.kwh} type="kwh" />
+      </div>
     </div>
   );
 }
-
-interface CardBodyProps {
-  automatico: string; // "1" o "0"
-  bomba: string;
-  falla: string;
-}
-
-const indicadorBase: React.CSSProperties = {
-  display: "inline-block",
-  marginLeft: "10px",
-  padding: "5px 10px",
-  color: "white",
-  borderRadius: "12px", // más redondeado
-  fontSize: "0.8rem", // texto más pequeño
-  minWidth: "110px", // mismo ancho para todos
-  textAlign: "center",
-};
-
-const getEstadoStyle = (
-  valor: string,
-  tipo: "automatico" | "bomba" | "falla"
-): React.CSSProperties => {
-  const activo = valor === "1";
-
-  if (tipo === "falla") {
-    return {
-      ...indicadorBase,
-      backgroundColor: activo ? "orange" : "gray",
-    };
-  }
-
-  return {
-    ...indicadorBase,
-    backgroundColor: activo ? "green" : "gray",
-  };
-};
-
-const getLabel = (
-  valor: string,
-  tipo: "automatico" | "bomba" | "falla"
-): string => {
-  const activo = valor === "1";
-
-  switch (tipo) {
-    case "automatico":
-      return activo ? "Automático" : "Manual";
-    case "bomba":
-      return activo ? "Encendida" : "Apagada";
-    case "falla":
-      return activo ? "Con falla" : "Sin falla";
-  }
-};
-
-export function StateBody(props: CardBodyProps) {
-  const { automatico, bomba, falla } = props;
-
-  return (
-    <>
-      <h6 className="card-title">Estado Tablero</h6>
-
-      <div className="d-flex justify-content-between align-items-center mb-2">
-        <span>Modo:</span>
-        <span style={getEstadoStyle(automatico, "automatico")}>
-          {getLabel(automatico, "automatico")}
-        </span>
-      </div>
-
-      <div className="d-flex justify-content-between align-items-center mb-2">
-        <span>Bomba:</span>
-        <span style={getEstadoStyle(bomba, "bomba")}>
-          {getLabel(bomba, "bomba")}
-        </span>
-      </div>
-
-      <div className="d-flex justify-content-between align-items-center mb-2">
-        <span>Estado:</span>
-        <span style={getEstadoStyle(falla, "falla")}>
-          {getLabel(falla, "falla")}
-        </span>
-      </div>
-    </>
-  );
-}
-
-export default State;

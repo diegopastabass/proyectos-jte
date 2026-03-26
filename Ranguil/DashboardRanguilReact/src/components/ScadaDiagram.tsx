@@ -3,7 +3,7 @@ import Tank from "./Tank";
 import Pipe from "./Pipe";
 import Pump from "./Pump";
 import Elbow from "./Elbow";
-import State, { StateBody } from "./States";
+import States from "./States";
 import tankImage from "../assets/newTank.png";
 import pipeImage from "../assets/newPipe.png";
 import elbowImage from "../assets/newElbow.png";
@@ -29,6 +29,13 @@ interface DatosSnapshot {
   horometro: Metric;
   totalizador: Metric;
   solar: Metric;
+  i1: Metric;
+  i2: Metric;
+  i3: Metric;
+  v1: Metric;
+  v2: Metric;
+  v3: Metric;
+  kwh: Metric;
 }
 
 interface Metric {
@@ -65,13 +72,24 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
   return (
     <div>
       <div style={containerStyle}>
-        <State style={{ maxWidth: "230px", maxHeight: "200px" }}>
-          <StateBody
-            automatico={"1"}
-            falla={data.snapshot.falla.value.toString()}
-            bomba={data.snapshot.bomba.value.toString()}
-          ></StateBody>
-        </State>
+        <States
+          style={{ maxWidth: "230px", maxHeight: "200px" }}
+          title="Estado Tablero"
+          automatico={data.snapshot.automatico.value.toString()}
+          falla={data.snapshot.falla.value.toString()}
+          bomba={data.snapshot.bomba.value.toString()}
+        />
+        <States
+          style={{ maxWidth: "230px", maxHeight: "280px" }}
+          title="Tablero Eléctrico"
+          corriente1={(data.snapshot.i1.value / 100).toString()}
+          corriente2={(data.snapshot.i2.value / 100).toString()}
+          corriente3={(data.snapshot.i3.value / 100).toString()}
+          voltaje1={(data.snapshot.v1.value / 10).toString()}
+          voltaje2={(data.snapshot.v2.value / 10).toString()}
+          voltaje3={(data.snapshot.v3.value / 10).toString()}
+          kwh={(data.snapshot.kwh.value / 10).toString()}
+        ></States>
         {/* 1. Bomba - Posición (0, 300) */}
         <Pump
           spriteWidth={SPRITE_SIZE}
@@ -79,7 +97,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           sentido={0}
           image={imageAssets.newPump}
           isActive={hasWaterFlow}
-          style={{ top: 300, left: -50 }}
+          style={{ top: 300, left: 50 }}
         />
 
         {/* 2. Codo - Posición (0, 0) */}
@@ -90,7 +108,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           b={0}
           image={imageAssets.newElbow}
           hasWaterFlow={hasWaterFlow}
-          style={{ top: 0, left: -50 }}
+          style={{ top: 0, left: 50 }}
           freatico={data.snapshot.freatico.value}
           horometro_diario={Number(hor)}
           horometro_total={data.snapshot.horometro.value}
@@ -103,7 +121,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           sentido={1}
           image={imageAssets.newPipe}
           hasWaterFlow={hasWaterFlow}
-          style={{ top: 0, left: 250 }}
+          style={{ top: 0, left: 350 }}
           caudal={data.snapshot.caudal.value}
           totalizador_diario={Number(tot)}
           totalizador_total={data.snapshot.totalizador.value}
@@ -118,10 +136,10 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           image={imageAssets.newTank}
           volume={data.snapshot.estanque.value / 100}
           maxVolume={3.2}
-          style={{ top: 0, left: 550 }}
+          style={{ top: 0, left: 650 }}
           name="Estanque Nuevo"
-          labelX={600}
-          labelY={100}
+          labelX={700}
+          labelY={-160}
           tiempoVaciado={data.tiempo_vaciado_est_1_formatted}
           solar={data.snapshot.solar.value / 1000}
         />
@@ -135,10 +153,10 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           image={imageAssets.newTank2}
           volume={data.snapshot.estanque_2.value}
           maxVolume={3.2}
-          style={{ top: 0, left: 850 }}
+          style={{ top: 0, left: 950 }}
           name="Estanque Viejo"
-          labelX={900}
-          labelY={-130}
+          labelX={1000}
+          labelY={-400}
           tiempoVaciado={data.tiempo_vaciado_est_2_formatted}
         />
       </div>

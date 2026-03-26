@@ -2,7 +2,7 @@ import Card, { CardBody } from "../components/Card";
 import { useEffect, useState } from "react";
 import { TankLevelCircular } from "../components/Level";
 import Navbar from "../components/Navbar";
-import State, { StateBody } from "../components/States";
+import States from "../components/States";
 import "../index.css";
 import Loading from "./Loading";
 import ToggleCardButton from "../components/ToggelCardButton";
@@ -33,6 +33,13 @@ interface Datos {
   horometro: Metric;
   solar: Metric;
   totalizador: Metric;
+  i1: Metric;
+  i2: Metric;
+  i3: Metric;
+  v1: Metric;
+  v2: Metric;
+  v3: Metric;
+  kwh: Metric;
 }
 
 interface Metric {
@@ -266,13 +273,11 @@ function App() {
       </div>
 
       {/* Panel de Estados */}
-      <State>
-        <StateBody
-          automatico={"1"}
-          bomba={data.snapshot.bomba.value.toString()}
-          falla={data.snapshot.falla.value.toString()}
-        />
-      </State>
+      <States
+        automatico={data.snapshot.automatico.value.toString()}
+        bomba={data.snapshot.bomba.value.toString()}
+        falla={data.snapshot.falla.value.toString()}
+      />
     </>
   );
 

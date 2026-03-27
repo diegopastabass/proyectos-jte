@@ -9,6 +9,7 @@ import ToggleCardButton from "../components/ToggelCardButton";
 import DropdownCard from "../components/DropdownCard";
 import DropdownCardv2 from "../components/DropDownCardv2";
 import DropdownCardv3 from "../components/DropDownCardv3";
+import DropdownCardv4 from "../components/DropdownCardv4";
 import ScadaDiagram from "../components/ScadaDiagram";
 import ExportModal from "../components/ExportModal";
 import Error from "./Error";
@@ -40,6 +41,7 @@ interface Datos {
   v2: Metric;
   v3: Metric;
   kwh: Metric;
+  presion: Metric;
 }
 
 interface Metric {
@@ -57,6 +59,24 @@ function App() {
   const [totalizadorChartData, setTotalizadorData] = useState<Metric[]>([]);
   const [horometroChartData, setHorometroData] = useState<Metric[]>([]);
   const [kwhChartData, setKwhData] = useState<Metric[]>([]);
+  const [voltajeChartData, setVoltajeData] = useState<{
+    v1: Metric[];
+    v2: Metric[];
+    v3: Metric[];
+  }>({
+    v1: [],
+    v2: [],
+    v3: [],
+  });
+  const [corrienteChartData, setCorrienteData] = useState<{
+    i1: Metric[];
+    i2: Metric[];
+    i3: Metric[];
+  }>({
+    i1: [],
+    i2: [],
+    i3: [],
+  });
 
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1500);
   const [isOpenExport, setIsOpenExport] = useState(false);
@@ -94,6 +114,8 @@ function App() {
           nivel2Res,
           caudalRes,
           kwhRes,
+          voltajeRes,
+          corrienteRes,
         ] = await Promise.all([
           fetch("https://app.jteanalytics.cl/ranguil/snapshot"),
           fetch(
@@ -108,6 +130,12 @@ function App() {
           fetch(
             `https://app.jteanalytics.cl/ranguil/kwh?start=${start}&end=${end}`,
           ),
+          fetch(
+            `https://app.jteanalytics.cl/ranguil/voltaje?start=${start}&end=${end}`,
+          ),
+          fetch(
+            `https://app.jteanalytics.cl/ranguil/corriente?start=${start}&end=${end}`,
+          ),
         ]);
 
         const snapshotData: Snapshot = await snapshotRes.json();
@@ -118,6 +146,8 @@ function App() {
         setNivel2Data(await nivel2Res.json());
         setCaudalData(await caudalRes.json());
         setKwhData(await kwhRes.json());
+        setVoltajeData(await voltajeRes.json());
+        setCorrienteData(await corrienteRes.json());
       } catch (error) {
         console.error("Error al cargar datos:", error);
       } finally {
@@ -249,6 +279,10 @@ function App() {
               "Totalizador",
               data.snapshot.totalizador.value.toFixed(2) + " m³",
             ]}
+            text7={[
+              "Presión",
+              (data.snapshot.presion.value / 10).toFixed(2) + " bar",
+            ]}
           />
           <ToggleCardButton
             isOpen={isOpenBomba}
@@ -280,6 +314,28 @@ function App() {
           chartLabel="kWh"
           data={kwhChartData}
         />{" "}
+        <DropdownCardv4
+          isOpen={true}
+          title="Voltaje"
+          chartLabel="Voltaje (V)"
+          data={{
+            v1: voltajeChartData.v1,
+            v2: voltajeChartData.v2,
+            v3: voltajeChartData.v3,
+          }}
+          divisor={10}
+        />
+        <DropdownCardv4
+          isOpen={true}
+          title="Corriente"
+          chartLabel="Corriente (A)"
+          data={{
+            i1: corrienteChartData.i1,
+            i2: corrienteChartData.i2,
+            i3: corrienteChartData.i3,
+          }}
+          divisor={100}
+        />
       </div>
       <States
         title="Estado Tablero"
@@ -295,7 +351,6 @@ function App() {
         voltaje1={(data.snapshot.v1.value / 10).toString()}
         voltaje2={(data.snapshot.v2.value / 10).toString()}
         voltaje3={(data.snapshot.v3.value / 10).toString()}
-        kwh={(data.snapshot.kwh.value / 10).toString()}
       ></States>
     </>
   );
@@ -308,7 +363,7 @@ function App() {
       className="desktop-grid w-100"
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(4, 1fr)",
+        gridTemplateColumns: "repeat(3, 1fr)",
         gridTemplateRows: "1fr 1fr 1fr",
         gap: "1rem",
         width: "100%",
@@ -317,7 +372,7 @@ function App() {
       }}
     >
       {/* Diagrama SCADA */}
-      <div style={{ gridColumn: "1 / span 3", gridRow: "1 / span 2" }}>
+      <div style={{ gridColumn: "1 / span 2", gridRow: "1 / span 3" }}>
         <div className="card w-100 p-4 justify-content-center">
           <ScadaDiagram
             data={data}
@@ -328,7 +383,7 @@ function App() {
       </div>
 
       {/* Estanque 1 */}
-      <div style={{ gridColumn: "4", gridRow: "1" }}>
+      <div style={{ gridColumn: "3", gridRow: "1" }}>
         <DropdownCard
           isOpen={true}
           title="Estanque Nuevo"
@@ -340,7 +395,7 @@ function App() {
       </div>
 
       {/* Estanque 2 */}
-      <div style={{ gridColumn: "4", gridRow: "2" }}>
+      <div style={{ gridColumn: "3", gridRow: "2" }}>
         <DropdownCard
           isOpen={true}
           title="Estanque Antiguo"
@@ -361,18 +416,8 @@ function App() {
         />
       </div>
 
-      {/* Kwh */}
-      <div style={{ gridColumn: "2", gridRow: "3" }}>
-        <DropdownCardv3
-          isOpen={true}
-          title="Kwh"
-          chartLabel="Kwh"
-          data={kwhChartData}
-        />
-      </div>
-
       {/* Totalizador */}
-      <div style={{ gridColumn: "3", gridRow: "3" }}>
+      <div style={{ gridColumn: "2", gridRow: "3" }}>
         <DropdownCardv3
           isOpen={true}
           title="Totalizador Diario"
@@ -382,13 +427,53 @@ function App() {
       </div>
 
       {/* Caudal */}
-      <div style={{ gridColumn: "4", gridRow: "3" }}>
+      <div style={{ gridColumn: "3", gridRow: "3" }}>
         <DropdownCard
           isOpen={true}
           title="Caudal"
           chartLabel="Caudal de Impulsión (l/s)"
           data={caudalChartData}
           nivelMax={4}
+        />
+      </div>
+
+      {/* Kwh */}
+      <div style={{ gridColumn: "1", gridRow: "4" }}>
+        <DropdownCardv3
+          isOpen={true}
+          title="Kwh"
+          chartLabel="Kwh"
+          data={kwhChartData}
+        />
+      </div>
+
+      {/* Voltaje */}
+      <div style={{ gridColumn: "2", gridRow: "4" }}>
+        <DropdownCardv4
+          isOpen={true}
+          title="Voltaje"
+          data={{
+            v1: voltajeChartData.v1,
+            v2: voltajeChartData.v2,
+            v3: voltajeChartData.v3,
+          }}
+          divisor={10}
+          chartLabel="Voltaje (V)"
+        />
+      </div>
+
+      {/* Corriente */}
+      <div style={{ gridColumn: "3", gridRow: "4" }}>
+        <DropdownCardv4
+          isOpen={true}
+          title="Corriente"
+          data={{
+            i1: corrienteChartData.i1,
+            i2: corrienteChartData.i2,
+            i3: corrienteChartData.i3,
+          }}
+          divisor={100}
+          chartLabel="Corriente (A)"
         />
       </div>
     </div>

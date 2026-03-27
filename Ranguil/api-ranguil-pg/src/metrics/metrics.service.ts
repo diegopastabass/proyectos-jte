@@ -276,6 +276,103 @@ export class SsrRanguilService {
       value: Number(row.mt_value),
     }));
   }
+  // Corriente
+  async getCorriente(
+    dto: DateRangeDto,
+  ): Promise<{ i1: Metric[]; i2: Metric[]; i3: Metric[] }> {
+    const range = this.normalizeDateRange(dto);
+
+    const fetchVariable = async (variable: string) => {
+      const mtName = `SSR_RANGUIL--slave.${variable}`;
+      if (!range) {
+        const results = await this.repo.find({
+          where: { mt_name: mtName },
+          order: { mt_time_2: 'DESC' },
+          take: 100,
+        });
+
+        return results.reverse().map((row) => ({
+          time: row.mt_time_2.toISOString(),
+          value: Number(row.mt_value),
+        }));
+      }
+
+      const { start, end } = range;
+
+      const results = await this.repo.find({
+        where: {
+          mt_name: mtName,
+          mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
+            start,
+            end,
+          }),
+        },
+        order: { mt_time_2: 'ASC' },
+      });
+
+      return results.map((row) => ({
+        time: row.mt_time_2.toISOString(),
+        value: Number(row.mt_value),
+      }));
+    };
+
+    const [i1, i2, i3] = await Promise.all([
+      fetchVariable('i1'),
+      fetchVariable('i2'),
+      fetchVariable('i3'),
+    ]);
+
+    return { i1, i2, i3 };
+  }
+
+  // Voltaje
+  async getVoltaje(
+    dto: DateRangeDto,
+  ): Promise<{ v1: Metric[]; v2: Metric[]; v3: Metric[] }> {
+    const range = this.normalizeDateRange(dto);
+
+    const fetchVariable = async (variable: string) => {
+      const mtName = `SSR_RANGUIL--slave.${variable}`;
+      if (!range) {
+        const results = await this.repo.find({
+          where: { mt_name: mtName },
+          order: { mt_time_2: 'DESC' },
+          take: 100,
+        });
+
+        return results.reverse().map((row) => ({
+          time: row.mt_time_2.toISOString(),
+          value: Number(row.mt_value),
+        }));
+      }
+
+      const { start, end } = range;
+
+      const results = await this.repo.find({
+        where: {
+          mt_name: mtName,
+          mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
+            start,
+            end,
+          }),
+        },
+        order: { mt_time_2: 'ASC' },
+      });
+
+      return results.map((row) => ({
+        time: row.mt_time_2.toISOString(),
+        value: Number(row.mt_value),
+      }));
+    };
+
+    const [v1, v2, v3] = await Promise.all([
+      fetchVariable('v1'),
+      fetchVariable('v2'),
+      fetchVariable('v3'),
+    ]);
+
+    return { v1, v2, v3 };
+  }
 
   // Nivel 2
   async getNivel2(dto: DateRangeDto): Promise<Metric[]> {

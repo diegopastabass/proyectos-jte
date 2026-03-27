@@ -36,6 +36,7 @@ interface DatosSnapshot {
   v2: Metric;
   v3: Metric;
   kwh: Metric;
+  presion: Metric;
 }
 
 interface Metric {
@@ -80,7 +81,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           bomba={data.snapshot.bomba.value.toString()}
         />
         <States
-          style={{ maxWidth: "245px", maxHeight: "280px" }}
+          style={{ maxWidth: "245px", maxHeight: "260px" }}
           title="Tablero Eléctrico"
           corriente1={(data.snapshot.i1.value / 100).toString()}
           corriente2={(data.snapshot.i2.value / 100).toString()}
@@ -88,7 +89,6 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           voltaje1={(data.snapshot.v1.value / 10).toString()}
           voltaje2={(data.snapshot.v2.value / 10).toString()}
           voltaje3={(data.snapshot.v3.value / 10).toString()}
-          kwh={(data.snapshot.kwh.value / 10).toString()}
         ></States>
         {/* 1. Bomba - Posición (0, 300) */}
         <Pump
@@ -125,6 +125,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           caudal={data.snapshot.caudal.value}
           totalizador_diario={Number(tot)}
           totalizador_total={data.snapshot.totalizador.value}
+          presion={data.snapshot.presion.value}
         />
 
         {/* 4. Tanque Principal - Posición (600, 0). Max Volume: 7 */}
@@ -139,7 +140,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           style={{ top: 0, left: 620 }}
           name="Estanque Nuevo"
           labelX={680}
-          labelY={-200}
+          labelY={-180}
           tiempoVaciado={data.tiempo_vaciado_est_1_formatted}
           solar={data.snapshot.solar.value / 1000}
         />
@@ -156,7 +157,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           style={{ top: 0, left: 920 }}
           name="Estanque Viejo"
           labelX={970}
-          labelY={-430}
+          labelY={-410}
           tiempoVaciado={data.tiempo_vaciado_est_2_formatted}
         />
       </div>

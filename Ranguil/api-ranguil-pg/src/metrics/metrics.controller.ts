@@ -40,4 +40,14 @@ export class SsrRanguilController {
   getKwh(@Query() dto: DateRangeDto) {
     return this.service.getKwh(dto);
   }
+
+  @Get('voltaje')
+  getVoltaje(@Query() dto: DateRangeDto) {
+    return this.service.getVoltaje(dto);
+  }
+
+  @Get('corriente')
+  getCorriente(@Query() dto: DateRangeDto) {
+    return this.service.getCorriente(dto);
+  }
 }

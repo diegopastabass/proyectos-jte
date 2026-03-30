@@ -77,6 +77,7 @@ function App() {
     i2: [],
     i3: [],
   });
+  const [presionChartData, setPresionData] = useState<Metric[]>([]);
 
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1500);
   const [isOpenExport, setIsOpenExport] = useState(false);
@@ -116,6 +117,7 @@ function App() {
           kwhRes,
           voltajeRes,
           corrienteRes,
+          presionRes,
         ] = await Promise.all([
           fetch("https://app.jteanalytics.cl/ranguil/snapshot"),
           fetch(
@@ -130,12 +132,9 @@ function App() {
           fetch(
             `https://app.jteanalytics.cl/ranguil/kwh?start=${start}&end=${end}`,
           ),
-          fetch(
-            `https://app.jteanalytics.cl/ranguil/voltaje?start=${start}&end=${end}`,
-          ),
-          fetch(
-            `https://app.jteanalytics.cl/ranguil/corriente?start=${start}&end=${end}`,
-          ),
+          fetch(`https://app.jteanalytics.cl/ranguil/voltaje`),
+          fetch(`https://app.jteanalytics.cl/ranguil/corriente`),
+          fetch(`https://app.jteanalytics.cl/ranguil/presion`),
         ]);
 
         const snapshotData: Snapshot = await snapshotRes.json();
@@ -148,6 +147,7 @@ function App() {
         setKwhData(await kwhRes.json());
         setVoltajeData(await voltajeRes.json());
         setCorrienteData(await corrienteRes.json());
+        setPresionData(await presionRes.json());
       } catch (error) {
         console.error("Error al cargar datos:", error);
       } finally {
@@ -335,6 +335,14 @@ function App() {
             i3: corrienteChartData.i3,
           }}
           divisor={100}
+        />
+        <DropdownCard
+          isOpen={isOpenBomba}
+          title="Presión"
+          chartLabel="Presion (bar)"
+          data={presionChartData}
+          nivelMax={100}
+          divisor={10}
         />
       </div>
       <States

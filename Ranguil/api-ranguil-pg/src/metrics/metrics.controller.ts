@@ -50,4 +50,9 @@ export class SsrRanguilController {
   getCorriente(@Query() dto: DateRangeDto) {
     return this.service.getCorriente(dto);
   }
+
+  @Get('presion')
+  getPresion(@Query() dto: DateRangeDto) {
+    return this.service.getPresion(dto);
+  }
 }

@@ -238,7 +238,7 @@ export class SsrRanguilService {
         typeof row.day === 'string'
           ? row.day
           : row.day.toISOString().split('T')[0],
-      value: Number(row.daily_value),
+      value: Number(row.daily_value * 10),
     }));
   }
 
@@ -246,13 +246,16 @@ export class SsrRanguilService {
   async getNivel(dto: DateRangeDto): Promise<Metric[]> {
     const range = this.normalizeDateRange(dto);
     if (!range) {
+      const start = new Date(Date.now() - 6 * 60 * 60 * 1000);
       const results = await this.repo.find({
-        where: { mt_name: 'SSR_RANGUIL--slave.estanque' },
-        order: { mt_time_2: 'DESC' },
-        take: 100,
+        where: {
+          mt_name: 'SSR_RANGUIL--slave.estanque',
+          mt_time_2: Raw((alias) => `${alias} >= :start`, { start }),
+        },
+        order: { mt_time_2: 'ASC' },
       });
 
-      return results.reverse().map((row) => ({
+      return results.map((row) => ({
         time: row.mt_time_2.toISOString(),
         value: Number(row.mt_value),
       }));
@@ -285,13 +288,16 @@ export class SsrRanguilService {
     const fetchVariable = async (variable: string) => {
       const mtName = `SSR_RANGUIL--slave.${variable}`;
       if (!range) {
+        const start = new Date(Date.now() - 6 * 60 * 60 * 1000);
         const results = await this.repo.find({
-          where: { mt_name: mtName },
-          order: { mt_time_2: 'DESC' },
-          take: 100,
+          where: {
+            mt_name: mtName,
+            mt_time_2: Raw((alias) => `${alias} >= :start`, { start }),
+          },
+          order: { mt_time_2: 'ASC' },
         });
 
-        return results.reverse().map((row) => ({
+        return results.map((row) => ({
           time: row.mt_time_2.toISOString(),
           value: Number(row.mt_value),
         }));
@@ -334,13 +340,16 @@ export class SsrRanguilService {
     const fetchVariable = async (variable: string) => {
       const mtName = `SSR_RANGUIL--slave.${variable}`;
       if (!range) {
+        const start = new Date(Date.now() - 6 * 60 * 60 * 1000);
         const results = await this.repo.find({
-          where: { mt_name: mtName },
-          order: { mt_time_2: 'DESC' },
-          take: 100,
+          where: {
+            mt_name: mtName,
+            mt_time_2: Raw((alias) => `${alias} >= :start`, { start }),
+          },
+          order: { mt_time_2: 'ASC' },
         });
 
-        return results.reverse().map((row) => ({
+        return results.map((row) => ({
           time: row.mt_time_2.toISOString(),
           value: Number(row.mt_value),
         }));
@@ -374,17 +383,58 @@ export class SsrRanguilService {
     return { v1, v2, v3 };
   }
 
+  // Presion
+  async getPresion(dto: DateRangeDto): Promise<Metric[]> {
+    const range = this.normalizeDateRange(dto);
+    if (!range) {
+      const start = new Date(Date.now() - 6 * 60 * 60 * 1000);
+      const results = await this.repo.find({
+        where: {
+          mt_name: 'SSR_RANGUIL--slave.presion',
+          mt_time_2: Raw((alias) => `${alias} >= :start`, { start }),
+        },
+        order: { mt_time_2: 'ASC' },
+      });
+
+      return results.map((row) => ({
+        time: row.mt_time_2.toISOString(),
+        value: Number(row.mt_value),
+      }));
+    }
+
+    const { start, end } = range;
+
+    const results = await this.repo.find({
+      where: {
+        mt_name: 'SSR_RANGUIL--slave.presion',
+        mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
+          start,
+          end,
+        }),
+      },
+      order: { mt_time_2: 'ASC' },
+    });
+
+    return results.map((row) => ({
+      time: row.mt_time_2.toISOString(),
+      value: Number(row.mt_value),
+    }));
+  }
+
   // Nivel 2
   async getNivel2(dto: DateRangeDto): Promise<Metric[]> {
     const range = this.normalizeDateRange(dto);
     if (!range) {
+      const start = new Date(Date.now() - 6 * 60 * 60 * 1000);
       const results = await this.repo.find({
-        where: { mt_name: 'SSR_RANGUIL--slave.estanque_2' },
-        order: { mt_time_2: 'DESC' },
-        take: 100,
+        where: {
+          mt_name: 'SSR_RANGUIL--slave.estanque_2',
+          mt_time_2: Raw((alias) => `${alias} >= :start`, { start }),
+        },
+        order: { mt_time_2: 'ASC' },
       });
 
-      return results.reverse().map((row) => ({
+      return results.map((row) => ({
         time: row.mt_time_2.toISOString(),
         value: Number(row.mt_value),
       }));
@@ -414,13 +464,16 @@ export class SsrRanguilService {
     const range = this.normalizeDateRange(dto);
 
     if (!range) {
+      const start = new Date(Date.now() - 6 * 60 * 60 * 1000);
       const results = await this.repo.find({
-        where: { mt_name: 'SSR_RANGUIL--slave.caudal' },
-        order: { mt_time_2: 'DESC' },
-        take: 100,
+        where: {
+          mt_name: 'SSR_RANGUIL--slave.caudal',
+          mt_time_2: Raw((alias) => `${alias} >= :start`, { start }),
+        },
+        order: { mt_time_2: 'ASC' },
       });
 
-      return results.reverse().map((row) => ({
+      return results.map((row) => ({
         time: row.mt_time_2.toISOString(),
         value: Number(row.mt_value),
       }));

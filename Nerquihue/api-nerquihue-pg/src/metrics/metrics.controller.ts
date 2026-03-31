@@ -30,4 +30,24 @@ export class SsrNerquihueController {
   getCaudal(@Query() dto: DateRangeDto) {
     return this.service.getCaudal(dto);
   }
+
+  @Get('kwh')
+  getKwh(@Query() dto: DateRangeDto) {
+    return this.service.getKwh(dto);
+  }
+
+  @Get('voltaje')
+  getVoltaje(@Query() dto: DateRangeDto) {
+    return this.service.getVoltaje(dto);
+  }
+
+  @Get('corriente')
+  getCorriente(@Query() dto: DateRangeDto) {
+    return this.service.getCorriente(dto);
+  }
+
+  @Get('presion')
+  getPresion(@Query() dto: DateRangeDto) {
+    return this.service.getPresion(dto);
+  }
 }

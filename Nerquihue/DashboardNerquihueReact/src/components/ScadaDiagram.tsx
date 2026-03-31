@@ -3,7 +3,7 @@ import Tank from "./Tank";
 import Pipe from "./Pipe";
 import Pump from "./Pump";
 import Elbow from "./Elbow";
-import State, { StateBody } from "./States";
+import States from "./States";
 
 import newTankImage from "../assets/newTank.png";
 import lilTankImage from "../assets/lilTank.png";
@@ -26,6 +26,14 @@ interface DatosSnapshot {
   freatico: Metric;
   horometro: Metric;
   totalizador: Metric;
+  i1: Metric;
+  i2: Metric;
+  i3: Metric;
+  v1: Metric;
+  v2: Metric;
+  v3: Metric;
+  kwh: Metric;
+  presion: Metric;
 }
 
 interface Metric {
@@ -62,13 +70,23 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
   return (
     <div>
       <div style={containerStyle}>
-        <State style={{ maxWidth: "250px", maxHeight: "180px" }}>
-          <StateBody
-            automatico={"1"}
-            falla={data.snapshot.falla.value.toString()}
-            bomba={data.snapshot.bomba.value.toString()}
-          ></StateBody>
-        </State>
+        <States
+          title="Estado Tablero"
+          style={{ maxWidth: "250px", maxHeight: "180px" }}
+          automatico={data.snapshot.automatico.value.toString()}
+          falla={data.snapshot.falla.value.toString()}
+          bomba={data.snapshot.bomba.value.toString()}
+        />
+        <States
+          style={{ maxWidth: "245px", maxHeight: "260px" }}
+          title="Tablero Eléctrico"
+          corriente1={(data.snapshot.i1.value / 100).toString()}
+          corriente2={(data.snapshot.i2.value / 100).toString()}
+          corriente3={(data.snapshot.i3.value / 100).toString()}
+          voltaje1={(data.snapshot.v1.value / 10).toString()}
+          voltaje2={(data.snapshot.v2.value / 10).toString()}
+          voltaje3={(data.snapshot.v3.value / 10).toString()}
+        ></States>
         {/* 1. Bomba - Posición (0, 300) */}
         <Pump
           spriteWidth={SPRITE_SIZE}
@@ -104,6 +122,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           caudal={data.snapshot.caudal.value}
           totalizador_diario={Number(tot)}
           totalizador_total={data.snapshot.totalizador.value}
+          presion={data.snapshot.presion.value}
         />
 
         {/* 4. Tanque Principal - Posición (600, 0). Max Volume: 7 */}
@@ -117,7 +136,8 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           maxVolume={3.5}
           style={{ top: 0, left: 700 }}
           name="Estanque 30m³"
-          labelOffsetX={35}
+          labelX={750}
+          labelY={-150}
           tiempoVaciado={data.tiempo_vaciado_formatted}
         />
       </div>

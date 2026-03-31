@@ -187,6 +187,45 @@ export class SsrNerquihueService {
     }));
   }
 
+  // Kwh
+  async getKwh(dto: DateRangeDto): Promise<Metric[]> {
+    const range = dto;
+    if (!range) throw new Error('Se requiere rango de fechas válido.');
+
+    const start = range.start + ' 00:00:00';
+    const end = range.end + ' 23:59:59';
+
+    const results: DailyQueryResult[] = await this.repo.query(
+      `
+        WITH bounds AS (
+          SELECT mt_time_2::DATE AS day, MIN(mt_time_2) AS first_ts, MAX(mt_time_2) AS last_ts
+          FROM ssr_nerquihue
+          WHERE mt_name = 'SSR_NERQUIHUE--slave.kwh'
+          AND mt_time_2 BETWEEN $1 AND $2
+          GROUP BY mt_time_2::DATE
+        )
+        SELECT b.day,
+          (MAX(CAST(s_last.mt_value AS NUMERIC(30,6))) - MIN(CAST(s_first.mt_value AS NUMERIC(30,6)))) AS daily_value
+        FROM bounds b
+        LEFT JOIN ssr_nerquihue s_first
+          ON s_first.mt_name = 'SSR_NERQUIHUE--slave.kwh' AND s_first.mt_time_2 = b.first_ts
+        LEFT JOIN ssr_nerquihue s_last
+          ON s_last.mt_name = 'SSR_NERQUIHUE--slave.kwh' AND s_last.mt_time_2 = b.last_ts
+        GROUP BY b.day
+        ORDER BY b.day ASC
+      `,
+      [start, end],
+    );
+
+    return results.map((row) => ({
+      time:
+        typeof row.day === 'string'
+          ? row.day
+          : row.day.toISOString().split('T')[0],
+      value: Number(row.daily_value * 10),
+    }));
+  }
+
   // Nivel
   async getNivel(dto: DateRangeDto): Promise<Metric[]> {
     const range = this.normalizeDateRange(dto);
@@ -279,6 +318,148 @@ export class SsrNerquihueService {
     const results = await this.repo.find({
       where: {
         mt_name: 'SSR_NERQUIHUE--slave.caudal',
+        mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
+          start,
+          end,
+        }),
+      },
+      order: { mt_time_2: 'ASC' },
+    });
+
+    return results.map((row) => ({
+      time: row.mt_time_2.toISOString(),
+      value: Number(row.mt_value),
+    }));
+  }
+
+  // Corriente
+  async getCorriente(
+    dto: DateRangeDto,
+  ): Promise<{ i1: Metric[]; i2: Metric[]; i3: Metric[] }> {
+    const range = this.normalizeDateRange(dto);
+
+    const fetchVariable = async (variable: string) => {
+      const mtName = `SSR_NERQUIHUE--slave.${variable}`;
+      if (!range) {
+        const start = new Date(Date.now() - 6 * 60 * 60 * 1000);
+        const results = await this.repo.find({
+          where: {
+            mt_name: mtName,
+            mt_time_2: Raw((alias) => `${alias} >= :start`, { start }),
+          },
+          order: { mt_time_2: 'ASC' },
+        });
+
+        return results.map((row) => ({
+          time: row.mt_time_2.toISOString(),
+          value: Number(row.mt_value),
+        }));
+      }
+
+      const { start, end } = range;
+
+      const results = await this.repo.find({
+        where: {
+          mt_name: mtName,
+          mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
+            start,
+            end,
+          }),
+        },
+        order: { mt_time_2: 'ASC' },
+      });
+
+      return results.map((row) => ({
+        time: row.mt_time_2.toISOString(),
+        value: Number(row.mt_value),
+      }));
+    };
+
+    const [i1, i2, i3] = await Promise.all([
+      fetchVariable('i1'),
+      fetchVariable('i2'),
+      fetchVariable('i3'),
+    ]);
+
+    return { i1, i2, i3 };
+  }
+
+  // Voltaje
+  async getVoltaje(
+    dto: DateRangeDto,
+  ): Promise<{ v1: Metric[]; v2: Metric[]; v3: Metric[] }> {
+    const range = this.normalizeDateRange(dto);
+
+    const fetchVariable = async (variable: string) => {
+      const mtName = `SSR_NERQUIHUE--slave.${variable}`;
+      if (!range) {
+        const start = new Date(Date.now() - 6 * 60 * 60 * 1000);
+        const results = await this.repo.find({
+          where: {
+            mt_name: mtName,
+            mt_time_2: Raw((alias) => `${alias} >= :start`, { start }),
+          },
+          order: { mt_time_2: 'ASC' },
+        });
+
+        return results.map((row) => ({
+          time: row.mt_time_2.toISOString(),
+          value: Number(row.mt_value),
+        }));
+      }
+
+      const { start, end } = range;
+
+      const results = await this.repo.find({
+        where: {
+          mt_name: mtName,
+          mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
+            start,
+            end,
+          }),
+        },
+        order: { mt_time_2: 'ASC' },
+      });
+
+      return results.map((row) => ({
+        time: row.mt_time_2.toISOString(),
+        value: Number(row.mt_value),
+      }));
+    };
+
+    const [v1, v2, v3] = await Promise.all([
+      fetchVariable('v1'),
+      fetchVariable('v2'),
+      fetchVariable('v3'),
+    ]);
+
+    return { v1, v2, v3 };
+  }
+
+  // Presion
+  async getPresion(dto: DateRangeDto): Promise<Metric[]> {
+    const range = this.normalizeDateRange(dto);
+    if (!range) {
+      const start = new Date(Date.now() - 6 * 60 * 60 * 1000);
+      const results = await this.repo.find({
+        where: {
+          mt_name: 'SSR_NERQUIHUE--slave.presion',
+          mt_time_2: Raw((alias) => `${alias} >= :start`, { start }),
+        },
+        order: { mt_time_2: 'ASC' },
+      });
+
+      return results.map((row) => ({
+        time: row.mt_time_2.toISOString(),
+        value: Number(row.mt_value),
+      }));
+    }
+
+    const { start, end } = range;
+
+    const results = await this.repo.find({
+      where: {
+        mt_name: 'SSR_NERQUIHUE--slave.presion',
         mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
           start,
           end,

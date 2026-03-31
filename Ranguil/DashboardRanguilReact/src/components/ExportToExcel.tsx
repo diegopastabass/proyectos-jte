@@ -7,7 +7,11 @@ type ExportDataType =
   | "nivel2"
   | "caudal"
   | "horometro"
-  | "totalizador";
+  | "totalizador"
+  | "voltaje"
+  | "corriente"
+  | "presion"
+  | "kwh";
 
 const EXPORT_OPTIONS: Record<ExportDataType, string> = {
   nivel: "Nivel Estanque 1",
@@ -15,6 +19,10 @@ const EXPORT_OPTIONS: Record<ExportDataType, string> = {
   caudal: "Caudal",
   horometro: "Horómetro",
   totalizador: "Totalizador",
+  voltaje: "Voltaje",
+  corriente: "Corriente",
+  presion: "Presión",
+  kwh: "kWh",
 };
 
 const ENDPOINT_MAP: Record<ExportDataType, string> = {
@@ -23,6 +31,10 @@ const ENDPOINT_MAP: Record<ExportDataType, string> = {
   caudal: "caudal",
   horometro: "horometro",
   totalizador: "totalizador",
+  voltaje: "voltaje",
+  corriente: "corriente",
+  presion: "presion",
+  kwh: "kwh",
 };
 
 interface ApiDataPoint {
@@ -54,7 +66,14 @@ function Export() {
 
       if (
         startDate === endDate &&
-        ["nivel", "caudal", "nivel2"].includes(endpoint)
+        [
+          "nivel",
+          "caudal",
+          "nivel2",
+          "voltaje",
+          "corriente",
+          "presion",
+        ].includes(endpoint)
       ) {
         apiUrl = `https://app.jteanalytics.cl/ranguil/${endpoint}`;
       } else {
@@ -114,6 +133,14 @@ function Export() {
 
           case "totalizador":
             return { Fecha: fecha, "Valor (m³)": d.value };
+          case "voltaje":
+            return { Fecha: fecha, "Valor (V)": d.value / 10 };
+          case "corriente":
+            return { Fecha: fecha, "Valor (A)": d.value / 100 };
+          case "presion":
+            return { Fecha: fecha, "Valor (bar)": d.value / 10 };
+          case "kwh":
+            return { Fecha: fecha, "Valor (kWh)": d.value };
         }
       });
 

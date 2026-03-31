@@ -10,6 +10,7 @@ interface PipeProps {
   caudal?: number;
   totalizador_total?: number;
   totalizador_diario?: number;
+  presion?: number;
 }
 
 const FRAMES_COUNT = 3;
@@ -25,6 +26,7 @@ const Pipe: React.FC<PipeProps> = ({
   caudal,
   totalizador_diario,
   totalizador_total,
+  presion,
 }) => {
   const [frameX, setFrameX] = useState(0);
 
@@ -56,7 +58,7 @@ const Pipe: React.FC<PipeProps> = ({
         style={{
           maxWidth: "220px",
           position: "absolute",
-          top: 80,
+          top: 30,
           left: 420,
           zIndex: 10,
         }}
@@ -79,6 +81,12 @@ const Pipe: React.FC<PipeProps> = ({
           <span className="text-muted small">Caudal de Impulsión:</span>
           <strong>
             <h6>{caudal ? caudal?.toFixed(2) : 0} l/s</h6>
+          </strong>
+        </div>
+        <div className="mb-2">
+          <span className="text-muted small">Presión:</span>
+          <strong>
+            <h6>{presion ? presion?.toFixed(2) : 0} bar</h6>
           </strong>
         </div>
       </div>

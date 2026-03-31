@@ -10,8 +10,10 @@ interface TankProps {
   maxVolume: number; // Volumen máximo
   style?: CSSProperties;
   name?: string;
-  labelOffsetX?: number;
+  labelX?: number;
+  labelY?: number;
   tiempoVaciado?: string;
+  solar?: number;
 }
 
 const MAX_LEVEL_FRAMES = 20;
@@ -22,12 +24,15 @@ const Tank: React.FC<TankProps> = ({
   spriteHeight,
   positionX,
   positionY,
+  labelX,
+  labelY,
   image,
   volume,
   maxVolume,
   style,
   name,
   tiempoVaciado,
+  solar,
 }) => {
   const [frameX, setFrameX] = useState(0);
 
@@ -61,20 +66,25 @@ const Tank: React.FC<TankProps> = ({
       <div
         className="text-center"
         style={{
-          maxWidth: "300px",
+          maxWidth: "200px",
           position: "relative",
-          top: 130,
-          left: 705,
+          top: labelY,
+          left: labelX,
           zIndex: 10,
         }}
       >
         <h5>{name}</h5>
+
+        {solar && <h6>☼ {solar.toFixed(2)} V</h6>}
         <h6>{volume.toFixed(2)} m</h6>
         <h6>{((60 / 7) * volume).toFixed(2)} m³</h6>
         <p>{Math.round(percentage * 100)}%</p>
         {tiempoVaciado && (
-          <div className="alert alert-primary" style={{ padding: "5px" }}>
-            <h6>Tiempo de Vaciado Estanque</h6>
+          <div
+            className="alert alert-primary"
+            style={{ padding: "5px", margin: "5px" }}
+          >
+            <h6>T. Vaciado</h6>
             <p>{tiempoVaciado}</p>
           </div>
         )}

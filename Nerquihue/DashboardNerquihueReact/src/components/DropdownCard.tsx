@@ -18,7 +18,7 @@ ChartJS.register(
   LineElement,
   Tooltip,
   Legend,
-  Title
+  Title,
 );
 
 interface DropdownCardProps {
@@ -33,6 +33,7 @@ interface DropdownCardProps {
   date?: string;
   nivelMax?: number; // si no viene, usar 3
   nivelAlarma?: number; // opcional
+  divisor?: number;
 }
 
 function DropdownCard({
@@ -43,16 +44,15 @@ function DropdownCard({
   date,
   nivelMax = 3,
   nivelAlarma,
+  divisor = 1,
 }: DropdownCardProps) {
   const labels = data.map((d) =>
     new Date(d.time).toLocaleTimeString("es-CL", {
       hour: "2-digit",
       minute: "2-digit",
-    })
+    }),
   );
 
-  // Divisor solo para Estanque Nuevo
-  const divisor = title === "Estanque Nuevo" ? 100 : 1;
   const values = data.map((d) => d.value / divisor);
 
   // Línea horizontal de alarma SOLO si viene el valor

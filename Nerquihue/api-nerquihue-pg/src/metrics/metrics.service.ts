@@ -52,8 +52,14 @@ export class SsrNerquihueService {
     const snapshot: MetricSnapshot = results.reduce(
       (acc: MetricSnapshot, row: any) => {
         const key = row.mt_name.replace(prefix, '');
+        let value = Number(row.mt_value);
+        
+        if (key === 'automatico') {
+          value = 1;
+        }
+
         acc[key] = {
-          value: Number(row.mt_value),
+          value,
           time: new Date(row.mt_time_2).toISOString(),
         };
         return acc;

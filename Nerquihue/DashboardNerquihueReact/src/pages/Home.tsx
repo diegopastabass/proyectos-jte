@@ -233,7 +233,10 @@ function App() {
               "Totalizador Total",
               `${data.snapshot.totalizador.value.toFixed(2)} m³`,
             ]}
-            text7={["Presión", `${data.snapshot.presion.value.toFixed(2)} bar`]}
+            text7={[
+              "Presión",
+              `${(data.snapshot.presion.value / 10).toFixed(2)} bar`,
+            ]}
           />
           <ToggleCardButton
             isOpen={isOpenBomba}
@@ -319,7 +322,7 @@ function App() {
           i2: corrienteChartData.i2,
           i3: corrienteChartData.i3,
         }}
-        divisor={100}
+        divisor={50}
       />
     </>
   );
@@ -433,7 +436,7 @@ function App() {
             i2: corrienteChartData.i2,
             i3: corrienteChartData.i3,
           }}
-          divisor={100}
+          divisor={50}
           chartLabel="Corriente (A)"
         />
       </div>

@@ -58,7 +58,7 @@ const Pipe: React.FC<PipeProps> = ({
         style={{
           maxWidth: "220px",
           position: "absolute",
-          top: 30,
+          top: 0,
           left: 420,
           zIndex: 10,
         }}

@@ -63,7 +63,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
   const containerStyle: CSSProperties = {
     position: "relative",
     maxWidth: "900px",
-    height: "600px",
+    height: "500px",
     borderRadius: "8px",
   };
 
@@ -94,7 +94,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           sentido={0}
           image={imageAssets.newPump}
           isActive={hasWaterFlow}
-          style={{ top: 300, left: 100 }}
+          style={{ top: 270, left: 100 }}
         />
 
         {/* 2. Codo - Posición (0, 0) */}
@@ -105,7 +105,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           b={0}
           image={imageAssets.newElbow}
           hasWaterFlow={hasWaterFlow}
-          style={{ top: 0, left: 100 }}
+          style={{ top: -30, left: 100 }}
           freatico={data.snapshot.freatico.value}
           horometro_diario={Number(hor)}
           horometro_total={data.snapshot.horometro.value}
@@ -118,7 +118,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           sentido={1}
           image={imageAssets.newPipe}
           hasWaterFlow={hasWaterFlow}
-          style={{ top: 0, left: 400 }}
+          style={{ top: -30, left: 400 }}
           caudal={data.snapshot.caudal.value}
           totalizador_diario={Number(tot)}
           totalizador_total={data.snapshot.totalizador.value}
@@ -134,10 +134,10 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           image={imageAssets.newTank}
           volume={data.snapshot.estanque.value}
           maxVolume={3.5}
-          style={{ top: 0, left: 700 }}
+          style={{ top: -30, left: 700 }}
           name="Estanque 30m³"
           labelX={750}
-          labelY={-150}
+          labelY={-190}
           tiempoVaciado={data.tiempo_vaciado_formatted}
         />
       </div>

@@ -28,6 +28,7 @@ interface DropdownCardv4Props {
   data: Record<string, { time: string; value: number }[]>;
   date?: string;
   divisor?: number;
+  chartHeight?: string | number;
 }
 
 function DropdownCardv4({
@@ -37,6 +38,7 @@ function DropdownCardv4({
   data,
   date,
   divisor = 1,
+  chartHeight = "230px",
 }: DropdownCardv4Props) {
   const keys = Object.keys(data);
   const firstKey = keys.find((key) => data[key] && data[key].length > 0);
@@ -128,7 +130,7 @@ function DropdownCardv4({
     >
       <Card>
         <CardBody title={`Detalle ${title}`} date={date}></CardBody>
-        <div style={{ height: "230px" }}>
+        <div style={{ height: chartHeight }}>
           <Line data={chartData} options={options} />
         </div>
       </Card>

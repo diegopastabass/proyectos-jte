@@ -361,6 +361,7 @@ function App() {
           chartLabel="Nivel del Estanque (m)"
           data={nivelChartData}
           nivelAlarma={1.7}
+          chartHeight="178px"
         />
       </div>
 
@@ -372,6 +373,7 @@ function App() {
           chartLabel="Caudal de Impulsión (l/s)"
           data={caudalChartData}
           nivelMax={5}
+          chartHeight="176px"
         />
       </div>
 

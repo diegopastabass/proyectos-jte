@@ -29,6 +29,7 @@ interface DropdownCardProps {
     value: number;
   }[];
   date?: string;
+  chartHeight?: string | number;
 }
 
 function DropdownCardv3({
@@ -37,6 +38,7 @@ function DropdownCardv3({
   data,
   chartLabel,
   date,
+  chartHeight = "230px",
 }: DropdownCardProps) {
   const labels = data.map((d) => new Date(d.time).toISOString().split("T")[0]);
   const values = data.map((d) => d.value);
@@ -92,7 +94,7 @@ function DropdownCardv3({
     >
       <Card>
         <CardBody title={`Detalle ${title}`} date={date} />
-        <div style={{ height: "230px" }}>
+        <div style={{ height: chartHeight }}>
           <Bar data={chartData} options={options} />
         </div>
       </Card>

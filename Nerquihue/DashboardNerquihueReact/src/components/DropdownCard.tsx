@@ -34,6 +34,8 @@ interface DropdownCardProps {
   nivelMax?: number; // si no viene, usar 3
   nivelAlarma?: number; // opcional
   divisor?: number;
+  style?: React.CSSProperties;
+  chartHeight?: string | number;
 }
 
 function DropdownCard({
@@ -45,6 +47,8 @@ function DropdownCard({
   nivelMax = 3,
   nivelAlarma,
   divisor = 1,
+  style,
+  chartHeight = "230px",
 }: DropdownCardProps) {
   const labels = data.map((d) =>
     new Date(d.time).toLocaleTimeString("es-CL", {
@@ -122,10 +126,11 @@ function DropdownCard({
       className={`mt-lg-0 mb-lg-0 mt-2 mb-2 ${
         isOpen ? "show" : "collapse-card"
       }`}
+      style={style}
     >
       <Card>
         <CardBody title={`Detalle ${title}`} date={date}></CardBody>
-        <div style={{ height: "230px" }}>
+        <div style={{ height: chartHeight }}>
           <Line data={chartData} options={options} />
         </div>
       </Card>

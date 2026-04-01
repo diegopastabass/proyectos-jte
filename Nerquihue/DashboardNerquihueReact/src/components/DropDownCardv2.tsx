@@ -29,6 +29,7 @@ interface DropdownCardProps {
     value: number;
   }[];
   date?: string;
+  chartHeight?: string | number;
 }
 
 const minutesToHHMM = (mins: number): string => {
@@ -46,6 +47,7 @@ function DropdownCardv2({
   data,
   chartLabel,
   date,
+  chartHeight = "230px",
 }: DropdownCardProps) {
   const labels = data.map((d) => new Date(d.time).toISOString().split("T")[0]);
   const values = data.map((d) => d.value);
@@ -116,7 +118,7 @@ function DropdownCardv2({
     >
       <Card>
         <CardBody title={`Detalle ${title}`} date={date} />
-        <div style={{ height: "230px" }}>
+        <div style={{ height: chartHeight }}>
           <Bar data={chartData} options={options} />
         </div>
       </Card>

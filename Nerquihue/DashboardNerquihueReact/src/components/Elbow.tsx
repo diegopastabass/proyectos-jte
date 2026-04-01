@@ -48,7 +48,7 @@ const Elbow: React.FC<ElbowProps> = ({
         style={{
           maxWidth: "300px",
           position: "absolute",
-          top: 320,
+          top: 280,
           left: 420,
           zIndex: 10,
         }}

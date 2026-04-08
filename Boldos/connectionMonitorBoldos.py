@@ -1,6 +1,7 @@
 import time
 import logging
 import requests
+import subprocess
 from datetime import datetime, timezone
 import os
 from dotenv import load_dotenv
@@ -25,6 +26,35 @@ logging.basicConfig(
 )
 
 alertas_activas = set()
+ultimo_reinicio_servicio = 0 # Timestamp del último reinicio para evitar bucles
+COOLDOWN_REINICIO = 3600 # 1 hora (en segundos) de espera mínima entre reinicios
+NOMBRE_SERVICIO_WINDOWS = "NOMBRE_EXACTO_DEL_SERVICIO" # TODO: Cambiar por el Nombre real de Servicio en services.msc
+
+# --- reiniciar_servicio_mt_data_provider ---
+def reiniciar_servicio_mt_data_provider():
+    global ultimo_reinicio_servicio
+    ahora = time.time()
+    
+    # Evitar reiniciar el servicio múltiples veces seguidas si ya se hizo hace poco
+    if (ahora - ultimo_reinicio_servicio) < COOLDOWN_REINICIO:
+        tiempo_restante = int((COOLDOWN_REINICIO - (ahora - ultimo_reinicio_servicio)) / 60)
+        logging.info(f"Reinicio de servicio omitido (en cooldown por {tiempo_restante} minutos).")
+        return
+
+    logging.info(f"Intentando reiniciar el servicio {NOMBRE_SERVICIO_WINDOWS}...")
+    try:
+        # Usamos PowerShell para forzar el reinicio (funciona perfecto en Windows Server)
+        comando = ["powershell", "-Command", f"Restart-Service -Name '{NOMBRE_SERVICIO_WINDOWS}' -Force"]
+        resultado = subprocess.run(comando, check=True, capture_output=True, text=True)
+        
+        logging.info(f"Servicio {NOMBRE_SERVICIO_WINDOWS} reiniciado exitosamente.")
+        enviar_alerta(f"⚙️ REINICIO AUTOMÁTICO ⚙️\n\nSe ha forzado el reinicio del servicio '{NOMBRE_SERVICIO_WINDOWS}' debido a una interrupción en la llegada de datos.")
+        ultimo_reinicio_servicio = ahora
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr.strip() if e.stderr else e.output
+        logging.error(f"Error al reiniciar el servicio {NOMBRE_SERVICIO_WINDOWS}: {error_msg}")
+        # Puedes descomentar la siguiente línea si también quieres una alerta de WhatsApp cuando falla el reinicio
+        # enviar_alerta(f"❌ ERROR DE REINICIO ❌\n\nFallo al intentar reiniciar '{NOMBRE_SERVICIO_WINDOWS}'.")
 
 # --- enviar_alerta ---
 def enviar_alerta(mensaje: str):
@@ -103,6 +133,9 @@ def verificar_estado_endpoint():
             mensaje_alerta = "🚨 ALERTA DE CONEXIÓN APR LOS BOLDOS 🚨\n\nEquipos sin datos:\n\n" + "\n\n".join(nuevas_alertas)
             enviar_alerta(mensaje_alerta)
             logging.info("Alerta agrupada enviada.")
+            
+            # Intentar reiniciar el servicio de recolección local
+            reiniciar_servicio_mt_data_provider()
 
     except Exception as e:
         logging.error(f"Error consultando endpoint: {e}")

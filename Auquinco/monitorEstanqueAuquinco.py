@@ -21,11 +21,11 @@ def get_dynamic_config():
     }
 
 # Nombre de sensores
-SENSOR_ESTANQUE = "SSR_NERQUIHUE--slave.estanque"
+SENSOR_ESTANQUE = "SSR_AUQUINCO--slave.estanque"
 
 # --- Logging ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-LOG_FILE = os.path.join(BASE_DIR, "logs_NERQUIHUE.txt")
+LOG_FILE = os.path.join(BASE_DIR, "logs_AUQUINCO.txt")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -37,7 +37,7 @@ logging.basicConfig(
 # --- Funciones ---
 def obtener_niveles(nombre_sensor):
     """Obtiene los dos últimos registros desde la API."""
-    url = "https://app.jteanalytics.cl/nerquihue/nivel?limit=2"
+    url = "https://app.jteanalytics.cl/auquinco/nivel?limit=2"
     try:
         response = requests.get(url, timeout=10)
         response.raise_for_status()

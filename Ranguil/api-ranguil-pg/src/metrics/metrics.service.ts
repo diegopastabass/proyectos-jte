@@ -124,122 +124,123 @@ export class SsrRanguilService {
       };
     }
   }
+  // Daily Metrics
+  private async calculateAndCacheDaily(
+    metricName: string,
+    start: string,
+    end: string,
+  ): Promise<Metric[]> {
+    const cached = await this.repo.query(
+      `SELECT mt_day, mt_value FROM ssr_ranguil_daily_metrics WHERE mt_name = $1 AND mt_day BETWEEN $2 AND $3`,
+      [metricName, start, end],
+    );
 
-  // Totalizador
-  async getTotalizador(dto: DateRangeDto): Promise<Metric[]> {
-    const range = dto;
-    if (!range) throw new Error('Se requiere rango de fechas válido.');
+    const metricsMap = new Map<string, number>();
+    cached.forEach((row: any) => {
+      const dateStr =
+        typeof row.mt_day === 'string'
+          ? row.mt_day
+          : row.mt_day.toISOString().split('T')[0];
+      metricsMap.set(dateStr, Number(row.mt_value));
+    });
 
-    const start = range.start + ' 00:00:00';
-    const end = range.end + ' 23:59:59';
+    const missingDates: string[] = [];
+    let currentDate = new Date(`${start}T00:00:00Z`);
+    const endDate = new Date(`${end}T00:00:00Z`);
+    const todayStr = new Date().toISOString().split('T')[0];
 
-    const results: DailyQueryResult[] = await this.repo.query(
-      `
+    while (currentDate <= endDate) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+      if (!metricsMap.has(dateStr) || dateStr === todayStr) {
+        missingDates.push(dateStr);
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    if (missingDates.length > 0) {
+      const calculated = await this.repo.query(
+        `
         WITH bounds AS (
           SELECT mt_time_2::DATE AS day, MIN(mt_time_2) AS first_ts, MAX(mt_time_2) AS last_ts
           FROM ssr_ranguil
-          WHERE mt_name = 'SSR_RANGUIL--slave.totalizador'
-          AND mt_time_2 BETWEEN $1 AND $2
+          WHERE mt_name = $1 AND mt_time_2::DATE = ANY($2::DATE[])
           GROUP BY mt_time_2::DATE
         )
         SELECT b.day,
           (MAX(CAST(s_last.mt_value AS NUMERIC(30,6))) - MIN(CAST(s_first.mt_value AS NUMERIC(30,6)))) AS daily_value
         FROM bounds b
         LEFT JOIN ssr_ranguil s_first
-          ON s_first.mt_name = 'SSR_RANGUIL--slave.totalizador' AND s_first.mt_time_2 = b.first_ts
+          ON s_first.mt_name = $1 AND s_first.mt_time_2 = b.first_ts
         LEFT JOIN ssr_ranguil s_last
-          ON s_last.mt_name = 'SSR_RANGUIL--slave.totalizador' AND s_last.mt_time_2 = b.last_ts
+          ON s_last.mt_name = $1 AND s_last.mt_time_2 = b.last_ts
         GROUP BY b.day
-        ORDER BY b.day ASC
-      `,
-      [start, end],
-    );
+        `,
+        [metricName, missingDates],
+      );
 
-    return results.map((row) => ({
-      time:
-        typeof row.day === 'string'
-          ? row.day
-          : row.day.toISOString().split('T')[0],
-      value: Number(row.daily_value),
-    }));
+      for (const row of calculated) {
+        const dateStr =
+          typeof row.day === 'string'
+            ? row.day
+            : row.day.toISOString().split('T')[0];
+        const val = Number(row.daily_value || 0);
+
+        await this.repo.query(
+          `INSERT INTO ssr_ranguil_daily_metrics (mt_name, mt_day, mt_value) 
+           VALUES ($1, $2, $3) 
+           ON CONFLICT (mt_name, mt_day) DO UPDATE SET mt_value = EXCLUDED.mt_value`,
+          [metricName, dateStr, val],
+        );
+
+        metricsMap.set(dateStr, val);
+      }
+    }
+
+    const results: Metric[] = [];
+    currentDate = new Date(`${start}T00:00:00Z`);
+
+    while (currentDate <= endDate) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+      if (metricsMap.has(dateStr)) {
+        results.push({ time: dateStr, value: metricsMap.get(dateStr)! });
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return results;
+  }
+
+  // Totalizador
+  async getTotalizador(dto: DateRangeDto): Promise<Metric[]> {
+    if (!dto || !dto.start || !dto.end)
+      throw new Error('Se requiere rango de fechas válido.');
+    return this.calculateAndCacheDaily(
+      'SSR_RANGUIL--slave.totalizador',
+      dto.start,
+      dto.end,
+    );
   }
 
   // Horometro
   async getHorometro(dto: DateRangeDto): Promise<Metric[]> {
-    const range = dto;
-    if (!range) throw new Error('Se requiere rango de fechas válido.');
-
-    const start = range.start + ' 00:00:00';
-    const end = range.end + ' 23:59:59';
-
-    const results: DailyQueryResult[] = await this.repo.query(
-      `
-        WITH bounds AS (
-          SELECT mt_time_2::DATE AS day, MIN(mt_time_2) AS first_ts, MAX(mt_time_2) AS last_ts
-          FROM ssr_ranguil
-          WHERE mt_name = 'SSR_RANGUIL--slave.horometro'
-          AND mt_time_2 BETWEEN $1 AND $2
-          GROUP BY mt_time_2::DATE
-        )
-        SELECT b.day,
-          (MAX(CAST(s_last.mt_value AS NUMERIC(30,6))) - MIN(CAST(s_first.mt_value AS NUMERIC(30,6)))) AS daily_value
-        FROM bounds b
-        LEFT JOIN ssr_ranguil s_first
-          ON s_first.mt_name = 'SSR_RANGUIL--slave.horometro' AND s_first.mt_time_2 = b.first_ts
-        LEFT JOIN ssr_ranguil s_last
-          ON s_last.mt_name = 'SSR_RANGUIL--slave.horometro' AND s_last.mt_time_2 = b.last_ts
-        GROUP BY b.day
-        ORDER BY b.day ASC
-      `,
-      [start, end],
+    if (!dto || !dto.start || !dto.end)
+      throw new Error('Se requiere rango de fechas válido.');
+    return this.calculateAndCacheDaily(
+      'SSR_RANGUIL--slave.horometro',
+      dto.start,
+      dto.end,
     );
-
-    return results.map((row) => ({
-      time:
-        typeof row.day === 'string'
-          ? row.day
-          : row.day.toISOString().split('T')[0],
-      value: Number(row.daily_value),
-    }));
   }
 
   // Kwh
   async getKwh(dto: DateRangeDto): Promise<Metric[]> {
-    const range = dto;
-    if (!range) throw new Error('Se requiere rango de fechas válido.');
-
-    const start = range.start + ' 00:00:00';
-    const end = range.end + ' 23:59:59';
-
-    const results: DailyQueryResult[] = await this.repo.query(
-      `
-        WITH bounds AS (
-          SELECT mt_time_2::DATE AS day, MIN(mt_time_2) AS first_ts, MAX(mt_time_2) AS last_ts
-          FROM ssr_ranguil
-          WHERE mt_name = 'SSR_RANGUIL--slave.kwh'
-          AND mt_time_2 BETWEEN $1 AND $2
-          GROUP BY mt_time_2::DATE
-        )
-        SELECT b.day,
-          (MAX(CAST(s_last.mt_value AS NUMERIC(30,6))) - MIN(CAST(s_first.mt_value AS NUMERIC(30,6)))) AS daily_value
-        FROM bounds b
-        LEFT JOIN ssr_ranguil s_first
-          ON s_first.mt_name = 'SSR_RANGUIL--slave.kwh' AND s_first.mt_time_2 = b.first_ts
-        LEFT JOIN ssr_ranguil s_last
-          ON s_last.mt_name = 'SSR_RANGUIL--slave.kwh' AND s_last.mt_time_2 = b.last_ts
-        GROUP BY b.day
-        ORDER BY b.day ASC
-      `,
-      [start, end],
+    if (!dto || !dto.start || !dto.end)
+      throw new Error('Se requiere rango de fechas válido.');
+    return this.calculateAndCacheDaily(
+      'SSR_RANGUIL--slave.kwh',
+      dto.start,
+      dto.end,
     );
-
-    return results.map((row) => ({
-      time:
-        typeof row.day === 'string'
-          ? row.day
-          : row.day.toISOString().split('T')[0],
-      value: Number(row.daily_value * 10),
-    }));
   }
 
   // Nivel

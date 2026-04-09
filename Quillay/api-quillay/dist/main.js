@@ -14,7 +14,7 @@ async function bootstrap() {
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
         allowedHeaders: 'Content-Type, Accept',
     });
-    const port = process.env.PORT || 3006;
+    const port = process.env.PORT || 3007;
     await app.listen(port);
     common_1.Logger.log(`Server running on http://localhost:${port}`);
 }

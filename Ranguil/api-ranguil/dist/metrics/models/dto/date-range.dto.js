@@ -14,14 +14,21 @@ const class_validator_1 = require("class-validator");
 class DateRangeDto {
     start;
     end;
+    limit;
 }
 exports.DateRangeDto = DateRangeDto;
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsDateString)(),
     __metadata("design:type", String)
 ], DateRangeDto.prototype, "start", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsDateString)(),
     __metadata("design:type", String)
 ], DateRangeDto.prototype, "end", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Object)
+], DateRangeDto.prototype, "limit", void 0);
 //# sourceMappingURL=date-range.dto.js.map

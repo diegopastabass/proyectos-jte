@@ -27,14 +27,14 @@ __decorate([
     __metadata("design:type", String)
 ], Telemetria.prototype, "mt_name", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 30, scale: 6 }),
+    (0, typeorm_1.Column)('numeric', { precision: 30, scale: 6 }),
     __metadata("design:type", Number)
 ], Telemetria.prototype, "mt_value", void 0);
 __decorate([
-    (0, typeorm_1.Column)('datetime'),
+    (0, typeorm_1.Column)('timestamp'),
     __metadata("design:type", Date)
 ], Telemetria.prototype, "mt_time_2", void 0);
 exports.Telemetria = Telemetria = __decorate([
-    (0, typeorm_1.Entity)('ssr_nerquihue')
+    (0, typeorm_1.Entity)('ssr_quillay')
 ], Telemetria);
 //# sourceMappingURL=metrics.entity.js.map

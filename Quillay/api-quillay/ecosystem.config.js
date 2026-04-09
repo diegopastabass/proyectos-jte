@@ -3,7 +3,7 @@ module.exports = {
     {
       name: 'api-quillay',
       script: 'dist/main.js',
-      instances: 2,
+      instances: 1,
       autorestart: true,
       watch: false,
       env: {

@@ -1,2 +1,2 @@
-export declare class SsrNerquihueModule {
+export declare class SsrQuillayModule {
 }

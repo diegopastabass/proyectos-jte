@@ -6,21 +6,21 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SsrNerquihueModule = void 0;
+exports.SsrQuillayModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const metrics_service_1 = require("./metrics.service");
 const metrics_controller_1 = require("./metrics.controller");
 const metrics_entity_1 = require("./models/metrics.entity");
-let SsrNerquihueModule = class SsrNerquihueModule {
+let SsrQuillayModule = class SsrQuillayModule {
 };
-exports.SsrNerquihueModule = SsrNerquihueModule;
-exports.SsrNerquihueModule = SsrNerquihueModule = __decorate([
+exports.SsrQuillayModule = SsrQuillayModule;
+exports.SsrQuillayModule = SsrQuillayModule = __decorate([
     (0, common_1.Module)({
         imports: [typeorm_1.TypeOrmModule.forFeature([metrics_entity_1.Telemetria])],
-        providers: [metrics_service_1.SsrNerquihueService],
-        controllers: [metrics_controller_1.SsrNerquihueController],
-        exports: [metrics_service_1.SsrNerquihueService],
+        providers: [metrics_service_1.SsrQuillayService],
+        controllers: [metrics_controller_1.SsrQuillayController],
+        exports: [metrics_service_1.SsrQuillayService],
     })
-], SsrNerquihueModule);
+], SsrQuillayModule);
 //# sourceMappingURL=metrics.module.js.map

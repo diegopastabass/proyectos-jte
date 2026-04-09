@@ -12,18 +12,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Telemetria = void 0;
 const typeorm_1 = require("typeorm");
 let Telemetria = class Telemetria {
-    mt_id;
     mt_name;
     mt_value;
     mt_time_2;
 };
 exports.Telemetria = Telemetria;
 __decorate([
-    (0, typeorm_1.PrimaryGeneratedColumn)(),
-    __metadata("design:type", Number)
-], Telemetria.prototype, "mt_id", void 0);
-__decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.PrimaryColumn)(),
     __metadata("design:type", String)
 ], Telemetria.prototype, "mt_name", void 0);
 __decorate([
@@ -31,10 +26,10 @@ __decorate([
     __metadata("design:type", Number)
 ], Telemetria.prototype, "mt_value", void 0);
 __decorate([
-    (0, typeorm_1.Column)('datetime'),
+    (0, typeorm_1.Column)('timestamp'),
     __metadata("design:type", Date)
 ], Telemetria.prototype, "mt_time_2", void 0);
 exports.Telemetria = Telemetria = __decorate([
-    (0, typeorm_1.Entity)('ssr_nerquihue')
+    (0, typeorm_1.Entity)('ssr_ranguil')
 ], Telemetria);
 //# sourceMappingURL=metrics.entity.js.map

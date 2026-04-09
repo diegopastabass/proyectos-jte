@@ -12,11 +12,11 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SsrNerquihueController = void 0;
+exports.SsrQuillayController = void 0;
 const common_1 = require("@nestjs/common");
 const metrics_service_1 = require("./metrics.service");
 const date_range_dto_1 = require("./models/dto/date-range.dto");
-let SsrNerquihueController = class SsrNerquihueController {
+let SsrQuillayController = class SsrQuillayController {
     service;
     constructor(service) {
         this.service = service;
@@ -33,47 +33,57 @@ let SsrNerquihueController = class SsrNerquihueController {
     getNivel(dto) {
         return this.service.getNivel(dto);
     }
+    getNivel2(dto) {
+        return this.service.getNivel2(dto);
+    }
     getCaudal(dto) {
         return this.service.getCaudal(dto);
     }
 };
-exports.SsrNerquihueController = SsrNerquihueController;
+exports.SsrQuillayController = SsrQuillayController;
 __decorate([
     (0, common_1.Get)('snapshot'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
-], SsrNerquihueController.prototype, "getSnapshot", null);
+], SsrQuillayController.prototype, "getSnapshot", null);
 __decorate([
     (0, common_1.Get)('totalizador'),
     __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [date_range_dto_1.DateRangeDto]),
     __metadata("design:returntype", void 0)
-], SsrNerquihueController.prototype, "getTotalizador", null);
+], SsrQuillayController.prototype, "getTotalizador", null);
 __decorate([
     (0, common_1.Get)('horometro'),
     __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [date_range_dto_1.DateRangeDto]),
     __metadata("design:returntype", void 0)
-], SsrNerquihueController.prototype, "getHorometro", null);
+], SsrQuillayController.prototype, "getHorometro", null);
 __decorate([
     (0, common_1.Get)('nivel'),
     __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [date_range_dto_1.DateRangeDto]),
     __metadata("design:returntype", void 0)
-], SsrNerquihueController.prototype, "getNivel", null);
+], SsrQuillayController.prototype, "getNivel", null);
+__decorate([
+    (0, common_1.Get)('nivel2'),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [date_range_dto_1.DateRangeDto]),
+    __metadata("design:returntype", void 0)
+], SsrQuillayController.prototype, "getNivel2", null);
 __decorate([
     (0, common_1.Get)('caudal'),
     __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [date_range_dto_1.DateRangeDto]),
     __metadata("design:returntype", void 0)
-], SsrNerquihueController.prototype, "getCaudal", null);
-exports.SsrNerquihueController = SsrNerquihueController = __decorate([
+], SsrQuillayController.prototype, "getCaudal", null);
+exports.SsrQuillayController = SsrQuillayController = __decorate([
     (0, common_1.Controller)(''),
-    __metadata("design:paramtypes", [metrics_service_1.SsrNerquihueService])
-], SsrNerquihueController);
+    __metadata("design:paramtypes", [metrics_service_1.SsrQuillayService])
+], SsrQuillayController);
 //# sourceMappingURL=metrics.controller.js.map

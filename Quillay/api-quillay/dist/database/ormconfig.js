@@ -39,7 +39,7 @@ const metrics_entity_1 = require("../metrics/models/metrics.entity");
 const dotenv = __importStar(require("dotenv"));
 dotenv.config();
 exports.AppDataSource = new typeorm_1.DataSource({
-    type: 'mysql',
+    type: 'postgres',
     host: process.env.DB_HOST,
     port: Number(process.env.DB_PORT),
     username: process.env.DB_USER,

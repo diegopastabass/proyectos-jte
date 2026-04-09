@@ -318,6 +318,7 @@ function App() {
           title="kWh"
           chartLabel="kWh"
           data={kwhChartData}
+          mult={10}
         />{" "}
         <DropdownCardv4
           isOpen={true}
@@ -430,6 +431,7 @@ function App() {
           title="kWh"
           chartLabel="kWh"
           data={kwhChartData}
+          mult={10}
         />
       </div>
 

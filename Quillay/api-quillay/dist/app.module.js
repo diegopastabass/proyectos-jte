@@ -24,7 +24,7 @@ exports.AppModule = AppModule = __decorate([
                 inject: [config_1.ConfigService],
                 useFactory: (config) => {
                     return {
-                        type: 'mysql',
+                        type: 'postgres',
                         host: config.get('DB_HOST', { infer: true }),
                         port: Number(config.get('DB_PORT', { infer: true })),
                         username: config.get('DB_USER', { infer: true }),
@@ -36,7 +36,7 @@ exports.AppModule = AppModule = __decorate([
                     };
                 },
             }),
-            metrics_module_1.SsrNerquihueModule,
+            metrics_module_1.SsrQuillayModule,
         ],
     })
 ], AppModule);

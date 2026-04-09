@@ -17,7 +17,7 @@ ChartJS.register(
   BarElement,
   Tooltip,
   Legend,
-  Title
+  Title,
 );
 
 interface DropdownCardProps {
@@ -29,6 +29,7 @@ interface DropdownCardProps {
     value: number;
   }[];
   date?: string;
+  mult?: number;
 }
 
 function DropdownCardv3({
@@ -37,9 +38,10 @@ function DropdownCardv3({
   data,
   chartLabel,
   date,
+  mult = 1,
 }: DropdownCardProps) {
   const labels = data.map((d) => new Date(d.time).toISOString().split("T")[0]);
-  const values = data.map((d) => d.value);
+  const values = data.map((d) => d.value * mult);
 
   const chartData = {
     labels,

@@ -1,5 +1,5 @@
 {
-  "name": "api-quillay",
+  "name": "api-ranguil",
   "version": "0.0.1",
   "description": "",
   "author": "",
@@ -25,9 +25,10 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/typeorm": "^11.0.0",
+    "cache-manager": "^7.2.8",
     "class-validator": "^0.14.2",
     "common": "^0.2.5",
-    "mysql2": "^3.15.2",
+    "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },

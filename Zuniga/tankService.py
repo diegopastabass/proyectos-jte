@@ -1,30 +1,31 @@
 import time
 import logging
 import requests
-import psycopg2
-import os
 from datetime import datetime
+import os
 from dotenv import load_dotenv
 
+# --- Cargar variables desde .env ---
 load_dotenv()
 
-# --- Configuración ---
-DB_CONFIG = {
-    "host": os.getenv("DB_HOST"),
-    "port": os.getenv("DB_PORT"),
-    "user": os.getenv("DB_USER"),
-    "password": os.getenv("DB_PASSWORD"),
-    "dbname": os.getenv("DB_NAME"),
-    "sslmode": os.getenv("DB_SSLMODE", "require"),
-}
-
+# --- Configuración desde .env ---
 API_URL = os.getenv("API_URL")
-TOKEN = os.getenv("API_TOKEN")
-TO = os.getenv("API_TO")
-INTERVALO_MINUTOS = 5
+TOKEN = os.getenv("TOKEN")
+TO = os.getenv("TO")
 
+# Estos valores se recargarán en cada ciclo
+def get_dynamic_config():
+    return {
+        "INTERVALO_MINUTOS": int(os.getenv("INTERVALO_MINUTOS", 5)),
+        "NIVEL_ALERTA": float(os.getenv("NIVEL_ALERTA", 2)),
+    }
+
+# Nombre de sensores
+SENSOR_ESTANQUE = "SSR_ZUNIGA--slave.estanque"
+
+# --- Logging ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-LOG_FILE = os.path.join(BASE_DIR, "logs.txt")
+LOG_FILE = os.path.join(BASE_DIR, "logs_ZUNIGA.txt")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -32,38 +33,46 @@ logging.basicConfig(
     handlers=[logging.FileHandler(LOG_FILE, encoding="utf-8", mode="a")]
 )
 
+
 # --- Funciones ---
-def obtener_niveles():
-    query = """
-        SELECT mt_value, mt_time_2 
-        FROM ssr_zuniga
-        WHERE mt_name = 'SSR_ZUNIGA--slave.estanque'
-        ORDER BY mt_time_2 DESC
-        LIMIT 2;
-    """
-    
+def obtener_niveles(nombre_sensor):
+    """Obtiene los dos últimos registros desde la API."""
+    url = "https://app.jteanalytics.cl/zuniga/nivel?limit=2"
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
-        cursor = conn.cursor()
-        cursor.execute(query)
-        rows = cursor.fetchall()
-        cursor.close()
-        conn.close()
-
-        if len(rows) < 2:
-            logging.warning("No hay suficientes datos en la BD.")
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        if len(data) < 2:
+            logging.warning(f"No hay suficientes datos desde la API para {nombre_sensor}.")
             return None, None, None, None
-
-        nivel_actual, time_actual = rows[0]
-        nivel_anterior, time_anterior = rows[1]
-
-        return float(nivel_actual), float(nivel_anterior), time_actual, time_anterior
-    
+            
+        # Ordenar por time ascendente para tener el anterior y luego el actual
+        data_sorted = sorted(data, key=lambda x: x["time"])
+        
+        registro_anterior = data_sorted[0]
+        registro_actual = data_sorted[1]
+        
+        def parse_time(t_str):
+            if t_str.endswith("Z"):
+                t_str = t_str[:-1] + "+00:00"
+            return datetime.fromisoformat(t_str).replace(tzinfo=None)
+            
+        time_anterior = parse_time(registro_anterior["time"])
+        time_actual = parse_time(registro_actual["time"])
+        
+        nivel_anterior = float(registro_anterior["value"])
+        nivel_actual = float(registro_actual["value"])
+        
+        return nivel_actual, nivel_anterior, time_actual, time_anterior
+        
     except Exception as e:
-        logging.error(f"Error de conexión a BD: {e}")
+        logging.error(f"Error obteniendo niveles desde la API: {e}")
         return None, None, None, None
 
+
 def calcular_tiempo_vaciado(nivel_actual, nivel_anterior, time_actual, time_anterior):
+    """Estimación de vaciado en HH:MM:SS."""
     delta_nivel = nivel_actual - nivel_anterior
     delta_tiempo = (time_actual - time_anterior).total_seconds()
 
@@ -73,46 +82,74 @@ def calcular_tiempo_vaciado(nivel_actual, nivel_anterior, time_actual, time_ante
     tasa_descenso = abs(delta_nivel) / delta_tiempo
     tiempo_restante_segundos = nivel_actual / tasa_descenso
 
-    # Corrección para compatibilidad con datetime
-    return str(datetime.utcfromtimestamp(tiempo_restante_segundos).strftime("%H:%M:%S"))
+    return datetime.utcfromtimestamp(tiempo_restante_segundos).strftime("%H:%M:%S")
 
-def enviar_alerta(nivel_actual, tiempo_vaciado):
-    body_msg = (
-        f"⚠️ Nivel de Estanque crítico\n"
-        f"Nivel Actual: {nivel_actual:.2f} m\n"
-        f"Tiempo Estimado de Vaciado: {tiempo_vaciado} Hrs"
-    )
-    data = {"token": TOKEN, "to": TO, "body": body_msg}
+def enviar_alerta(mensaje: str):
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    data = {"token": TOKEN, "to": TO, "body": mensaje}
 
     try:
         response = requests.post(API_URL, data=data, headers=headers, timeout=10)
-        logging.info(f"Respuesta API (status {response.status_code}): {response.text}")
-        response.raise_for_status()
+        if response.status_code == 200:
+            logging.info(f"📤 Alerta enviada con éxito: {mensaje}")
+        else:
+            logging.warning(f"⚠️ Error en respuesta UltaMsg ({response.status_code}): {response.text}")
     except requests.RequestException as e:
-        logging.error(f"Error al enviar alerta: {e}")
+        logging.error(f"❌ Error enviando mensaje a UltaMsg: {e}")
+
+def procesar_estanque(sensor, nombre_publico, nivel_alerta):
+    nivel_actual, nivel_anterior, time_actual, time_anterior = obtener_niveles(sensor)
+
+    if nivel_actual is None:
+        return False
+
+    nivel_actual = nivel_actual
+    nivel_anterior = nivel_anterior
+
+    if nivel_actual < nivel_anterior and nivel_actual < nivel_alerta:
+        tiempo_vaciado = calcular_tiempo_vaciado(
+            nivel_actual, nivel_anterior, time_actual, time_anterior
+        )
+        if tiempo_vaciado:
+            mensaje = (
+                f"🚨 ALERTA NIVEL CRÍTICO 🚨\n"
+                f"Estanque: {nombre_publico}\n"
+                f"Nivel Actual: {nivel_actual:.2f} m\n"
+                f"Tiempo Estimado de Vaciado: {tiempo_vaciado if tiempo_vaciado else 'N/A'}"
+            )
+            enviar_alerta(mensaje)
+            return True
+        else:
+            logging.info(f"No se pudo calcular tiempo de vaciado para {nombre_publico}.")
+            return False
+    else:
+        logging.info(f"{nombre_publico}: condiciones normales.")
+        return False
 
 def monitorear():
+    """Bucle principal con intervalo dinámico."""
     while True:
-        logging.info("Consultando datos de estanque...")
-        nivel_actual, nivel_anterior, time_actual, time_anterior = obtener_niveles()
+        cfg = get_dynamic_config()
+        intervalo_alerta = cfg["INTERVALO_MINUTOS"]   
+        nivel_alerta = cfg["NIVEL_ALERTA"]
 
-        if nivel_actual is not None and nivel_anterior is not None:
-            if nivel_actual < nivel_anterior and nivel_actual < 2:
-                tiempo_vaciado = calcular_tiempo_vaciado(
-                    nivel_actual, nivel_anterior, time_actual, time_anterior
-                )
-                if tiempo_vaciado:
-                    enviar_alerta(nivel_actual, tiempo_vaciado)
-                else:
-                    logging.info("No se pudo calcular tiempo de vaciado.")
-            else:
-                logging.info("Condiciones no cumplidas. Todo normal.")
-        else:
-            logging.warning("No se obtuvieron datos válidos.")
+        logging.info("Iniciando ciclo de monitoreo...")
 
-        logging.info(f"Esperando {INTERVALO_MINUTOS} minutos para la siguiente consulta...")
-        time.sleep(INTERVALO_MINUTOS * 60)
+        alerta_nuevo = procesar_estanque(SENSOR_ESTANQUE, "Estanque Nuevo", nivel_alerta)
+
+        hay_alerta = alerta_nuevo
+
+        # Intervalos dinámicos
+        intervalo = intervalo_alerta if hay_alerta else 1
+
+        logging.info(
+            f"{'⚠ Intervalo aumentado por alerta' if hay_alerta else '✓ Intervalo normal'}: "
+            f"{intervalo} minuto(s)."
+        )
+
+        time.sleep(intervalo * 60)
+
+
 
 if __name__ == "__main__":
     try:

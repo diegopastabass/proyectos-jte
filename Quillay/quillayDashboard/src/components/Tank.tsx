@@ -64,7 +64,7 @@ const Tank: React.FC<TankProps> = ({
       <div
         className="text-center"
         style={{
-          maxWidth: "300px",
+          maxWidth: "250px",
           position: "relative",
           top: labelY,
           left: labelX,

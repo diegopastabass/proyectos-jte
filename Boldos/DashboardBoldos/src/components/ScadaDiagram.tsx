@@ -152,7 +152,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           maxVolume={nivelMaxEstanque}
           style={{ top: 0, left: 605 }}
           name="Estanque 1"
-          labelX={600}
+          labelX={620}
           labelY={-300}
           tiempoVaciado={data.tiempo_vaciado_est_1_formatted}
         />
@@ -168,7 +168,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           maxVolume={nivelMaxEstanque2}
           style={{ top: 0, left: 905 }}
           name="Estanque 2"
-          labelX={910}
+          labelX={920}
           labelY={-510}
           tiempoVaciado={data.tiempo_vaciado_est_2_formatted}
         />

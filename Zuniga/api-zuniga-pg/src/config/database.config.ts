@@ -14,10 +14,14 @@ export class DatabaseConfig implements TypeOrmOptionsFactory {
       username: this.config.get<string>('DB_USER'),
       password: this.config.get<string>('DB_PASS'),
       database: this.config.get<string>('DB_NAME'),
-      autoLoadEntities: true, 
-      synchronize: false, 
+      autoLoadEntities: true,
+      synchronize: false,
       ssl: {
         rejectUnauthorized: false,
+      },
+      extra: {
+        max: 5,
+        statement_timeout: 10000,
       },
     };
   }

@@ -218,33 +218,36 @@ export class SsrZunigaService {
   // Nivel
   async getNivel(dto: DateRangeDto): Promise<Metric[]> {
     const range = this.normalizeDateRange(dto);
-    if (!range) {
+
+    if (range) {
+      const { start, end } = range;
       const results = await this.repo.find({
-        where: { mt_name: 'SSR_ZUNIGA--slave.estanque' },
-        order: { mt_time_2: 'DESC' },
-        take: 100,
+        where: {
+          mt_name: 'SSR_ZUNIGA--slave.estanque',
+          mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
+            start,
+            end,
+          }),
+        },
+        order: { mt_time_2: 'ASC' },
       });
 
-      return results.reverse().map((row) => ({
+      return results.map((row) => ({
         time: row.mt_time_2.toISOString(),
         value: Number(row.mt_value),
       }));
     }
 
-    const { start, end } = range;
+    const takeLimit =
+      dto.limit && !isNaN(Number(dto.limit)) ? Number(dto.limit) : 100;
 
     const results = await this.repo.find({
-      where: {
-        mt_name: 'SSR_ZUNIGA--slave.estanque',
-        mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
-          start,
-          end,
-        }),
-      },
-      order: { mt_time_2: 'ASC' },
+      where: { mt_name: 'SSR_ZUNIGA--slave.estanque' },
+      order: { mt_time_2: 'DESC' },
+      take: takeLimit,
     });
 
-    return results.map((row) => ({
+    return results.reverse().map((row) => ({
       time: row.mt_time_2.toISOString(),
       value: Number(row.mt_value),
     }));
@@ -253,33 +256,36 @@ export class SsrZunigaService {
   // Nivel 2
   async getNivel2(dto: DateRangeDto): Promise<Metric[]> {
     const range = this.normalizeDateRange(dto);
-    if (!range) {
+
+    if (range) {
+      const { start, end } = range;
       const results = await this.repo.find({
-        where: { mt_name: 'SSR_ZUNIGA--slave.estanque_2' },
-        order: { mt_time_2: 'DESC' },
-        take: 100,
+        where: {
+          mt_name: 'SSR_ZUNIGA--slave.estanque_2',
+          mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
+            start,
+            end,
+          }),
+        },
+        order: { mt_time_2: 'ASC' },
       });
 
-      return results.reverse().map((row) => ({
+      return results.map((row) => ({
         time: row.mt_time_2.toISOString(),
         value: Number(row.mt_value),
       }));
     }
 
-    const { start, end } = range;
+    const takeLimit =
+      dto.limit && !isNaN(Number(dto.limit)) ? Number(dto.limit) : 100;
 
     const results = await this.repo.find({
-      where: {
-        mt_name: 'SSR_ZUNIGA--slave.estanque_2',
-        mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
-          start,
-          end,
-        }),
-      },
-      order: { mt_time_2: 'ASC' },
+      where: { mt_name: 'SSR_ZUNIGA--slave.estanque_2' },
+      order: { mt_time_2: 'DESC' },
+      take: takeLimit,
     });
 
-    return results.map((row) => ({
+    return results.reverse().map((row) => ({
       time: row.mt_time_2.toISOString(),
       value: Number(row.mt_value),
     }));

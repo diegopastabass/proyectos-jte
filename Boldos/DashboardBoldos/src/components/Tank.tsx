@@ -64,7 +64,7 @@ const Tank: React.FC<TankProps> = ({
       <div
         className="text-center"
         style={{
-          maxWidth: "300px",
+          maxWidth: "250px",
           position: "relative",
           top: labelY,
           left: labelX,
@@ -80,7 +80,7 @@ const Tank: React.FC<TankProps> = ({
             className="alert alert-primary"
             style={{ padding: "5px", margin: "5px" }}
           >
-            <h6>Tiempo de Vaciado Estanque</h6>
+            <h6>T. Vaciado Estanque</h6>
             <p>{tiempoVaciado}</p>
           </div>
         )}

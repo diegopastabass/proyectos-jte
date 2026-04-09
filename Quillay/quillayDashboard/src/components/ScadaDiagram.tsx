@@ -3,7 +3,7 @@ import Tank from "./Tank";
 import Pipe from "./Pipe";
 import Pump from "./Pump";
 import Elbow from "./Elbow";
-import State, { StateBody } from "./States";
+import States from "./States";
 import tankImage from "../assets/newTank.png";
 import pipeImage from "../assets/newPipe.png";
 import elbowImage from "../assets/newElbow.png";
@@ -29,6 +29,8 @@ interface DatosSnapshot {
   freatico_sentina: Metric;
   horometro: Metric;
   totalizador: Metric;
+  v1: Metric;
+  i1: Metric;
 }
 
 interface Metric {
@@ -65,13 +67,19 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
   return (
     <div>
       <div style={containerStyle}>
-        <State style={{ maxWidth: "230px", maxHeight: "200px" }}>
-          <StateBody
-            automatico={"1"}
-            falla={data.snapshot.falla.value.toString()}
-            bomba={data.snapshot.bomba.value.toString()}
-          ></StateBody>
-        </State>
+        <States
+          style={{ maxWidth: "230px", maxHeight: "200px" }}
+          title="Estado Tablero"
+          automatico={"1"}
+          falla={data.snapshot.falla.value.toString()}
+          bomba={data.snapshot.bomba.value.toString()}
+        />
+        <States
+          style={{ maxWidth: "230px", maxHeight: "200px" }}
+          title="Estado Table Eléctrico"
+          voltaje1={data.snapshot.v1.value.toString()}
+          corriente1={data.snapshot.i1.value.toString()}
+        />
         {/* 1. Bomba - Posición (0, 300) */}
         <Pump
           spriteWidth={SPRITE_SIZE}
@@ -79,7 +87,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           sentido={0}
           image={imageAssets.newPump}
           isActive={hasWaterFlow}
-          style={{ top: 300, left: -50 }}
+          style={{ top: 300, left: 0 }}
         />
 
         {/* 2. Codo - Posición (0, 0) */}
@@ -90,7 +98,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           b={0}
           image={imageAssets.newElbow}
           hasWaterFlow={hasWaterFlow}
-          style={{ top: 0, left: -50 }}
+          style={{ top: 0, left: 0 }}
           freatico_pozo={data.snapshot.freatico_pozo.value}
           freatico_sentina={data.snapshot.freatico_sentina.value}
           horometro_diario={Number(hor)}
@@ -104,7 +112,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           sentido={1}
           image={imageAssets.newPipe}
           hasWaterFlow={hasWaterFlow}
-          style={{ top: 0, left: 250 }}
+          style={{ top: 0, left: 300 }}
           caudal={data.snapshot.caudal.value}
           totalizador_diario={Number(tot)}
           totalizador_total={data.snapshot.totalizador.value}
@@ -119,10 +127,10 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           image={imageAssets.newTank}
           volume={data.snapshot.estanque_hormigon.value}
           maxVolume={3.2}
-          style={{ top: 0, left: 550 }}
+          style={{ top: 0, left: 600 }}
           name="Estanque Hormigón"
-          labelX={550}
-          labelY={150}
+          labelX={630}
+          labelY={-110}
           tiempoVaciado={data.tiempo_vaciado_hormigon_formatted}
         />
 
@@ -135,10 +143,10 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           image={imageAssets.newTank2}
           volume={data.snapshot.estanque_metalico.value}
           maxVolume={3.2}
-          style={{ top: 0, left: 850 }}
+          style={{ top: 0, left: 900 }}
           name="Estanque Metálico"
-          labelX={850}
-          labelY={-60}
+          labelX={930}
+          labelY={-320}
           tiempoVaciado={data.tiempo_vaciado_metalico_formatted}
         />
       </div>

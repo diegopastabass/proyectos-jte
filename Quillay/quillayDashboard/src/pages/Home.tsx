@@ -14,6 +14,7 @@ import ExportModal from "../components/ExportModal";
 import Error from "./Error";
 import logoJte from "../assets/logoJte.png";
 import DropdownCardv4 from "../components/DropdownCardv4";
+import { fetchWithCache } from "../components/fetchWithcache";
 
 interface Snapshot {
   snapshot: Datos;
@@ -91,52 +92,40 @@ function App() {
 
     const now = new Date();
     const end = formatter.format(now);
-    const startDate = new Date(now);
-    startDate.setDate(startDate.getDate() - 15);
-    const start = formatter.format(startDate);
 
+    // Fetch Data
     const fetchData = async () => {
       try {
         const [
           snapshotRes,
-          totalizadorRes,
-          horometroRes,
           nivelRes,
           nivel2Res,
           caudalRes,
-          kwhRes,
           voltajeRes,
           corrienteRes,
         ] = await Promise.all([
           fetch("https://app.jteanalytics.cl/quillay/snapshot"),
-          fetch(
-            `https://app.jteanalytics.cl/quillay/totalizador?start=${start}&end=${end}`,
-          ),
-          fetch(
-            `https://app.jteanalytics.cl/quillay/horometro?start=${start}&end=${end}`,
-          ),
           fetch(`https://app.jteanalytics.cl/quillay/nivel`),
           fetch(`https://app.jteanalytics.cl/quillay/nivel2`),
           fetch(`https://app.jteanalytics.cl/quillay/caudal`),
-          fetch(
-            `https://app.jteanalytics.cl/quillay/kwh?start=${start}&end=${end}`,
-          ),
           fetch(`https://app.jteanalytics.cl/quillay/voltaje`),
           fetch(`https://app.jteanalytics.cl/quillay/corriente`),
         ]);
 
         const snapshotData: Snapshot = await snapshotRes.json();
         setData(snapshotData);
-        setTotalizadorData(await totalizadorRes.json());
-        setHorometroData(await horometroRes.json());
+
+        setTotalizadorData(await fetchWithCache("totalizador", end));
+        setHorometroData(await fetchWithCache("horometro", end));
+        setKwhData(await fetchWithCache("kwh", end));
+
         setNivelData(await nivelRes.json());
         setNivel2Data(await nivel2Res.json());
         setCaudalData(await caudalRes.json());
-        setKwhData(await kwhRes.json());
         setVoltajeData(await voltajeRes.json());
         setCorrienteData(await corrienteRes.json());
       } catch (error) {
-        console.error("Error al cargar datos:", error);
+        console.error(error);
       } finally {
         setLoading(false);
       }
@@ -310,7 +299,7 @@ function App() {
       <div className="col-12 col-lg-4 mb-1">
         <States
           title="Estado Tablero Eléctrico"
-          corriente1={((data.snapshot.i1.value * 2) / 100).toFixed(2)}
+          corriente1={(data.snapshot.i1.value / 100).toFixed(2)}
           voltaje1={(data.snapshot.v1.value / 10).toFixed(2)}
         />
         <DropdownCardv3

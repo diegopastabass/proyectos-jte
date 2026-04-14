@@ -21,7 +21,7 @@ export class DatabaseConfig implements TypeOrmOptionsFactory {
       },
       extra: {
         max: 5,
-        statement_timeout: 10000,
+        statement_timeout: 20000,
       },
     };
   }

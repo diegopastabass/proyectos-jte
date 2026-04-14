@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { TankLevelCircular } from "../components/Level";
 import Navbar from "../components/Navbar";
 import States from "../components/States";
-import "../index.css";
 import Loading from "./Loading";
 import ToggleCardButton from "../components/ToggelCardButton";
 import DropdownCard from "../components/DropdownCard";
@@ -12,6 +11,7 @@ import DropdownCardv3 from "../components/DropDownCardv3";
 import ScadaDiagram from "../components/ScadaDiagram";
 import ExportModal from "../components/ExportModal";
 import Error from "./Error";
+import { fetchWithCache } from "../components/fetchWithcache";
 import logoJte from "../assets/logoJte.png";
 
 interface Snapshot {
@@ -53,8 +53,9 @@ function App() {
   const [nivelChartData, setNivelData] = useState<Metric[]>([]);
   const [nivel2ChartData, setNivel2Data] = useState<Metric[]>([]);
   const [caudalChartData, setCaudalData] = useState<Metric[]>([]);
-  const [totalizadorChartData, setTotalizadorData] = useState<Metric[]>([]);
-  const [horometroChartData, setHorometroData] = useState<Metric[]>([]);
+
+  const [horometroChartData, setHorometro] = useState<Metric[]>([]);
+  const [totalizadorChartData, setTotalizador] = useState<Metric[]>([]);
 
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1500);
   const [isOpenExport, setIsOpenExport] = useState(false);
@@ -83,39 +84,26 @@ function App() {
 
     const now = new Date();
     const end = formatter.format(now);
-    const startDate = new Date(now);
-    startDate.setDate(startDate.getDate() - 15);
-    const start = formatter.format(startDate);
 
     const fetchData = async () => {
       try {
-        const [
-          snapshotRes,
-          totalizadorRes,
-          horometroRes,
-          nivelRes,
-          nivel2Res,
-          caudalRes,
-        ] = await Promise.all([
-          fetch("https://app.jteanalytics.cl/boldos/snapshot"),
-          fetch(
-            `https://app.jteanalytics.cl/boldos/totalizador?start=${start}&end=${end}`,
-          ),
-          fetch(
-            `https://app.jteanalytics.cl/boldos/horometro?start=${start}&end=${end}`,
-          ),
-          fetch(`https://app.jteanalytics.cl/boldos/nivel`),
-          fetch(`https://app.jteanalytics.cl/boldos/nivel2`),
-          fetch(`https://app.jteanalytics.cl/boldos/caudal`),
-        ]);
+        const [snapshotRes, nivelRes, nivel2Res, caudalRes] = await Promise.all(
+          [
+            fetch("https://app.jteanalytics.cl/auquinco/snapshot"),
+            fetch(`https://app.jteanalytics.cl/auquinco/nivel`),
+            fetch(`https://app.jteanalytics.cl/auquinco/nivel2`),
+            fetch(`https://app.jteanalytics.cl/auquinco/caudal`),
+          ],
+        );
 
         const snapshotData: Snapshot = await snapshotRes.json();
         setData(snapshotData);
-        setTotalizadorData(await totalizadorRes.json());
-        setHorometroData(await horometroRes.json());
         setNivelData(await nivelRes.json());
         setNivel2Data(await nivel2Res.json());
         setCaudalData(await caudalRes.json());
+
+        setTotalizador(await fetchWithCache("totalizador", end));
+        setHorometro(await fetchWithCache("horometro", end));
       } catch (error) {
         console.error("Error al cargar datos:", error);
       } finally {

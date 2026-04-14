@@ -77,8 +77,8 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
         <States
           style={{ maxWidth: "230px", maxHeight: "200px" }}
           title="Estado Table Eléctrico"
-          voltaje1={data.snapshot.v1.value.toString()}
-          corriente1={data.snapshot.i1.value.toString()}
+          voltaje1={(data.snapshot.v1.value / 10).toFixed(2)}
+          corriente1={(data.snapshot.i1.value / 100).toFixed(2)}
         />
         {/* 1. Bomba - Posición (0, 300) */}
         <Pump

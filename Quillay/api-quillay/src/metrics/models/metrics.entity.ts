@@ -1,15 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, PrimaryColumn  } from 'typeorm';
+import { Entity, Column, PrimaryColumn } from 'typeorm';
 
 @Entity('ssr_quillay')
 export class Telemetria {
-  @PrimaryGeneratedColumn()
-  mt_id: number;
-
-  @Column()
+  @PrimaryColumn()
   mt_name: string;
 
   @Column()
-  mt_value: string; 
+  mt_value: string;
 
   @PrimaryColumn('timestamp')
   mt_time_2: Date;

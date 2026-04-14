@@ -13,6 +13,7 @@ import DropdownCardv3 from "../components/DropDownCardv3";
 import ScadaDiagram from "../components/ScadaDiagram";
 import ExportModal from "../components/ExportModal";
 import lgoJte from "../assets/logoJte.png";
+import { fetchWithCache } from "../components/fetchWithcache";
 
 interface Metric {
   value: number;
@@ -68,37 +69,22 @@ function App() {
 
     const now = new Date();
     const date = formatter.format(now);
-    const fiveDaysAgo = new Date(now);
-    fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 14);
-    const oldDate = formatter.format(fiveDaysAgo);
 
     const fetchData = async () => {
       try {
-        const [
-          snapshotRes,
-          nivelEstanque1Res,
-          nivelEstanque2Res,
-          caudalRes,
-          horometroRes,
-          totalizadorRes,
-        ] = await Promise.all([
-          fetch("https://app.jteanalytics.cl/zuniga/snapshot"),
-          fetch(
-            `https://app.jteanalytics.cl/zuniga/nivel?start=${date}&end=${date}`,
-          ),
-          fetch(
-            `https://app.jteanalytics.cl/zuniga/nivel2?start=${date}&end=${date}`,
-          ),
-          fetch(
-            `https://app.jteanalytics.cl/zuniga/caudal?start=${date}&end=${date}`,
-          ),
-          fetch(
-            `https://app.jteanalytics.cl/zuniga/horometro?start=${oldDate}&end=${date}`,
-          ),
-          fetch(
-            `https://app.jteanalytics.cl/zuniga/totalizador?start=${oldDate}&end=${date}`,
-          ),
-        ]);
+        const [snapshotRes, nivelEstanque1Res, nivelEstanque2Res, caudalRes] =
+          await Promise.all([
+            fetch("https://app.jteanalytics.cl/zuniga/snapshot"),
+            fetch(
+              `https://app.jteanalytics.cl/zuniga/nivel?start=${date}&end=${date}`,
+            ),
+            fetch(
+              `https://app.jteanalytics.cl/zuniga/nivel2?start=${date}&end=${date}`,
+            ),
+            fetch(
+              `https://app.jteanalytics.cl/zuniga/caudal?start=${date}&end=${date}`,
+            ),
+          ]);
 
         const snapshotData: Datos = await snapshotRes.json();
 
@@ -106,8 +92,8 @@ function App() {
         setNivelEstanque1(await nivelEstanque1Res.json());
         setNivelEstanque2(await nivelEstanque2Res.json());
         setCaudal(await caudalRes.json());
-        setHorometro(await horometroRes.json());
-        setTotalizador(await totalizadorRes.json());
+        setTotalizador(await fetchWithCache("totalizador", date));
+        setHorometro(await fetchWithCache("horometro", date));
       } catch (error) {
         console.error("Error al cargar datos:", error);
       } finally {

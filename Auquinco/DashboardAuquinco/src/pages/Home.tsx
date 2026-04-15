@@ -16,29 +16,34 @@ import logoJte from "../assets/logoJte.png";
 
 interface Snapshot {
   snapshot: Datos;
-  tiempo_vaciado_est_1: number;
-  tiempo_vaciado_est_1_formatted: string;
-  tiempo_vaciado_est_2: number;
-  tiempo_vaciado_est_2_formatted: string;
+  tiempo_vaciado: number;
+  tiempo_vaciado_formatted: string;
 }
 
 interface Datos {
-  automatico: Metric;
-  bomba: Metric;
-  caudal: Metric;
-  estanque: Metric;
-  estanque_2: Metric;
-  falla: Metric;
-  freatico: Metric;
-  horometro: Metric;
-  totalizador: Metric;
-  automatico_p1: Metric;
-  asimetria_p1: Metric;
-  falla_vdf1_p1: Metric;
-  falla_vdf2_p1: Metric;
-  bomba_p1: Metric;
-  falla_p1: Metric;
-  presion: Metric;
+  automatico: Metric; //
+  manual: Metric; //
+  bomba: Metric; //
+  temp: Metric; //
+  petroleo: Metric; //
+  rpm: Metric; //
+  L1L2: Metric; //
+  L2L3: Metric; //
+  L3L1: Metric; //
+  L1N: Metric; //
+  L2N: Metric; //
+  L3N: Metric; //
+  I1: Metric; //
+  I2: Metric; //
+  I3: Metric; //
+  PF: Metric; //
+  KW1: Metric; //
+  KW2: Metric; //
+  KW3: Metric; //
+  totalizador: Metric; //
+  caudal: Metric; //
+  estanque: Metric; //
+  pozo: Metric; //
 }
 
 interface Metric {
@@ -51,21 +56,17 @@ function App() {
   const [data, setData] = useState<Snapshot | null>(null);
 
   const [nivelChartData, setNivelData] = useState<Metric[]>([]);
-  const [nivel2ChartData, setNivel2Data] = useState<Metric[]>([]);
   const [caudalChartData, setCaudalData] = useState<Metric[]>([]);
 
-  const [horometroChartData, setHorometro] = useState<Metric[]>([]);
   const [totalizadorChartData, setTotalizador] = useState<Metric[]>([]);
 
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1500);
   const [isOpenExport, setIsOpenExport] = useState(false);
 
   const [isOpenEstanque, setIsOpenEstanque] = useState(isLargeScreen);
-  const [isOpenEstanque2, setIsOpenEstanque2] = useState(isLargeScreen);
   const [isOpenBomba, setIsOpenBomba] = useState(isLargeScreen);
 
   const nivelMaxEstanque = 3;
-  const nivelMaxEstanque2 = 3;
   const nivelMaxCaudal = 10;
   const nivelAlarma = 1;
 
@@ -87,23 +88,18 @@ function App() {
 
     const fetchData = async () => {
       try {
-        const [snapshotRes, nivelRes, nivel2Res, caudalRes] = await Promise.all(
-          [
-            fetch("https://app.jteanalytics.cl/auquinco/snapshot"),
-            fetch(`https://app.jteanalytics.cl/auquinco/nivel`),
-            fetch(`https://app.jteanalytics.cl/auquinco/nivel2`),
-            fetch(`https://app.jteanalytics.cl/auquinco/caudal`),
-          ],
-        );
+        const [snapshotRes, nivelRes, caudalRes] = await Promise.all([
+          fetch("https://app.jteanalytics.cl/auquinco/snapshot"),
+          fetch(`https://app.jteanalytics.cl/auquinco/nivel`),
+          fetch(`https://app.jteanalytics.cl/auquinco/caudal`),
+        ]);
 
         const snapshotData: Snapshot = await snapshotRes.json();
         setData(snapshotData);
         setNivelData(await nivelRes.json());
-        setNivel2Data(await nivel2Res.json());
         setCaudalData(await caudalRes.json());
 
         setTotalizador(await fetchWithCache("totalizador", end));
-        setHorometro(await fetchWithCache("horometro", end));
       } catch (error) {
         console.error("Error al cargar datos:", error);
       } finally {
@@ -122,10 +118,11 @@ function App() {
   if (loading) return <Loading />;
   if (!data) return <Error />;
 
+  /*
   const ultimoHorometro =
     horometroChartData.length > 0
       ? horometroChartData[horometroChartData.length - 1].value
-      : 0;
+      : 0;*/
   const ultimoTotalizador =
     totalizadorChartData.length > 0
       ? totalizadorChartData[totalizadorChartData.length - 1].value
@@ -155,7 +152,7 @@ function App() {
               "Volumen Actual",
               `${((60 / 7) * data.snapshot.estanque.value).toFixed(2)} m³`,
             ]}
-            text3={["Tiempo de Vacío", data.tiempo_vaciado_est_1_formatted]}
+            text3={["Tiempo de Vacío", data.tiempo_vaciado_formatted]}
           />
           <TankLevelCircular
             nivelActual={data.snapshot.estanque.value}
@@ -177,39 +174,6 @@ function App() {
         />
       </div>
 
-      {/* Estanque 2 */}
-      <div className="col-12 col-lg-4 mb-1">
-        <Card>
-          <CardBody
-            title="Estanque 2"
-            text1={["Nivel", `${data.snapshot.estanque_2.value.toFixed(2)} m`]}
-            text2={[
-              "Volumen Actual",
-              `${((60 / 7) * data.snapshot.estanque_2.value).toFixed(2)} m³`,
-            ]}
-            text3={["Tiempo de Vacío", data.tiempo_vaciado_est_2_formatted]}
-            date={data.snapshot.estanque_2.time}
-          />
-          <TankLevelCircular
-            nivelActual={data.snapshot.estanque_2.value}
-            nivelMaximo={nivelMaxEstanque2}
-          />
-          <ToggleCardButton
-            isOpen={isOpenEstanque2}
-            onToggle={() => setIsOpenEstanque2(!isOpenEstanque2)}
-          />
-        </Card>
-        <DropdownCard
-          className="mb-4 d-below-1500-none d-1500-block"
-          isOpen={isOpenEstanque2}
-          title="Estanque 2"
-          chartLabel="Nivel del Estanque (m)"
-          data={nivel2ChartData}
-          nivelMax={nivelMaxEstanque2}
-          nivelAlarma={nivelAlarma}
-        />
-      </div>
-
       {/* Bomba */}
       <div className="col-12 col-lg-4 mb-1">
         <Card>
@@ -221,9 +185,8 @@ function App() {
             ]}
             text2={[
               "Nivel Freático",
-              `${(data.snapshot.freatico.value / 100).toFixed(2)} m`,
+              `${(data.snapshot.pozo.value / 100).toFixed(2)} m`,
             ]}
-            text4={["Horómetro por Día", minutesToHHMM(ultimoHorometro)]}
             text5={[
               "Totalizador por Día",
               `${ultimoTotalizador.toFixed(2)} m³`,
@@ -245,12 +208,6 @@ function App() {
           data={caudalChartData}
           nivelMax={nivelMaxCaudal}
         />
-        <DropdownCardv2
-          isOpen={isOpenBomba}
-          title="Horómetro Diario"
-          chartLabel="Horómetro"
-          data={horometroChartData}
-        />
         <DropdownCardv3
           isOpen={isOpenBomba}
           title="Totalizador Diario"
@@ -262,8 +219,8 @@ function App() {
       {/* Panel de Estados */}
       <States
         title="Estado Tablero Planta 1"
-        automatico_p1={data.snapshot.automatico_p1.value.toString()}
-        asimetria_p1={data.snapshot.asimetria_p1.value.toString()}
+        automatico_p1={data.snapshot.automatico.value.toString()}
+        asimetria_p1={data.snapshot.asimetria.value.toString()}
         bomba_p1={data.snapshot.bomba_p1.value.toString()}
         falla_p1={data.snapshot.falla_p1.value.toString()}
       />

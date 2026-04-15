@@ -35,6 +35,7 @@ interface Datos {
   freatico_sentina: Metric;
   horometro: Metric;
   totalizador: Metric;
+  presion: Metric;
   i1: Metric;
   i2: Metric;
   i3: Metric;
@@ -263,6 +264,10 @@ function App() {
             text6={[
               "Totalizador",
               `${data.snapshot.totalizador.value.toFixed(2)} m³`,
+            ]}
+            text7={[
+              "Presión",
+              `${data.snapshot.presion ? data.snapshot.presion.value.toFixed(2) : 0} bar`,
             ]}
           />
           <ToggleCardButton

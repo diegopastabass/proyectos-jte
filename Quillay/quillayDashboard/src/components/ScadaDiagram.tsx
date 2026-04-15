@@ -29,6 +29,7 @@ interface DatosSnapshot {
   freatico_sentina: Metric;
   horometro: Metric;
   totalizador: Metric;
+  presion: Metric;
   v1: Metric;
   i1: Metric;
 }
@@ -116,6 +117,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           caudal={data.snapshot.caudal.value}
           totalizador_diario={Number(tot)}
           totalizador_total={data.snapshot.totalizador.value}
+          presion={data.snapshot.presion ? data.snapshot.presion.value : 0}
         />
 
         {/* 4. Tanque Principal - Posición (600, 0). Max Volume: 7 */}

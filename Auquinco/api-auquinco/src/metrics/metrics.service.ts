@@ -223,6 +223,16 @@ export class SsrAuquincoService {
     );
   }
 
+  async getKwh(dto: DateRangeDto): Promise<Metric[]> {
+    if (!dto || !dto.start || !dto.end)
+      throw new Error('Se requiere rango de fechas válido.');
+    return this.calculateAndCacheDaily(
+      'SSR_AUQUINCO--slave.kwh',
+      dto.start,
+      dto.end,
+    );
+  }
+
   // Nivel
   async getNivel(dto: DateRangeDto): Promise<Metric[]> {
     const range = this.normalizeDateRange(dto);

@@ -4,7 +4,7 @@ import Home from "./pages/Home";
 function App() {
   return (
     <Routes>
-      <Route path="/boldos/" element={<Home />} />
+      <Route path="/" element={<Home />} />
     </Routes>
   );
 }

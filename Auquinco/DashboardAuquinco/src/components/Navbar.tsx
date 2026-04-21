@@ -1,6 +1,6 @@
 import { useState } from "react";
 import logoJte from "../assets/logoJte.png";
-import logoBoldos from "../assets/logoboldos.png";
+import logoBoldos from "../assets/logoAuq.png";
 
 interface NavbarProps {
   text?: string;
@@ -46,7 +46,7 @@ function Navbar(props: NavbarProps) {
         })
         .catch((err) => {
           console.error(
-            `Error al intentar activar pantalla completa: ${err.message}`
+            `Error al intentar activar pantalla completa: ${err.message}`,
           );
         });
     } else {
@@ -57,7 +57,7 @@ function Navbar(props: NavbarProps) {
         })
         .catch((err) => {
           console.error(
-            `Error al intentar desactivar pantalla completa: ${err.message}`
+            `Error al intentar desactivar pantalla completa: ${err.message}`,
           );
         });
     }
@@ -75,7 +75,7 @@ function Navbar(props: NavbarProps) {
           href="/boldos/"
         >
           <img src={logoJte} alt="logo" width={50} height={34} />
-          <img src={logoBoldos} alt="logo" width={60}/>
+          <img src={logoBoldos} alt="logo" width={60} />
         </a>
       </div>{" "}
       <div className="d-flex align-items-center gap-2 flex-grow-1">
@@ -85,8 +85,7 @@ function Navbar(props: NavbarProps) {
           </span>
         </div>
       </div>{" "}
-      <div className="d-flex align-items-center gap-2 m-2">
-      </div>
+      <div className="d-flex align-items-center gap-2 m-2"></div>
       <div className="ms-auto d-none d-md-block m-4 ">{children}</div>
       <button
         className="btn btn-outline-secondary d-none d-md-inline-block"

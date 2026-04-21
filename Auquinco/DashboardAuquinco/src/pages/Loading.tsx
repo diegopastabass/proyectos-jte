@@ -1,5 +1,5 @@
 import logoJte from "../assets/logoJte.png";
-import logoBoldos from "../assets/logoboldos.png";
+import logoBoldos from "../assets/logoAuq.png";
 
 const Loading = () => {
   return (

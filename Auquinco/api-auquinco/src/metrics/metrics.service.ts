@@ -122,7 +122,7 @@ export class SsrAuquincoService {
     end: string,
   ): Promise<Metric[]> {
     const cached = await this.repo.query(
-      `SELECT mt_day, mt_value FROM ssr_zuniga_daily_metrics WHERE mt_name = $1 AND mt_day BETWEEN $2 AND $3`,
+      `SELECT mt_day, mt_value FROM ssr_auquinco_daily_metrics WHERE mt_name = $1 AND mt_day BETWEEN $2 AND $3`,
       [metricName, start, end],
     );
 
@@ -223,14 +223,31 @@ export class SsrAuquincoService {
     );
   }
 
-  async getKwh(dto: DateRangeDto): Promise<Metric[]> {
+  async getKwh(
+    dto: DateRangeDto,
+  ): Promise<{ KW1: Metric[]; KW2: Metric[]; KW3: Metric[] }> {
     if (!dto || !dto.start || !dto.end)
       throw new Error('Se requiere rango de fechas válido.');
-    return this.calculateAndCacheDaily(
-      'SSR_AUQUINCO--slave.kwh',
-      dto.start,
-      dto.end,
-    );
+
+    const [KW1, KW2, KW3] = await Promise.all([
+      this.calculateAndCacheDaily(
+        'SSR_AUQUINCO--slave.KW1',
+        dto.start,
+        dto.end,
+      ),
+      this.calculateAndCacheDaily(
+        'SSR_AUQUINCO--slave.KW2',
+        dto.start,
+        dto.end,
+      ),
+      this.calculateAndCacheDaily(
+        'SSR_AUQUINCO--slave.KW3',
+        dto.start,
+        dto.end,
+      ),
+    ]);
+
+    return { KW1, KW2, KW3 };
   }
 
   // Nivel
@@ -256,16 +273,17 @@ export class SsrAuquincoService {
       }));
     }
 
-    const takeLimit =
-      dto.limit && !isNaN(Number(dto.limit)) ? Number(dto.limit) : 100;
-
+    // Ultimas 6 horas
+    const start = new Date(Date.now() - 6 * 60 * 60 * 1000);
     const results = await this.repo.find({
-      where: { mt_name: 'SSR_AUQUINCO--slave.estanque' },
-      order: { mt_time_2: 'DESC' },
-      take: takeLimit,
+      where: {
+        mt_name: 'SSR_AUQUINCO--slave.estanque',
+        mt_time_2: Raw((alias) => `${alias} >= :start`, { start }),
+      },
+      order: { mt_time_2: 'ASC' },
     });
 
-    return results.reverse().map((row) => ({
+    return results.map((row) => ({
       time: row.mt_time_2.toISOString(),
       value: Number(row.mt_value),
     }));
@@ -276,13 +294,17 @@ export class SsrAuquincoService {
     const range = this.normalizeDateRange(dto);
 
     if (!range) {
+      // Ultimas 6 horas
+      const start = new Date(Date.now() - 6 * 60 * 60 * 1000);
       const results = await this.repo.find({
-        where: { mt_name: 'SSR_AUQUINCO--slave.caudal' },
-        order: { mt_time_2: 'DESC' },
-        take: 100,
+        where: {
+          mt_name: 'SSR_AUQUINCO--slave.caudal',
+          mt_time_2: Raw((alias) => `${alias} >= :start`, { start }),
+        },
+        order: { mt_time_2: 'ASC' },
       });
 
-      return results.reverse().map((row) => ({
+      return results.map((row) => ({
         time: row.mt_time_2.toISOString(),
         value: Number(row.mt_value),
       }));
@@ -351,9 +373,9 @@ export class SsrAuquincoService {
     };
 
     const [i1, i2, i3] = await Promise.all([
-      fetchVariable('i1'),
-      fetchVariable('i2'),
-      fetchVariable('i3'),
+      fetchVariable('I1'),
+      fetchVariable('I2'),
+      fetchVariable('I3'),
     ]);
 
     return { i1, i2, i3 };
@@ -362,7 +384,7 @@ export class SsrAuquincoService {
   // Voltaje
   async getVoltaje(
     dto: DateRangeDto,
-  ): Promise<{ v1: Metric[]; v2: Metric[]; v3: Metric[] }> {
+  ): Promise<{ L1L2: Metric[]; L2L3: Metric[]; L3L1: Metric[] }> {
     const range = this.normalizeDateRange(dto);
 
     const fetchVariable = async (variable: string) => {
@@ -402,13 +424,65 @@ export class SsrAuquincoService {
       }));
     };
 
-    const [v1, v2, v3] = await Promise.all([
-      fetchVariable('v1'),
-      fetchVariable('v2'),
-      fetchVariable('v3'),
+    const [L1L2, L2L3, L3L1] = await Promise.all([
+      fetchVariable('L1L2'),
+      fetchVariable('L2L3'),
+      fetchVariable('L3L1'),
     ]);
 
-    return { v1, v2, v3 };
+    return { L1L2, L2L3, L3L1 };
+  }
+
+  // Voltaje Neutro
+  async getVoltajeNeutro(
+    dto: DateRangeDto,
+  ): Promise<{ L1N: Metric[]; L2N: Metric[]; L3N: Metric[] }> {
+    const range = this.normalizeDateRange(dto);
+
+    const fetchVariable = async (variable: string) => {
+      const mtName = `SSR_AUQUINCO--slave.${variable}`;
+      if (!range) {
+        const start = new Date(Date.now() - 6 * 60 * 60 * 1000);
+        const results = await this.repo.find({
+          where: {
+            mt_name: mtName,
+            mt_time_2: Raw((alias) => `${alias} >= :start`, { start }),
+          },
+          order: { mt_time_2: 'ASC' },
+        });
+
+        return results.map((row) => ({
+          time: row.mt_time_2.toISOString(),
+          value: Number(row.mt_value),
+        }));
+      }
+
+      const { start, end } = range;
+
+      const results = await this.repo.find({
+        where: {
+          mt_name: mtName,
+          mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
+            start,
+            end,
+          }),
+        },
+        order: { mt_time_2: 'ASC' },
+      });
+
+      return results.map((row) => ({
+        time: row.mt_time_2.toISOString(),
+        value: Number(row.mt_value),
+      }));
+    };
+
+    const [L1N, L2N, L3N] = await Promise.all([
+      fetchVariable('L1N'),
+      fetchVariable('L2N'),
+      fetchVariable('L3N'),
+    ]);
+
+    return { L1N, L2N, L3N };
   }
 
   // Presion

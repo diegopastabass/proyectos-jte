@@ -20,6 +20,7 @@ export default function Dashboard({
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [isGrid, setIsGrid] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   const [deletingQuote, setDeletingQuote] = useState<Quote | null>(null);
@@ -95,6 +96,24 @@ export default function Dashboard({
       setDownloadingId(null);
     }
   };
+
+  const filteredQuotes = quotes.filter((q) => {
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    const searchable = [
+      q.folio,
+      q.data.clientName,
+      q.data.project,
+      q.data.company,
+      q.data.contact,
+      q.data.email,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    return searchable.includes(term);
+  });
 
   // Renderers
   if (editingQuote || duplicatingQuote) {
@@ -202,7 +221,7 @@ export default function Dashboard({
         />
       )}
 
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="d-flex justify-content-between align-items-center mb-3">
         <h2>Mis Cotizaciones</h2>
         <div>
           <button
@@ -222,10 +241,41 @@ export default function Dashboard({
         </div>
       </div>
 
+      {quotes.length > 0 && (
+        <div className="mb-4">
+          <div className="input-group shadow-sm">
+            <span className="input-group-text bg-white border-end-0">
+              <i className="bi bi-search text-muted"></i>
+            </span>
+            <input
+              type="text"
+              className="form-control border-start-0"
+              placeholder="Buscar por folio, cliente, empresa, correo o proyecto..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            {searchTerm && (
+              <button
+                className="btn btn-outline-secondary border-start-0 border bg-white"
+                onClick={() => setSearchTerm("")}
+                title="Limpiar búsqueda"
+              >
+                <i className="bi bi-x-lg"></i>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {quotes.length === 0 ? (
         <div className="alert alert-info text-center p-5">
           <i className="bi bi-inbox fs-1 d-block mb-3"></i>
           No tienes cotizaciones creadas aún. ¡Crea la primera!
+        </div>
+      ) : filteredQuotes.length === 0 ? (
+        <div className="alert alert-warning text-center p-5">
+          <i className="bi bi-search fs-1 d-block mb-3"></i>
+          No se encontraron coincidencias para "{searchTerm}".
         </div>
       ) : (
         <div
@@ -233,7 +283,7 @@ export default function Dashboard({
             isGrid ? "row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" : ""
           }
         >
-          {quotes.map((q) =>
+          {filteredQuotes.map((q) =>
             isGrid ? (
               <div className="col" key={q.id}>
                 {renderCard(q)}

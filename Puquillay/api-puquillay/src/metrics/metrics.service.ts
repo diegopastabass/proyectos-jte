@@ -109,82 +109,208 @@ export class SsrPuQuillayService {
     };
   }
 
-  // Totalizador
-  async getTotalizador(dto: DateRangeDto): Promise<Metric[]> {
-    const range = dto;
-    if (!range) throw new Error('Se requiere rango de fechas válido.');
+  // Daily Metrics
+  private async calculateAndCacheDaily(
+    metricName: string,
+    start: string,
+    end: string,
+  ): Promise<Metric[]> {
+    const cached = await this.repo.query(
+      `SELECT mt_day, mt_value FROM ssr_puquillay_daily_metrics WHERE mt_name = $1 AND mt_day BETWEEN $2 AND $3`,
+      [metricName, start, end],
+    );
 
-    const start = range.start + ' 00:00:00';
-    const end = range.end + ' 23:59:59';
+    const metricsMap = new Map<string, number>();
+    cached.forEach((row: any) => {
+      const dateStr =
+        typeof row.mt_day === 'string'
+          ? row.mt_day
+          : row.mt_day.toISOString().split('T')[0];
+      metricsMap.set(dateStr, Number(row.mt_value));
+    });
 
-    const results: DailyQueryResult[] = await this.repo.query(
-      `
+    const missingDates: string[] = [];
+    let currentDate = new Date(`${start}T00:00:00Z`);
+    const endDate = new Date(`${end}T00:00:00Z`);
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    while (currentDate <= endDate) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+      if (!metricsMap.has(dateStr) || dateStr === todayStr) {
+        missingDates.push(dateStr);
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    if (missingDates.length > 0) {
+      const calculated = await this.repo.query(
+        `
         WITH bounds AS (
           SELECT mt_time_2::DATE AS day, MIN(mt_time_2) AS first_ts, MAX(mt_time_2) AS last_ts
           FROM ssr_puquillay
-          WHERE mt_name = 'SSR_PUQUILLAY--slave.totalizador'
-          AND mt_time_2 BETWEEN $1 AND $2
+          WHERE mt_name = $1 AND mt_time_2::DATE = ANY($2::DATE[])
           GROUP BY mt_time_2::DATE
         )
         SELECT b.day,
           (MAX(CAST(s_last.mt_value AS NUMERIC(30,6))) - MIN(CAST(s_first.mt_value AS NUMERIC(30,6)))) AS daily_value
         FROM bounds b
         LEFT JOIN ssr_puquillay s_first
-          ON s_first.mt_name = 'SSR_PUQUILLAY--slave.totalizador' AND s_first.mt_time_2 = b.first_ts
+          ON s_first.mt_name = $1 AND s_first.mt_time_2 = b.first_ts
         LEFT JOIN ssr_puquillay s_last
-          ON s_last.mt_name = 'SSR_PUQUILLAY--slave.totalizador' AND s_last.mt_time_2 = b.last_ts
+          ON s_last.mt_name = $1 AND s_last.mt_time_2 = b.last_ts
         GROUP BY b.day
-        ORDER BY b.day ASC
-      `,
-      [start, end],
-    );
+        `,
+        [metricName, missingDates],
+      );
 
-    return results.map((row) => ({
-      time:
-        typeof row.day === 'string'
-          ? row.day
-          : row.day.toISOString().split('T')[0],
-      value: Number(row.daily_value),
-    }));
+      for (const row of calculated) {
+        const dateStr =
+          typeof row.day === 'string'
+            ? row.day
+            : row.day.toISOString().split('T')[0];
+        const val = Number(row.daily_value || 0);
+
+        await this.repo.query(
+          `INSERT INTO ssr_puquillay_daily_metrics (mt_name, mt_day, mt_value) 
+           VALUES ($1, $2, $3) 
+           ON CONFLICT (mt_name, mt_day) DO UPDATE SET mt_value = EXCLUDED.mt_value`,
+          [metricName, dateStr, val],
+        );
+
+        metricsMap.set(dateStr, val);
+      }
+    }
+
+    const results: Metric[] = [];
+    currentDate = new Date(`${start}T00:00:00Z`);
+
+    while (currentDate <= endDate) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+      if (metricsMap.has(dateStr)) {
+        results.push({ time: dateStr, value: metricsMap.get(dateStr)! });
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return results;
   }
 
-  // Horometro
+  // Totalizador
+  async getTotalizador(dto: DateRangeDto): Promise<Metric[]> {
+    if (!dto || !dto.start || !dto.end)
+      throw new Error('Se requiere rango de fechas válido.');
+    return this.calculateAndCacheDaily(
+      'SSR_PUQUILLAY--slave.totalizador',
+      dto.start,
+      dto.end,
+    );
+  }
+
+  // Horometro — calculado a partir del caudal (caudal > 0 => bomba encendida)
   async getHorometro(dto: DateRangeDto): Promise<Metric[]> {
-    const range = dto;
-    if (!range) throw new Error('Se requiere rango de fechas válido.');
+    if (!dto || !dto.start || !dto.end)
+      throw new Error('Se requiere rango de fechas válido.');
 
-    const start = range.start + ' 00:00:00';
-    const end = range.end + ' 23:59:59';
+    const metricName = 'SSR_PUQUILLAY--slave.horometro';
+    const { start, end } = dto;
 
-    const results: DailyQueryResult[] = await this.repo.query(
-      `
-        WITH bounds AS (
-          SELECT mt_time_2::DATE AS day, MIN(mt_time_2) AS first_ts, MAX(mt_time_2) AS last_ts
-          FROM ssr_puquillay
-          WHERE mt_name = 'SSR_PUQUILLAY--slave.horometro'
-          AND mt_time_2 BETWEEN $1 AND $2
-          GROUP BY mt_time_2::DATE
-        )
-        SELECT b.day,
-          (MAX(CAST(s_last.mt_value AS NUMERIC(30,6))) - MIN(CAST(s_first.mt_value AS NUMERIC(30,6)))) AS daily_value
-        FROM bounds b
-        LEFT JOIN ssr_puquillay s_first
-          ON s_first.mt_name = 'SSR_PUQUILLAY--slave.horometro' AND s_first.mt_time_2 = b.first_ts
-        LEFT JOIN ssr_puquillay s_last
-          ON s_last.mt_name = 'SSR_PUQUILLAY--slave.horometro' AND s_last.mt_time_2 = b.last_ts
-        GROUP BY b.day
-        ORDER BY b.day ASC
-      `,
-      [start, end],
+    // 1. Leer caché existente
+    const cached = await this.repo.query(
+      `SELECT mt_day, mt_value FROM ssr_puquillay_daily_metrics WHERE mt_name = $1 AND mt_day BETWEEN $2 AND $3`,
+      [metricName, start, end],
     );
 
-    return results.map((row) => ({
-      time:
-        typeof row.day === 'string'
-          ? row.day
-          : row.day.toISOString().split('T')[0],
-      value: Number(row.daily_value),
-    }));
+    const metricsMap = new Map<string, number>();
+    cached.forEach((row: any) => {
+      const dateStr =
+        typeof row.mt_day === 'string'
+          ? row.mt_day
+          : row.mt_day.toISOString().split('T')[0];
+      metricsMap.set(dateStr, Number(row.mt_value));
+    });
+
+    // 2. Determinar días que faltan o corresponden a hoy (se recalculan)
+    const missingDates: string[] = [];
+    let currentDate = new Date(`${start}T00:00:00Z`);
+    const endDate = new Date(`${end}T00:00:00Z`);
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    while (currentDate <= endDate) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+      if (!metricsMap.has(dateStr) || dateStr === todayStr) {
+        missingDates.push(dateStr);
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    // 3. Calcular minutos de bomba encendida para los días que faltan
+    if (missingDates.length > 0) {
+      // Obtener todas las lecturas de caudal de los días faltantes ordenadas por tiempo
+      const readings = await this.repo.query(
+        `
+        SELECT mt_time_2, mt_value, mt_time_2::DATE AS day
+        FROM ssr_puquillay
+        WHERE mt_name = 'SSR_PUQUILLAY--slave.caudal'
+          AND mt_time_2::DATE = ANY($1::DATE[])
+        ORDER BY mt_time_2 ASC
+        `,
+        [missingDates],
+      );
+
+      // Agrupar lecturas por día
+      const readingsByDay = new Map<string, { time: Date; value: number }[]>();
+      for (const row of readings) {
+        const dateStr =
+          typeof row.day === 'string'
+            ? row.day
+            : (row.day as Date).toISOString().split('T')[0];
+        if (!readingsByDay.has(dateStr)) readingsByDay.set(dateStr, []);
+        readingsByDay.get(dateStr)!.push({
+          time: new Date(row.mt_time_2),
+          value: Number(row.mt_value),
+        });
+      }
+
+      // Calcular minutos encendido por día integrando intervalos con caudal > 0
+      for (const dateStr of missingDates) {
+        const dayReadings = readingsByDay.get(dateStr) ?? [];
+        let minutesOn = 0;
+
+        for (let i = 0; i < dayReadings.length - 1; i++) {
+          const current = dayReadings[i];
+          const next = dayReadings[i + 1];
+          if (current.value > 0) {
+            const diffMs = next.time.getTime() - current.time.getTime();
+            minutesOn += diffMs / 60000;
+          }
+        }
+
+        const val = Math.round(minutesOn);
+
+        await this.repo.query(
+          `INSERT INTO ssr_puquillay_daily_metrics (mt_name, mt_day, mt_value)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (mt_name, mt_day) DO UPDATE SET mt_value = EXCLUDED.mt_value`,
+          [metricName, dateStr, val],
+        );
+
+        metricsMap.set(dateStr, val);
+      }
+    }
+
+    // 4. Construir y retornar el arreglo de Metric[]
+    const results: Metric[] = [];
+    currentDate = new Date(`${start}T00:00:00Z`);
+
+    while (currentDate <= endDate) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+      if (metricsMap.has(dateStr)) {
+        results.push({ time: dateStr, value: metricsMap.get(dateStr)! });
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return results;
   }
 
   // Nivel

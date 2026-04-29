@@ -99,7 +99,7 @@ function App() {
 
   const nivelMaxEstanque = 3;
   const nivelMaxCaudal = 80;
-  const nivelAlarma = 1;
+  const nivelAlarma = 150;
 
   const handleResize = () => setIsLargeScreen(window.innerWidth >= 1500);
 
@@ -285,7 +285,6 @@ function App() {
         temp={data.snapshot.temp.value.toFixed(2)}
         petroleo={data.snapshot.petroleo.value.toFixed(2)}
         rpm={data.snapshot.rpm.value.toFixed(2)}
-        pf={data.snapshot.PF.value.toFixed(2)}
       />
       <States
         title="Estado Tablero Eléctrico"
@@ -361,8 +360,9 @@ function App() {
           title="Estanque Nuevo"
           chartLabel="Nivel del Estanque (m)"
           data={nivelChartData}
-          nivelMax={350}
-          nivelAlarma={50}
+          nivelMax={4}
+          divisor={100}
+          nivelAlarma={nivelAlarma}
         />
       </div>
 

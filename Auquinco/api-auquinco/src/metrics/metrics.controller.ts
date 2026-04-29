@@ -50,4 +50,9 @@ export class SsrAuquincoController {
   getPresion(@Query() dto: DateRangeDto) {
     return this.service.getPresion(dto);
   }
+
+  @Get('voltaje-neutro')
+  getVoltajeNeutro(@Query() dto: DateRangeDto) {
+    return this.service.getVoltajeNeutro(dto);
+  }
 }

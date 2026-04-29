@@ -13,6 +13,7 @@ import ScadaDiagram from "../components/ScadaDiagram";
 import ExportModal from "../components/ExportModal";
 import Error from "./Error";
 import logoJte from "../assets/logoJte.png";
+import { fetchWithCache } from "../components/fetchWithcache";
 
 interface Snapshot {
   snapshot: Datos;
@@ -74,36 +75,22 @@ function App() {
 
     const now = new Date();
     const end = formatter.format(now);
-    const startDate = new Date(now);
-    startDate.setDate(startDate.getDate() - 15);
-    const start = formatter.format(startDate);
 
     const fetchData = async () => {
       try {
-        const [
-          snapshotRes,
-          totalizadorRes,
-          horometroRes,
-          nivelRes,
-          nivel2Res,
-          caudalRes,
-        ] = await Promise.all([
-          fetch("https://app.jteanalytics.cl/gonzalez/snapshot"),
-          fetch(
-            `https://app.jteanalytics.cl/gonzalez/totalizador?start=${start}&end=${end}`,
-          ),
-          fetch(
-            `https://app.jteanalytics.cl/gonzalez/horometro?start=${start}&end=${end}`,
-          ),
-          fetch(`https://app.jteanalytics.cl/gonzalez/nivel`),
-          fetch(`https://app.jteanalytics.cl/gonzalez/nivel2`),
-          fetch(`https://app.jteanalytics.cl/gonzalez/caudal`),
-        ]);
+        const [snapshotRes, nivelRes, nivel2Res, caudalRes] = await Promise.all(
+          [
+            fetch("https://app.jteanalytics.cl/gonzalez/snapshot"),
+            fetch(`https://app.jteanalytics.cl/gonzalez/nivel`),
+            fetch(`https://app.jteanalytics.cl/gonzalez/nivel2`),
+            fetch(`https://app.jteanalytics.cl/gonzalez/caudal`),
+          ],
+        );
 
         const snapshotData: Snapshot = await snapshotRes.json();
         setData(snapshotData);
-        setTotalizadorData(await totalizadorRes.json());
-        setHorometroData(await horometroRes.json());
+        setTotalizadorData(await fetchWithCache("totalizador", end));
+        setHorometroData(await fetchWithCache("horometro", end));
         setNivelData(await nivelRes.json());
         setNivel2Data(await nivel2Res.json());
         setCaudalData(await caudalRes.json());

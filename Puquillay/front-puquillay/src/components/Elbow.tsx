@@ -56,7 +56,7 @@ const Elbow: React.FC<ElbowProps> = ({
         <div className="mb-2">
           <span className="text-muted small">Freático:</span>{" "}
           <strong>
-            <h6>{(freatico ? freatico / 100 : 0).toFixed(2)} m</h6>
+            <h6>{(freatico ? freatico / 10 : 0).toFixed(2)} m</h6>
           </strong>
         </div>
         <div className="mb-2">

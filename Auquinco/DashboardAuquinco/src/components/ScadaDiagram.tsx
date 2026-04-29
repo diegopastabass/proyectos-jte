@@ -99,7 +99,6 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           temp={data.snapshot.temp.value.toFixed(2)}
           petroleo={data.snapshot.petroleo.value.toFixed(2)}
           rpm={data.snapshot.rpm.value.toFixed(2)}
-          pf={data.snapshot.PF.value.toFixed(2)}
         />
 
         <States

@@ -183,7 +183,7 @@ function App() {
             ]}
             text2={[
               "Nivel Freático",
-              `${(data.snapshot.freatico.value / 100).toFixed(2)} m`,
+              `${(data.snapshot.freatico.value / 10).toFixed(2)} m`,
             ]}
             text4={["Horómetro", minutesToHHMM(ultimoHorometro)]}
             text5={["Totalizador Diario", `${ultimoTotalizador.toFixed(2)} m³`]}

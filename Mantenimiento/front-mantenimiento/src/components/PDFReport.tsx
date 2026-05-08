@@ -192,200 +192,297 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: "grey",
   },
+
+  // ── Estilos exclusivos para la página de fotos ──────────────────────────
+  photoPage: {
+    padding: 40,
+    fontFamily: "Helvetica",
+    fontSize: 10,
+    lineHeight: 1.5,
+    color: "#333",
+  },
+  photoGrid: {
+    // Grilla de 2 columnas con gap simulado usando marginBottom en cada fila
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    marginTop: 8,
+  },
+  photoCell: {
+    width: "47%", // ~2 columnas dejando gap
+    marginBottom: 4,
+  },
+  photoImage: {
+    width: "100%",
+    height: 200,
+    objectFit: "cover",
+    borderRadius: 3,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  photoCaption: {
+    fontSize: 8,
+    color: COLORS.secondary,
+    marginTop: 3,
+    textAlign: "center",
+  },
 });
 
 interface Props {
   data: ReportData;
 }
 
-export const PDFReport = ({ data }: Props) => (
-  <Document>
-    <Page size="LETTER" style={styles.page}>
-      <View style={styles.headerContainer}>
-        <Image style={styles.logo} src={logo_jt2} />
-        <View style={styles.headerTextContainer}>
-          <Text style={styles.reportTitle}>Informe Técnico</Text>
-          <Text style={styles.otNumber}>OT N°: {data.ticket.number}</Text>
-          <Text style={{ fontSize: 10, color: COLORS.secondary }}>
-            {data.ticket.date}
-          </Text>
-        </View>
-      </View>
+export const PDFReport = ({ data }: Props) => {
+  // Determinar si hay imágenes para incluir la página de fotos
+  const hasPhotos =
+    Array.isArray(data.capturedImages) && data.capturedImages.length > 0;
 
-      {/* Info Grid: Cliente + Contacto/Detalles */}
-      <View style={styles.infoGrid}>
-        <View style={styles.infoBox}>
-          <Text style={styles.infoBoxTitle}>INFORMACIÓN DEL CLIENTE</Text>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Empresa:</Text>
-            <Text style={styles.infoValue}>{data.client.name}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Dirección:</Text>
-            <Text style={styles.infoValue}>{data.client.address}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Equipos:</Text>
-            <Text style={styles.infoValue}>{data.client.equipment}</Text>
-          </View>
-        </View>
-
-        <View style={styles.infoBox}>
-          <Text style={styles.infoBoxTitle}>DETALLE DE ATENCIÓN</Text>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Contacto:</Text>
-            <Text style={styles.infoValue}>{data.contact.name}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Tipo:</Text>
-            <Text style={styles.infoValue}>{data.type}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Estado:</Text>
-            <Text style={{ ...styles.infoValue, fontWeight: "bold" }}>
-              {data.status}
+  return (
+    <Document>
+      {/* ═══════════════════════════════════════════════════════
+          PÁGINA 1: Contenido técnico del informe
+      ═══════════════════════════════════════════════════════ */}
+      <Page size="LETTER" style={styles.page}>
+        {/* Header */}
+        <View style={styles.headerContainer}>
+          <Image style={styles.logo} src={logo_jt2} />
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.reportTitle}>Informe Técnico</Text>
+            <Text style={styles.otNumber}>OT N°: {data.ticket.number}</Text>
+            <Text style={{ fontSize: 10, color: COLORS.secondary }}>
+              {data.ticket.date}
             </Text>
           </View>
         </View>
-      </View>
 
-      {/* Diagnóstico */}
-      <View style={styles.section}>
-        <Text style={styles.sectionHeader}>1. DIAGNÓSTICO / DESCRIPCIÓN</Text>
-        <View style={styles.contentBlock}>
-          <Text>{data.description}</Text>
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionHeader}>2. DESARROLLO DE ACTIVIDADES</Text>
-        <View style={styles.contentBlock}>
-          {data.developments && data.developments.length > 0 ? (
-            data.developments.map((dev, index) => (
-              <View key={index} style={styles.listItem}>
-                {/* Usamos guión o bullet diferente para diferenciar */}
-                <Text style={styles.bullet}>-</Text>
-                <Text style={{ flex: 1 }}>{dev}</Text>
-              </View>
-            ))
-          ) : (
-            <Text style={{ fontStyle: "italic", color: "#666" }}>
-              Sin detalles de desarrollo registrados.
-            </Text>
-          )}
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionHeader}>3. SOLUCIÓN TÉCNICA</Text>
-        <View style={styles.contentBlock}>
-          {data.solutions.map((sol, index) => (
-            <View key={index} style={styles.listItem}>
-              <Text style={styles.bullet}>•</Text>
-              <Text style={{ flex: 1 }}>{sol}</Text>
+        {/* Info Grid */}
+        <View style={styles.infoGrid}>
+          <View style={styles.infoBox}>
+            <Text style={styles.infoBoxTitle}>INFORMACIÓN DEL CLIENTE</Text>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Empresa:</Text>
+              <Text style={styles.infoValue}>{data.client.name}</Text>
             </View>
-          ))}
-        </View>
-      </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Dirección:</Text>
+              <Text style={styles.infoValue}>{data.client.address}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Equipos:</Text>
+              <Text style={styles.infoValue}>{data.client.equipment}</Text>
+            </View>
+          </View>
 
-      {/* Materiales (Si existen) */}
-      {data.materials.length > 0 && (
+          <View style={styles.infoBox}>
+            <Text style={styles.infoBoxTitle}>DETALLE DE ATENCIÓN</Text>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Contacto:</Text>
+              <Text style={styles.infoValue}>{data.contact.name}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Tipo:</Text>
+              <Text style={styles.infoValue}>{data.type}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Estado:</Text>
+              <Text style={{ ...styles.infoValue, fontWeight: "bold" }}>
+                {data.status}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Secciones técnicas */}
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>4. REPUESTOS E INSUMOS</Text>
-          <View style={styles.table}>
-            <View style={styles.tableHeader}>
-              <View style={styles.colDesc}>
-                <Text style={styles.tableHeaderText}>DESCRIPCIÓN</Text>
-              </View>
-              <View style={styles.colQty}>
-                <Text style={styles.tableHeaderText}>CANT.</Text>
-              </View>
-            </View>
-            {data.materials.map((mat, index) => (
-              <View key={index} style={styles.tableRow}>
-                <View style={styles.colDesc}>
-                  <Text>{mat.description}</Text>
-                </View>
-                <View style={styles.colQty}>
-                  <Text>{mat.quantity}</Text>
-                </View>
-              </View>
-            ))}
+          <Text style={styles.sectionHeader}>1. DIAGNÓSTICO / DESCRIPCIÓN</Text>
+          <View style={styles.contentBlock}>
+            <Text>{data.description}</Text>
           </View>
         </View>
-      )}
 
-      <Text
-        style={styles.pageFooter}
-        render={({ pageNumber, totalPages }) =>
-          `Página ${pageNumber} de ${totalPages}`
-        }
-      />
-    </Page>
-
-    {/* ================= PÁGINA 2: OBS Y FIRMAS ================= */}
-    <Page size="LETTER" style={styles.page}>
-      {/* Header Simplificado para Pág 2 */}
-      <View style={{ ...styles.headerContainer, marginBottom: 40 }}>
-        <View>
-          <Text style={{ fontSize: 10, color: COLORS.secondary }}>
-            ANEXO DE CIERRE
-          </Text>
-          <Text style={{ ...styles.reportTitle, fontSize: 14 }}>
-            OT N°: {data.ticket.number}
-          </Text>
-        </View>
-        <Text style={{ fontSize: 10, color: COLORS.secondary }}>
-          Fecha: {data.ticket.date}
-        </Text>
-      </View>
-
-      {/* Observaciones (Condicional) */}
-      {data.observations.length > 0 && (
-        <View style={{ ...styles.section, marginBottom: 60 }}>
-          <Text style={styles.sectionHeader}>OBSERVACIONES GENERALES</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>2. DESARROLLO DE ACTIVIDADES</Text>
           <View style={styles.contentBlock}>
-            {data.observations.map((obs, index) => (
+            {data.developments && data.developments.length > 0 ? (
+              data.developments.map((dev, index) => (
+                <View key={index} style={styles.listItem}>
+                  <Text style={styles.bullet}>-</Text>
+                  <Text style={{ flex: 1 }}>{dev}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={{ fontStyle: "italic", color: "#666" }}>
+                Sin detalles de desarrollo registrados.
+              </Text>
+            )}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>3. SOLUCIÓN TÉCNICA</Text>
+          <View style={styles.contentBlock}>
+            {data.solutions.map((sol, index) => (
               <View key={index} style={styles.listItem}>
                 <Text style={styles.bullet}>•</Text>
-                <Text style={{ flex: 1 }}>{obs}</Text>
+                <Text style={{ flex: 1 }}>{sol}</Text>
               </View>
             ))}
           </View>
         </View>
+
+        {data.materials.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionHeader}>4. REPUESTOS E INSUMOS</Text>
+            <View style={styles.table}>
+              <View style={styles.tableHeader}>
+                <View style={styles.colDesc}>
+                  <Text style={styles.tableHeaderText}>DESCRIPCIÓN</Text>
+                </View>
+                <View style={styles.colQty}>
+                  <Text style={styles.tableHeaderText}>CANT.</Text>
+                </View>
+              </View>
+              {data.materials.map((mat, index) => (
+                <View key={index} style={styles.tableRow}>
+                  <View style={styles.colDesc}>
+                    <Text>{mat.description}</Text>
+                  </View>
+                  <View style={styles.colQty}>
+                    <Text>{mat.quantity}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        <Text
+          style={styles.pageFooter}
+          render={({ pageNumber, totalPages }) =>
+            `Página ${pageNumber} de ${totalPages}`
+          }
+        />
+      </Page>
+
+      {/* ═══════════════════════════════════════════════════════
+          PÁGINA 2: Observaciones y Firmas
+      ═══════════════════════════════════════════════════════ */}
+      <Page size="LETTER" style={styles.page}>
+        <View style={{ ...styles.headerContainer, marginBottom: 40 }}>
+          <View>
+            <Text style={{ fontSize: 10, color: COLORS.secondary }}>
+              ANEXO DE CIERRE
+            </Text>
+            <Text style={{ ...styles.reportTitle, fontSize: 14 }}>
+              OT N°: {data.ticket.number}
+            </Text>
+          </View>
+          <Text style={{ fontSize: 10, color: COLORS.secondary }}>
+            Fecha: {data.ticket.date}
+          </Text>
+        </View>
+
+        {data.observations.length > 0 && (
+          <View style={{ ...styles.section, marginBottom: 60 }}>
+            <Text style={styles.sectionHeader}>OBSERVACIONES GENERALES</Text>
+            <View style={styles.contentBlock}>
+              {data.observations.map((obs, index) => (
+                <View key={index} style={styles.listItem}>
+                  <Text style={styles.bullet}>•</Text>
+                  <Text style={{ flex: 1 }}>{obs}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Firmas */}
+        <View style={styles.signatureSection}>
+          <View style={styles.signatureBlock}>
+            <View style={styles.signatureLine}>
+              {data.techSignature && (
+                <Image src={data.techSignature} style={styles.signatureImage} />
+              )}
+            </View>
+            <Text style={styles.signerName}>{data.techName}</Text>
+            <Text style={styles.signerRole}>Técnico Especialista</Text>
+          </View>
+
+          <View style={styles.signatureBlock}>
+            <View style={styles.signatureLine}>
+              {data.clientSignature && (
+                <Image
+                  src={data.clientSignature}
+                  style={styles.signatureImage}
+                />
+              )}
+            </View>
+            <Text style={styles.signerName}>{data.clientSigner}</Text>
+            <Text style={styles.signerRole}>Recepción Cliente</Text>
+          </View>
+        </View>
+
+        <Text
+          style={styles.pageFooter}
+          render={({ pageNumber, totalPages }) =>
+            `Página ${pageNumber} de ${totalPages}`
+          }
+        />
+      </Page>
+
+      {/* ═══════════════════════════════════════════════════════
+          PÁGINA 3 (condicional): Registro Fotográfico
+          Solo se incluye si hay al menos una imagen capturada.
+      ═══════════════════════════════════════════════════════ */}
+      {hasPhotos && (
+        <Page size="LETTER" style={styles.photoPage}>
+          {/* Header de la página de fotos */}
+          <View style={{ ...styles.headerContainer, marginBottom: 20 }}>
+            <View>
+              <Text style={{ fontSize: 10, color: COLORS.secondary }}>
+                REGISTRO FOTOGRÁFICO
+              </Text>
+              <Text style={{ ...styles.reportTitle, fontSize: 14 }}>
+                OT N°: {data.ticket.number}
+              </Text>
+            </View>
+            <Text style={{ fontSize: 10, color: COLORS.secondary }}>
+              {data.capturedImages.length} imagen
+              {data.capturedImages.length !== 1 ? "es" : ""} adjunta
+              {data.capturedImages.length !== 1 ? "s" : ""}
+            </Text>
+          </View>
+
+          <Text
+            style={{
+              fontSize: 9,
+              color: COLORS.secondary,
+              marginBottom: 12,
+              fontStyle: "italic",
+            }}
+          >
+            Las siguientes imágenes fueron registradas durante la ejecución del
+            trabajo como respaldo visual de las actividades realizadas.
+          </Text>
+
+          {/* Grilla de fotos: 2 columnas */}
+          <View style={styles.photoGrid}>
+            {data.capturedImages.map((img) => (
+              <View key={img.id} style={styles.photoCell}>
+                <Image src={img.dataUrl} style={styles.photoImage} />
+                <Text style={styles.photoCaption}>{img.fieldLabel}</Text>
+              </View>
+            ))}
+          </View>
+
+          <Text
+            style={styles.pageFooter}
+            render={({ pageNumber, totalPages }) =>
+              `Página ${pageNumber} de ${totalPages}`
+            }
+          />
+        </Page>
       )}
-
-      {/* Sección de Firmas (Siempre aquí) */}
-      <View style={styles.signatureSection}>
-        {/* Firma Técnico */}
-        <View style={styles.signatureBlock}>
-          <View style={styles.signatureLine}>
-            {data.techSignature && (
-              <Image src={data.techSignature} style={styles.signatureImage} />
-            )}
-          </View>
-          <Text style={styles.signerName}>{data.techName}</Text>
-          <Text style={styles.signerRole}>Técnico Especialista</Text>
-        </View>
-
-        {/* Firma Cliente */}
-        <View style={styles.signatureBlock}>
-          <View style={styles.signatureLine}>
-            {data.clientSignature && (
-              <Image src={data.clientSignature} style={styles.signatureImage} />
-            )}
-          </View>
-          <Text style={styles.signerName}>{data.clientSigner}</Text>
-          <Text style={styles.signerRole}>Recepción Cliente</Text>
-        </View>
-      </View>
-
-      <Text
-        style={styles.pageFooter}
-        render={({ pageNumber, totalPages }) =>
-          `Página ${pageNumber} de ${totalPages}`
-        }
-      />
-    </Page>
-  </Document>
-);
+    </Document>
+  );
+};

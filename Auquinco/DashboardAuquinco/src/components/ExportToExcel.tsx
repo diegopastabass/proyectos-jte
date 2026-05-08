@@ -56,9 +56,9 @@ function Export() {
         startDate === endDate &&
         ["nivel", "caudal", "nivel2"].includes(endpoint)
       ) {
-        apiUrl = `https://app.jteanalytics.cl/boldos/${endpoint}`;
+        apiUrl = `https://app.jteanalytics.cl/auquinco/${endpoint}`;
       } else {
-        apiUrl = `https://app.jteanalytics.cl/boldos/${endpoint}?start=${startDate}&end=${endDate}`;
+        apiUrl = `https://app.jteanalytics.cl/auquinco/${endpoint}?start=${startDate}&end=${endDate}`;
       }
 
       const res = await fetch(apiUrl);
@@ -103,7 +103,7 @@ function Export() {
             const minutos = totalMin % 60;
 
             const hhmm = `${String(horas).padStart(2, "0")}:${String(
-              minutos
+              minutos,
             ).padStart(2, "0")}`;
 
             return {
@@ -123,7 +123,7 @@ function Export() {
         wch:
           Math.max(
             key.length,
-            ...formattedData.map((row) => row[key]?.toString().length ?? 0)
+            ...formattedData.map((row) => row[key]?.toString().length ?? 0),
           ) + 2,
       }));
       ws["!cols"] = colWidths;

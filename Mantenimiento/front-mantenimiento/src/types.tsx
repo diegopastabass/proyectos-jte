@@ -24,6 +24,8 @@ export const initialData: ReportData = {
   techSignature: "",
   clientSignature: "",
   isApproved: false,
+  // Campo nuevo: arreglo de imágenes capturadas durante la sesión
+  capturedImages: [],
 };
 
 export interface User {
@@ -74,4 +76,26 @@ export interface ReportData {
   techSignature?: string;
   clientSignature?: string;
   isApproved: boolean;
+  /**
+   * Imágenes capturadas durante la sesión de mantenimiento.
+   * Se almacenan como Data URLs (base64) generados desde el canvas del PhotoCaptureModal.
+   * Se incluyen en el PDF si el arreglo no está vacío.
+   */
+  capturedImages: CapturedImage[];
+}
+
+/**
+ * Representa una imagen capturada durante la sesión.
+ * - id: Identificador único para operaciones de UI (agregar/eliminar).
+ * - dataUrl: La imagen en base64 lista para usar en <img> y en @react-pdf/renderer.
+ * - fieldId: El ID del campo de contexto (ej: "before", "after", "detail").
+ * - fieldLabel: Etiqueta legible para mostrar en la galería y en el PDF.
+ * - capturedAt: ISO string del momento de captura para ordenar y mostrar.
+ */
+export interface CapturedImage {
+  id: string;
+  dataUrl: string;
+  fieldId: string;
+  fieldLabel: string;
+  capturedAt: string;
 }

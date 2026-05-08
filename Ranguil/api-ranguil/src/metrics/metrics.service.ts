@@ -18,8 +18,8 @@ export class SsrRanguilService {
     if (!dto.start || !dto.end) return null;
 
     const startDate = new Date(`${dto.start}T00:00:00Z`);
-    const nextDay = new Date(dto.end);
-    nextDay.setDate(nextDay.getDate() + 1);
+    const nextDay = new Date(`${dto.end}T00:00:00Z`);
+    nextDay.setUTCDate(nextDay.getUTCDate() + 1);
     const endDate = new Date(`${nextDay.toISOString().slice(0, 10)}T00:00:00Z`);
 
     return { start: startDate, end: endDate };
@@ -149,17 +149,17 @@ export class SsrRanguilService {
       if (!metricsMap.has(dateStr) || dateStr === todayStr) {
         missingDates.push(dateStr);
       }
-      currentDate.setDate(currentDate.getDate() + 1);
+      currentDate.setUTCDate(currentDate.getUTCDate() + 1);
     }
 
     if (missingDates.length > 0) {
       const calculated = await this.repo.query(
         `
         WITH bounds AS (
-          SELECT mt_time_2::DATE AS day, MIN(mt_time_2) AS first_ts, MAX(mt_time_2) AS last_ts
+          SELECT (mt_time_2 AT TIME ZONE 'UTC')::DATE AS day, MIN(mt_time_2) AS first_ts, MAX(mt_time_2) AS last_ts
           FROM ssr_ranguil
-          WHERE mt_name = $1 AND mt_time_2::DATE = ANY($2::DATE[])
-          GROUP BY mt_time_2::DATE
+          WHERE mt_name = $1 AND (mt_time_2 AT TIME ZONE 'UTC')::DATE = ANY($2::DATE[])
+          GROUP BY (mt_time_2 AT TIME ZONE 'UTC')::DATE
         )
         SELECT b.day,
           (MAX(CAST(s_last.mt_value AS NUMERIC(30,6))) - MIN(CAST(s_first.mt_value AS NUMERIC(30,6)))) AS daily_value
@@ -199,7 +199,7 @@ export class SsrRanguilService {
       if (metricsMap.has(dateStr)) {
         results.push({ time: dateStr, value: metricsMap.get(dateStr)! });
       }
-      currentDate.setDate(currentDate.getDate() + 1);
+      currentDate.setUTCDate(currentDate.getUTCDate() + 1);
     }
 
     return results;

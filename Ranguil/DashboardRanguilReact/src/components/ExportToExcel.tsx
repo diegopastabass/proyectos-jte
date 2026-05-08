@@ -90,30 +90,39 @@ function Export() {
       }
 
       const formattedData: FormattedRow[] = data.map((d): FormattedRow => {
-        const date = new Date(d.time);
-        const fecha = date.toLocaleDateString("es-CL");
-        const hora = date.toLocaleTimeString("es-CL", {
-          hour: "2-digit",
-          minute: "2-digit",
-        });
+        // Endpoints diarios (horometro, kwh, totalizador) devuelven "YYYY-MM-DD"
+        // El resto devuelven un timestamp ISO completo "YYYY-MM-DDTHH:mm:ss.sssZ"
+        const isPlainDate = /^\d{4}-\d{2}-\d{2}$/.test(d.time);
+
+        // Para timestamps ISO: convertir a fecha/hora local chilena
+        const date = isPlainDate ? null : new Date(d.time);
+        const fecha = isPlainDate
+          ? d.time // ya es "YYYY-MM-DD", usarlo directamente
+          : date!.toLocaleDateString("es-CL");
+        const hora = date
+          ? date.toLocaleTimeString("es-CL", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : null;
 
         switch (exportType) {
           case "nivel":
             return {
               Fecha: fecha,
-              Hora: hora,
+              Hora: hora!,
               "Valor (m)": (d.value / 100).toFixed(2),
             };
           case "nivel2":
             return {
               Fecha: fecha,
-              Hora: hora,
+              Hora: hora!,
               "Valor (m)": d.value.toFixed(2),
             };
           case "caudal":
             return {
               Fecha: fecha,
-              Hora: hora,
+              Hora: hora!,
               "Valor (l/s)": d.value.toFixed(2),
             };
           case "horometro": {
@@ -132,13 +141,25 @@ function Export() {
           }
 
           case "totalizador":
-            return { Fecha: fecha, "Valor (m³)": d.value };
+            return { Fecha: fecha, "Valor (m³)": d.value.toFixed(2) };
           case "voltaje":
-            return { Fecha: fecha, "Valor (V)": d.value / 10 };
+            return {
+              Fecha: fecha,
+              Hora: hora!,
+              "Valor (V)": (d.value / 10).toFixed(2),
+            };
           case "corriente":
-            return { Fecha: fecha, "Valor (A)": d.value / 100 };
+            return {
+              Fecha: fecha,
+              Hora: hora!,
+              "Valor (A)": (d.value / 100).toFixed(2),
+            };
           case "presion":
-            return { Fecha: fecha, "Valor (bar)": d.value / 10 };
+            return {
+              Fecha: fecha,
+              Hora: hora!,
+              "Valor (bar)": (d.value / 10).toFixed(2),
+            };
           case "kwh":
             return { Fecha: fecha, "Valor (kWh)": d.value };
         }

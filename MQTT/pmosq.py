@@ -3,7 +3,7 @@ import paho.mqtt.client as mqtt
 
 PUBLIC_IP = "app.jteanalytics.cl"      
 PORT = 443                             
-TOPIC = "sensor/datos"
+TOPIC = "ssr_compania"
 WS_PATH = "/mosquitto/"                
 
 client = mqtt.Client(transport="websockets")

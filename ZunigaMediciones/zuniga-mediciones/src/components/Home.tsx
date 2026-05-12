@@ -12,6 +12,7 @@ interface Props {
   onLogout: () => void;
   onNewSession: () => void;
   onGoToExport: () => void;
+  onCompleteSession: (id: string) => void;
 }
 
 export default function Home({
@@ -19,6 +20,7 @@ export default function Home({
   onLogout,
   onNewSession,
   onGoToExport,
+  onCompleteSession,
 }: Props) {
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,6 +109,7 @@ export default function Home({
                     <th>Fecha</th>
                     <th>Responsable</th>
                     <th>Mediciones</th>
+                    <th>Estado</th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
@@ -121,10 +124,33 @@ export default function Home({
                       <td>{session.user.name}</td>
                       <td>{session.measures_number}</td>
                       <td>
+                        {session.state === "1" ? (
+                          <span className="badge bg-success">
+                            <i className="bi bi-check-circle-fill me-1"></i>
+                            Completa
+                          </span>
+                        ) : (
+                          <span className="badge bg-warning text-dark">
+                            <i className="bi bi-hourglass-split me-1"></i>
+                            Pendiente
+                          </span>
+                        )}
+                      </td>
+                      <td className="d-flex gap-2 flex-wrap">
+                        {session.state === "0" && (
+                          <button
+                            className="btn btn-sm btn-warning fw-bold"
+                            onClick={() => onCompleteSession(session.id)}
+                          >
+                            <i className="bi bi-plus-circle me-1"></i>
+                            Completar
+                          </button>
+                        )}
                         <button
                           className="btn btn-sm btn-outline-primary"
                           onClick={() => handleDownload(session.id)}
-                          disabled={downloadingId === session.id}
+                          disabled={downloadingId === session.id || session.state === "0"}
+                          title={session.state === "0" ? "La sesión debe completarse antes de descargar el informe" : "Descargar informe PDF"}
                         >
                           {downloadingId === session.id ? (
                             <>
@@ -143,7 +169,7 @@ export default function Home({
                   ))}
                   {sessions.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="text-center py-4 text-muted">
+                      <td colSpan={6} className="text-center py-4 text-muted">
                         No hay sesiones registradas
                       </td>
                     </tr>

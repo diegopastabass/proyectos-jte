@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Patch,
   Get,
   Delete,
   Param,
@@ -81,6 +82,34 @@ export class SessionsController {
   @Delete('app/:id')
   remove(@Param('id') id: string) {
     return this.sessionsService.remove(id);
+  }
+
+  @Patch('app/:id')
+  @UseInterceptors(
+    FilesInterceptor('files', 1, {
+      storage: diskStorage({
+        destination: './uploads',
+        filename: (req, file, cb) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          cb(
+            null,
+            `${file.fieldname}-${uniqueSuffix}${extname(file.originalname)}`,
+          );
+        },
+      }),
+    }),
+  )
+  async update(
+    @Param('id') id: string,
+    @UploadedFiles() files: Array<Express.Multer.File>,
+    @Body('data') dataString: string,
+  ) {
+    this.logger.log(`Actualizando sesión ${id} con datos: ${dataString}`);
+    if (!dataString)
+      throw new BadRequestException('Faltan datos de la actualización');
+    const sessionData = JSON.parse(dataString);
+    return this.sessionsService.updateSession(id, sessionData, files);
   }
 
   @Get('app/report/:id')

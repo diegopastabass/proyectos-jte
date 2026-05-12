@@ -8,6 +8,7 @@ import { Repository, DataSource, Between } from 'typeorm';
 import { Session } from './entities/session.entity';
 import { Measurement } from './entities/measurement.entity';
 import { CreateSessionDto } from './dto/create-session.dto';
+import { UpdateSessionDto } from './dto/update-session.dto';
 import { User } from '../users/entities/user.entity';
 import { join } from 'path';
 import { existsSync } from 'fs';
@@ -109,6 +110,7 @@ export class SessionsService {
       newSession.user = user;
       newSession.measures_number = data.measurements.length;
       newSession.report_json = reportSnapshot;
+      newSession.state = '0'; // Sesión incompleta: falta medición de cloro tarde
 
       const savedSession = await queryRunner.manager.save(newSession);
 
@@ -123,12 +125,91 @@ export class SessionsService {
       return {
         message: 'Sesión creada exitosamente',
         sessionId: savedSession.id,
+        state: savedSession.state,
       };
     } catch (err) {
       await queryRunner.rollbackTransaction();
       console.error('Error Transaction:', err);
       throw new BadRequestException(
         'Error al guardar la sesión: ' + err.message,
+      );
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async updateSession(
+    id: string,
+    data: UpdateSessionDto,
+    files: Array<Express.Multer.File>,
+  ) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // 1. Buscar la sesión existente
+      const session = await queryRunner.manager.findOne(Session, {
+        where: { id },
+        relations: ['user'],
+      });
+
+      if (!session) {
+        throw new NotFoundException(`Sesión con id "${id}" no encontrada.`);
+      }
+
+      if (session.state === '1') {
+        throw new BadRequestException(
+          'Esta sesión ya está completa y no puede ser modificada.',
+        );
+      }
+
+      // 2. Crear la nueva medición con timestamp propio (hora real de la tarde)
+      const newMeasure = new Measurement();
+      newMeasure.name = data.measurement.name;
+      newMeasure.value = Number(data.measurement.value);
+      newMeasure.time = new Date(); // Timestamp de este momento (tarde)
+      newMeasure.location = data.measurement.location || '';
+      newMeasure.session = session;
+
+      if (files && files[0]) {
+        newMeasure.imagePath = files[0].filename;
+      }
+
+      await queryRunner.manager.save(newMeasure);
+
+      // 3. Actualizar el report_json agregando la nueva medición
+      const updatedReportJson = { ...session.report_json };
+      updatedReportJson.items = [
+        ...(updatedReportJson.items || []),
+        {
+          label: newMeasure.name,
+          value: newMeasure.value,
+          unit: this.getUnit(newMeasure.name),
+          location: newMeasure.location,
+          time: newMeasure.time,
+          image: newMeasure.imagePath,
+        },
+      ];
+
+      // 4. Marcar sesión como completa
+      session.measures_number = session.measures_number + 1;
+      session.report_json = updatedReportJson;
+      session.state = '1';
+
+      await queryRunner.manager.save(session);
+      await queryRunner.commitTransaction();
+
+      return {
+        message: 'Sesión actualizada con segunda medición de cloro.',
+        sessionId: session.id,
+        state: session.state,
+      };
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      console.error('Error Transaction updateSession:', err);
+      throw new BadRequestException(
+        'Error al actualizar la sesión: ' + err.message,
       );
     } finally {
       await queryRunner.release();
@@ -169,6 +250,7 @@ export class SessionsService {
         id: true,
         createdAt: true,
         measures_number: true,
+        state: true,
         user: {
           name: true,
           email: true,

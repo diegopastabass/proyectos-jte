@@ -10,6 +10,7 @@ export interface SessionData {
   id: string;
   createdAt: string;
   measures_number: number;
+  state: "0" | "1";
   user: {
     name: string;
     email: string;

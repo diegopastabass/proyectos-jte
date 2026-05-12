@@ -25,6 +25,9 @@ export class Session {
   @Column({ name: 'report_json', type: 'jsonb', nullable: true })
   report_json: any;
 
+  @Column({ type: 'char', length: 1, default: '0' })
+  state: string;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

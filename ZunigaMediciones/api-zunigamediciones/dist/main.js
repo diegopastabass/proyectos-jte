@@ -19,7 +19,7 @@ async function bootstrap() {
         allowedHeaders: 'Content-Type, Accept, Authorization',
         credentials: true,
     });
-    const port = process.env.PORT || 3017;
+    const port = process.env.PORT || 3027;
     await app.listen(port);
     common_1.Logger.log(`Server running on http://localhost:${port}`);
 }

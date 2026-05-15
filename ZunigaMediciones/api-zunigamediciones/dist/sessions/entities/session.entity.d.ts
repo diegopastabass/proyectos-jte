@@ -5,6 +5,8 @@ export declare class Session {
     user: User;
     measures_number: number;
     report_json: any;
+    state: string;
+    update_count: number;
     createdAt: Date;
     measurements: Measurement[];
 }

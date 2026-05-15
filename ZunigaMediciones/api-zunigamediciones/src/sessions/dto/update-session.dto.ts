@@ -5,5 +5,6 @@ export class UpdateMeasurementDto {
 }
 
 export class UpdateSessionDto {
-  measurement: UpdateMeasurementDto;
+  measurements: UpdateMeasurementDto[]; // array de 1 o 2 mediciones de cloro
+  markComplete?: boolean;               // true = usuario marca sesión como completa
 }

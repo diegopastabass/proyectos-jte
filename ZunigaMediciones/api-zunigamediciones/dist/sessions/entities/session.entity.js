@@ -18,6 +18,8 @@ let Session = class Session {
     user;
     measures_number;
     report_json;
+    state;
+    update_count;
     createdAt;
     measurements;
 };
@@ -39,6 +41,14 @@ __decorate([
     (0, typeorm_1.Column)({ name: 'report_json', type: 'jsonb', nullable: true }),
     __metadata("design:type", Object)
 ], Session.prototype, "report_json", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'char', length: 1, default: '0' }),
+    __metadata("design:type", String)
+], Session.prototype, "state", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'update_count', type: 'int', default: 0 }),
+    __metadata("design:type", Number)
+], Session.prototype, "update_count", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)

@@ -5,14 +5,16 @@ import Home from "./components/Home";
 import CreateSession from "./components/CreateSession";
 import UpdateSession from "./components/UpdateSession";
 import ExportReports from "./components/ExportReports";
-import { type User } from "./types";
+import { type User, type SessionData } from "./types";
 
 function App() {
   const [view, setView] = useState<
     "login" | "register" | "home" | "create" | "update" | "export"
   >("login");
   const [user, setUser] = useState<User | null>(null);
-  const [pendingSessionId, setPendingSessionId] = useState<string | null>(null);
+  const [pendingSession, setPendingSession] = useState<SessionData | null>(
+    null,
+  );
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user_data");
@@ -57,8 +59,8 @@ function App() {
           onLogout={handleLogout}
           onNewSession={() => setView("create")}
           onGoToExport={() => setView("export")}
-          onCompleteSession={(id) => {
-            setPendingSessionId(id);
+          onCompleteSession={(session) => {
+            setPendingSession(session);
             setView("update");
           }}
         />
@@ -68,12 +70,13 @@ function App() {
         <CreateSession user={user} onBack={() => setView("home")} />
       )}
 
-      {user && view === "update" && pendingSessionId && (
+      {user && view === "update" && pendingSession && (
         <UpdateSession
           user={user}
-          sessionId={pendingSessionId}
+          sessionId={pendingSession.id}
+          sessionData={pendingSession}
           onBack={() => {
-            setPendingSessionId(null);
+            setPendingSession(null);
             setView("home");
           }}
         />

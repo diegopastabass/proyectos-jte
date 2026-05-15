@@ -229,6 +229,7 @@ export class SsrCocalanService {
   async getNivel(dto: DateRangeDto): Promise<Metric[]> {
     try {
       const range = this.normalizeDateRange(dto);
+      const take = dto.limit ? Number(dto.limit) : undefined;
 
       if (range) {
         const { start, end } = range;
@@ -244,6 +245,7 @@ export class SsrCocalanService {
             ),
           },
           order: { mt_time_2: 'ASC' },
+          ...(take !== undefined && { take }),
         });
 
         return results.map((row) => ({
@@ -260,6 +262,7 @@ export class SsrCocalanService {
           mt_time_2: Raw((alias) => `${alias} >= :start`, { start }),
         },
         order: { mt_time_2: 'ASC' },
+        ...(take !== undefined && { take }),
       });
 
       return results.map((row) => ({

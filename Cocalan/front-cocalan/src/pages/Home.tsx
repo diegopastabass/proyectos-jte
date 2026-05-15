@@ -7,7 +7,6 @@ import Loading from "./Loading";
 import ToggleCardButton from "../components/ToggelCardButton";
 import DropdownCard from "../components/DropdownCard";
 import DropdownCardv2 from "../components/DropDownCardv2";
-import DropdownCardv3 from "../components/DropDownCardv3";
 import ScadaDiagram from "../components/ScadaDiagram";
 import ExportModal from "../components/ExportModal";
 import Error from "./Error";
@@ -49,7 +48,7 @@ function App() {
   const [isOpenBomba, setIsOpenBomba] = useState(isLargeScreen);
 
   const nivelMaxEstanque = 4;
-  const nivelAlarma = 2;
+  const nivelAlarma = 200;
 
   const handleResize = () => setIsLargeScreen(window.innerWidth >= 1500);
 
@@ -164,7 +163,7 @@ function App() {
             onToggle={() => setIsOpenBomba(!isOpenBomba)}
           />
         </Card>
-        <DropdownCardv3
+        <DropdownCardv2
           isOpen={isOpenBomba}
           title="Horómetro"
           chartLabel="Horómetro"

@@ -188,7 +188,7 @@ function App() {
           />
           <TankLevelCircular
             nivelActual={data.snapshot.P1.nivel.value / 100}
-            nivelMaximo={3.4}
+            nivelMaximo={3.1}
           />
           <ToggleCardButton
             isOpen={isOpenEstanqueP1}
@@ -246,7 +246,7 @@ function App() {
           />
           <TankLevelCircular
             nivelActual={data.snapshot.P2.nivel.value / 100}
-            nivelMaximo={2.2}
+            nivelMaximo={4.1}
           />
           <ToggleCardButton
             isOpen={isOpenEstanqueP2}
@@ -312,7 +312,7 @@ function App() {
             automatico={data.snapshot.P1.automatico}
             nivel={data.snapshot.P1.nivel}
             bomba={data.snapshot.P1.bomba}
-            nivel_max={5}
+            nivel_max={3.1}
             divisor_nivel={100}
             date={lastUpdateP1}
           />
@@ -350,7 +350,7 @@ function App() {
             solar={data.snapshot.P2.solar.value / 1000}
             bomba={data.snapshot.P2.bomba}
             divisor_nivel={100}
-            nivel_max={5}
+            nivel_max={4.1}
             date={lastUpdateP2}
           />
         </div>

@@ -86,7 +86,7 @@ export class SessionsController {
 
   @Patch('app/:id')
   @UseInterceptors(
-    FilesInterceptor('files', 1, {
+    FilesInterceptor('files', 3, {
       storage: diskStorage({
         destination: './uploads',
         filename: (req, file, cb) => {

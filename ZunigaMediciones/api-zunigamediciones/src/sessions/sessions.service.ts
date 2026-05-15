@@ -164,46 +164,63 @@ export class SessionsService {
         );
       }
 
-      // 2. Crear la nueva medición con timestamp propio (hora real de la tarde)
-      const newMeasure = new Measurement();
-      newMeasure.name = data.measurement.name;
-      newMeasure.value = Number(data.measurement.value);
-      newMeasure.time = new Date(); // Timestamp de este momento (tarde)
-      newMeasure.location = data.measurement.location || '';
-      newMeasure.session = session;
-
-      if (files && files[0]) {
-        newMeasure.imagePath = files[0].filename;
+      if (session.update_count >= 3) {
+        throw new BadRequestException(
+          'Esta sesión ya alcanzó el máximo de 3 actualizaciones permitidas.',
+        );
       }
 
-      await queryRunner.manager.save(newMeasure);
+      // 2. Crear las nuevas mediciones con timestamp propio
+      const now = new Date();
+      const newMeasures: Measurement[] = (data.measurements || []).map(
+        (item, index) => {
+          const m = new Measurement();
+          m.name = item.name;
+          m.value = Number(item.value);
+          m.time = now;
+          m.location = item.location || '';
+          m.session = session;
+          if (files && files[index]) {
+            m.imagePath = files[index].filename;
+          }
+          return m;
+        },
+      );
 
-      // 3. Actualizar el report_json agregando la nueva medición
+      await queryRunner.manager.save(newMeasures);
+
+      // 3. Actualizar el report_json
       const updatedReportJson = { ...session.report_json };
       updatedReportJson.items = [
         ...(updatedReportJson.items || []),
-        {
-          label: newMeasure.name,
-          value: newMeasure.value,
-          unit: this.getUnit(newMeasure.name),
-          location: newMeasure.location,
-          time: newMeasure.time,
-          image: newMeasure.imagePath,
-        },
+        ...newMeasures.map((m) => ({
+          label: m.name,
+          value: m.value,
+          unit: this.getUnit(m.name),
+          location: m.location,
+          time: m.time,
+          image: m.imagePath,
+        })),
       ];
 
-      // 4. Marcar sesión como completa
-      session.measures_number = session.measures_number + 1;
+      // 4. Actualizar contadores y estado
+      session.measures_number = session.measures_number + newMeasures.length;
       session.report_json = updatedReportJson;
-      session.state = '1';
+      session.update_count = (session.update_count || 0) + 1;
+
+      // Marcar completa si: usuario lo pide explícitamente O se alcanzó el límite de 3 ediciones
+      if (data.markComplete === true || session.update_count >= 3) {
+        session.state = '1';
+      }
 
       await queryRunner.manager.save(session);
       await queryRunner.commitTransaction();
 
       return {
-        message: 'Sesión actualizada con segunda medición de cloro.',
+        message: 'Sesión actualizada con nuevas mediciones de cloro.',
         sessionId: session.id,
         state: session.state,
+        update_count: session.update_count,
       };
     } catch (err) {
       await queryRunner.rollbackTransaction();
@@ -243,7 +260,13 @@ export class SessionsService {
   }
 
   async findAll() {
-    return this.sessionRepo.find({
+    const CHLORO_LABELS = [
+      'Cloro en Caseta',
+      'Cloro Red Punto 1',
+      'Cloro Red Punto 2',
+    ];
+
+    const sessions = await this.sessionRepo.find({
       relations: ['user'],
       order: { createdAt: 'DESC' },
       select: {
@@ -251,11 +274,27 @@ export class SessionsService {
         createdAt: true,
         measures_number: true,
         state: true,
+        update_count: true,
+        report_json: true,
         user: {
           name: true,
           email: true,
         },
       },
+    });
+
+    return sessions.map((s) => {
+      const presentLabels: string[] = (
+        (s.report_json?.items as any[]) || []
+      ).map((item: any) => item.label as string);
+
+      const chloro_pending_count = CHLORO_LABELS.filter(
+        (label) => !presentLabels.includes(label),
+      ).length;
+
+      // Omitir report_json del resultado para no sobrecargar la respuesta
+      const { report_json, ...rest } = s as any;
+      return { ...rest, chloro_pending_count };
     });
   }
 

@@ -28,6 +28,9 @@ export class Session {
   @Column({ type: 'char', length: 1, default: '0' })
   state: string;
 
+  @Column({ name: 'update_count', type: 'int', default: 0 })
+  update_count: number;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

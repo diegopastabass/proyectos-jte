@@ -24,9 +24,6 @@ def get_dynamic_config():
         "NIVEL_ALERTA": float(os.getenv("NIVEL_ALERTA", 2)),
     }
 
-# Nombre de sensores
-SENSOR_ESTANQUE = "SSR_COCALAN--slave.nivel"
-
 # --- Logging ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_FILE = os.path.join(BASE_DIR, "logs_COCALAN.txt")
@@ -39,37 +36,38 @@ logging.basicConfig(
 
 
 # --- Funciones ---
-def obtener_niveles(nombre_sensor):
-    """Obtiene los dos últimos registros desde la API."""
+def obtener_niveles():
+    """Obtiene los dos últimos registros desde la API y los convierte a metros."""
     url = "https://app.jteanalytics.cl/cocalan/nivel?limit=2"
     try:
         response = requests.get(url, timeout=10)
         response.raise_for_status()
         data = response.json()
-        
+
         if len(data) < 2:
-            logging.warning(f"No hay suficientes datos desde la API para {nombre_sensor}.")
+            logging.warning("No hay suficientes datos desde la API.")
             return None, None, None, None
-            
+
         # Ordenar por time ascendente para tener el anterior y luego el actual
         data_sorted = sorted(data, key=lambda x: x["time"])
-        
+
         registro_anterior = data_sorted[0]
         registro_actual = data_sorted[1]
-        
+
         def parse_time(t_str):
             if t_str.endswith("Z"):
                 t_str = t_str[:-1] + "+00:00"
             return datetime.fromisoformat(t_str).replace(tzinfo=None)
-            
+
         time_anterior = parse_time(registro_anterior["time"])
         time_actual = parse_time(registro_actual["time"])
-        
-        nivel_anterior = float(registro_anterior["value"])
-        nivel_actual = float(registro_actual["value"])
-        
+
+        # El sensor devuelve el valor en centímetros; dividir por 100 para obtener metros
+        nivel_anterior = float(registro_anterior["value"]) / 100
+        nivel_actual = float(registro_actual["value"]) / 100
+
         return nivel_actual, nivel_anterior, time_actual, time_anterior
-        
+
     except Exception as e:
         logging.error(f"Error obteniendo niveles desde la API: {e}")
         return None, None, None, None
@@ -102,8 +100,8 @@ def enviar_alerta(mensaje: str, to: str = None):
     except requests.RequestException as e:
         logging.error(f"❌ Error enviando mensaje a UltaMsg: {e}")
 
-def procesar_estanque(sensor, nombre_publico, nivel_alerta, divisor):
-    nivel_actual, nivel_anterior, time_actual, time_anterior = obtener_niveles(sensor)
+def procesar_estanque(nombre_publico, nivel_alerta):
+    nivel_actual, nivel_anterior, time_actual, time_anterior = obtener_niveles()
 
     if nivel_actual is None:
         return False
@@ -113,27 +111,25 @@ def procesar_estanque(sensor, nombre_publico, nivel_alerta, divisor):
     diferencia_minutos = (ahora_utc - time_actual).total_seconds() / 60
 
     if diferencia_minutos > 30:
-        if not alertas_desconexion_enviadas.get(sensor):
+        if not alertas_desconexion_enviadas.get(nombre_publico):
             logging.warning(f"📡 {nombre_publico}: Datos desactualizados ({int(diferencia_minutos)} min). Enviando alerta a admin.")
             mensaje_desc = (
-                f"⚠️ ALERTA DESCONEXIÓN ⚠️\n"
+                f"⚠️ ALERTA DESCONEXIÓN SSR COCALAN ⚠️\n"
                 f"Estanque: {nombre_publico}\n"
                 f"El equipo no ha enviado datos en más de 30 minutos.\n"
                 f"Última actualización: {time_actual.strftime('%Y-%m-%d %H:%M:%S')} UTC"
             )
             enviar_alerta(mensaje_desc, to=TO_ADMIN)
-            alertas_desconexion_enviadas[sensor] = True
+            alertas_desconexion_enviadas[nombre_publico] = True
         else:
             logging.info(f"📡 {nombre_publico}: Sigue desconectado, alerta ya enviada.")
     else:
-        if alertas_desconexion_enviadas.get(sensor):
+        if alertas_desconexion_enviadas.get(nombre_publico):
             logging.info(f"✅ {nombre_publico}: Conexión recuperada.")
-        alertas_desconexion_enviadas[sensor] = False
+        alertas_desconexion_enviadas[nombre_publico] = False
 
-    nivel_actual = nivel_actual / divisor
-    nivel_anterior = nivel_anterior / divisor
-
-    if nivel_actual < nivel_anterior and (nivel_actual / divisor) < nivel_alerta:
+    # nivel_actual y nivel_anterior ya vienen en metros desde obtener_niveles()
+    if nivel_actual < nivel_anterior and nivel_actual < nivel_alerta:
         tiempo_vaciado = calcular_tiempo_vaciado(
             nivel_actual, nivel_anterior, time_actual, time_anterior
         )
@@ -141,8 +137,8 @@ def procesar_estanque(sensor, nombre_publico, nivel_alerta, divisor):
             mensaje = (
                 f"🚨 ALERTA NIVEL CRÍTICO 🚨\n"
                 f"Estanque: {nombre_publico}\n"
-                f"Nivel Actual: {nivel_actual / divisor:.2f} m\n"
-                f"Tiempo Estimado de Vaciado: {tiempo_vaciado if tiempo_vaciado else 'N/A'}"
+                f"Nivel Actual: {nivel_actual:.2f} m\n"
+                f"Tiempo Estimado de Vaciado: {tiempo_vaciado}"
             )
             enviar_alerta(mensaje)
             return True
@@ -157,12 +153,12 @@ def monitorear():
     """Bucle principal con intervalo dinámico."""
     while True:
         cfg = get_dynamic_config()
-        intervalo_alerta = cfg["INTERVALO_MINUTOS"]   
+        intervalo_alerta = cfg["INTERVALO_MINUTOS"]
         nivel_alerta = cfg["NIVEL_ALERTA"]
 
         logging.info("Iniciando ciclo de monitoreo...")
 
-        alerta_nuevo = procesar_estanque(SENSOR_ESTANQUE, "Estanque Nuevo", nivel_alerta, 100)
+        alerta_nuevo = procesar_estanque("Estanque", nivel_alerta)
 
         hay_alerta = alerta_nuevo
 
@@ -175,7 +171,6 @@ def monitorear():
         )
 
         time.sleep(intervalo * 60)
-
 
 
 if __name__ == "__main__":

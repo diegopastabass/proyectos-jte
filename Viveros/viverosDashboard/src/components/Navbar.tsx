@@ -1,3 +1,5 @@
+import logoWeb from "../assets/logo-web.svg";
+
 interface NavbarProps {
   text?: string;
   children?: React.ReactNode;
@@ -41,7 +43,7 @@ function Navbar({ text, children }: NavbarProps) {
         {/* Sección izquierda (logo + texto) */}
         <div className="d-flex flex-column flex-lg-row align-items-center gap-2">
           <img
-            src="/src/assets/logo-web.svg"
+            src={logoWeb}
             alt="logoViveros"
             width={100}
             height={100}

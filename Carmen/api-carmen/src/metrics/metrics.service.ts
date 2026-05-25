@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Raw } from 'typeorm';
 import { Telemetria } from './models/metrics.entity';
@@ -12,6 +12,7 @@ interface DailyQueryResult {
 
 @Injectable()
 export class SsrCarmenService {
+  private readonly logger = new Logger(SsrCarmenService.name);
   constructor(
     @InjectRepository(Telemetria)
     private repo: Repository<Telemetria>,
@@ -133,81 +134,115 @@ export class SsrCarmenService {
     };
   }
 
-  // Horometro
+  private async calculateAndCacheDaily(
+    metricName: string,
+    start: string,
+    end: string,
+  ): Promise<Metric[]> {
+    try {
+      const cached = await this.repo.query(
+        `SELECT mt_day, mt_value FROM ssr_carmen_daily_metrics WHERE mt_name = $1 AND mt_day BETWEEN $2 AND $3`,
+        [metricName, start, end],
+      );
+      const metricsMap = new Map<string, number>();
+      cached.forEach((row: any) => {
+        const dateStr =
+          typeof row.mt_day === 'string'
+            ? row.mt_day
+            : row.mt_day.toISOString().split('T')[0];
+        metricsMap.set(dateStr, Number(row.mt_value));
+      });
+
+      const missingDates: string[] = [];
+      let currentDate = new Date(`${start}T00:00:00Z`);
+      const endDate = new Date(`${end}T00:00:00Z`);
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      while (currentDate <= endDate) {
+        const dateStr = currentDate.toISOString().split('T')[0];
+        if (!metricsMap.has(dateStr) || dateStr === todayStr)
+          missingDates.push(dateStr);
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      if (missingDates.length > 0) {
+        const calculated = await this.repo.query(
+          `
+          WITH bounds AS (
+            SELECT mt_time_2::DATE AS day, MIN(mt_time_2) AS first_ts, MAX(mt_time_2) AS last_ts
+            FROM ssr_carmen_bajo
+            WHERE mt_name = $1 AND mt_time_2::DATE = ANY($2::DATE[])
+            GROUP BY mt_time_2::DATE
+          )
+          SELECT b.day, (MAX(CAST(s_last.mt_value AS NUMERIC(30,6))) - MIN(CAST(s_first.mt_value AS NUMERIC(30,6)))) AS daily_value
+          FROM bounds b
+          LEFT JOIN ssr_carmen_bajo s_first ON s_first.mt_name = $1 AND s_first.mt_time_2 = b.first_ts
+          LEFT JOIN ssr_carmen_bajo s_last ON s_last.mt_name = $1 AND s_last.mt_time_2 = b.last_ts
+          GROUP BY b.day
+        `,
+          [metricName, missingDates],
+        );
+
+        for (const row of calculated) {
+          const dateStr =
+            typeof row.day === 'string'
+              ? row.day
+              : row.day.toISOString().split('T')[0];
+          const val = Number(row.daily_value || 0);
+          await this.repo.query(
+            `INSERT INTO ssr_carmen_daily_metrics (mt_name, mt_day, mt_value) VALUES ($1, $2, $3) ON CONFLICT (mt_name, mt_day) DO UPDATE SET mt_value = EXCLUDED.mt_value`,
+            [metricName, dateStr, val],
+          );
+          metricsMap.set(dateStr, val);
+        }
+      }
+
+      const results: Metric[] = [];
+      currentDate = new Date(`${start}T00:00:00Z`);
+      while (currentDate <= endDate) {
+        const dateStr = currentDate.toISOString().split('T')[0];
+        if (metricsMap.has(dateStr))
+          results.push({ time: dateStr, value: metricsMap.get(dateStr)! });
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      return results;
+    } catch (error) {
+      this.logger.error(
+        `Error en calculateAndCacheDaily para ${metricName}`,
+        error,
+      );
+      throw error;
+    }
+  }
+
   async getHorometroBajo(dto: DateRangeDto): Promise<Metric[]> {
-    const range = dto;
-    if (!range) throw new Error('Se requiere rango de fechas válido.');
-
-    const start = range.start + ' 00:00:00';
-    const end = range.end + ' 23:59:59';
-
-    const results: DailyQueryResult[] = await this.repo.query(
-      `
-        WITH bounds AS (
-          SELECT mt_time_2::DATE AS day, MIN(mt_time_2) AS first_ts, MAX(mt_time_2) AS last_ts
-          FROM ssr_carmen_bajo
-          WHERE mt_name = 'SSR_CARMEN_BAJO_POZO--slave.horometro'
-          AND mt_time_2 BETWEEN $1 AND $2
-          GROUP BY mt_time_2::DATE
-        )
-        SELECT b.day,
-          (MAX(CAST(s_last.mt_value AS NUMERIC(30,6))) - MIN(CAST(s_first.mt_value AS NUMERIC(30,6)))) AS daily_value
-        FROM bounds b
-        LEFT JOIN ssr_carmen_bajo s_first
-          ON s_first.mt_name = 'SSR_CARMEN_BAJO_POZO--slave.horometro' AND s_first.mt_time_2 = b.first_ts
-        LEFT JOIN ssr_carmen_bajo s_last
-          ON s_last.mt_name = 'SSR_CARMEN_BAJO_POZO--slave.horometro' AND s_last.mt_time_2 = b.last_ts
-        GROUP BY b.day
-        ORDER BY b.day ASC
-      `,
-      [start, end],
-    );
-
-    return results.map((row) => ({
-      time:
-        typeof row.day === 'string'
-          ? row.day
-          : row.day.toISOString().split('T')[0],
-      value: Number(row.daily_value),
-    }));
+    this.logger.debug(`getHorometroBajo recibido: ${JSON.stringify(dto)}`);
+    try {
+      if (!dto?.start || !dto?.end) throw new Error('Rango de fechas inválido');
+      return await this.calculateAndCacheDaily(
+        'SSR_CARMEN_BAJO_POZO--slave.horometro',
+        dto.start,
+        dto.end,
+      );
+    } catch (error) {
+      this.logger.error('Error en getHorometroBajo', error);
+      throw error;
+    }
   }
 
   async getHorometroSentina(dto: DateRangeDto): Promise<Metric[]> {
-    const range = dto;
-    if (!range) throw new Error('Se requiere rango de fechas válido.');
-
-    const start = range.start + ' 00:00:00';
-    const end = range.end + ' 23:59:59';
-
-    const results: DailyQueryResult[] = await this.repo.query(
-      `
-        WITH bounds AS (
-          SELECT mt_time_2::DATE AS day, MIN(mt_time_2) AS first_ts, MAX(mt_time_2) AS last_ts
-          FROM ssr_carmen_bajo
-          WHERE mt_name = 'SSR_CARMEN_BAJO_SENTINA--slave.horometro'
-          AND mt_time_2 BETWEEN $1 AND $2
-          GROUP BY mt_time_2::DATE
-        )
-        SELECT b.day,
-          (MAX(CAST(s_last.mt_value AS NUMERIC(30,6))) - MIN(CAST(s_first.mt_value AS NUMERIC(30,6)))) AS daily_value
-        FROM bounds b
-        LEFT JOIN ssr_carmen_bajo s_first
-          ON s_first.mt_name = 'SSR_CARMEN_BAJO_SENTINA--slave.horometro' AND s_first.mt_time_2 = b.first_ts
-        LEFT JOIN ssr_carmen_bajo s_last
-          ON s_last.mt_name = 'SSR_CARMEN_BAJO_SENTINA--slave.horometro' AND s_last.mt_time_2 = b.last_ts
-        GROUP BY b.day
-        ORDER BY b.day ASC
-      `,
-      [start, end],
-    );
-
-    return results.map((row) => ({
-      time:
-        typeof row.day === 'string'
-          ? row.day
-          : row.day.toISOString().split('T')[0],
-      value: Number(row.daily_value),
-    }));
+    this.logger.debug(`getHorometroSentina recibido: ${JSON.stringify(dto)}`);
+    try {
+      if (!dto?.start || !dto?.end) throw new Error('Rango de fechas inválido');
+      return await this.calculateAndCacheDaily(
+        'SSR_CARMEN_BAJO_SENTINA--slave.horometro',
+        dto.start,
+        dto.end,
+      );
+    } catch (error) {
+      this.logger.error('Error en getHorometroSentina', error);
+      throw error;
+    }
   }
 
   // Nivel

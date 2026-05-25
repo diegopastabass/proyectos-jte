@@ -12,10 +12,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Metric = void 0;
 const typeorm_1 = require("typeorm");
 let Metric = class Metric {
-    id;
-    sensor_id;
-    value;
-    time;
 };
 exports.Metric = Metric;
 __decorate([
@@ -35,6 +31,6 @@ __decorate([
     __metadata("design:type", Date)
 ], Metric.prototype, "time", void 0);
 exports.Metric = Metric = __decorate([
-    (0, typeorm_1.Entity)({ name: 'ssr_bucalemu' })
+    (0, typeorm_1.Entity)({ name: 'viveros_tambo' })
 ], Metric);
 //# sourceMappingURL=metric.entity.js.map

@@ -5,46 +5,26 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
-const config_1 = require("@nestjs/config");
-const typeorm_1 = require("@nestjs/typeorm");
-const database_config_1 = __importDefault(require("./config/database.config"));
-const metric_controller_1 = require("./metrics/controllers/metric.controller");
-const metrics_service_1 = require("./metrics/services/metrics.service");
-const metric_entity_1 = require("./metrics/models/metric.entity");
+const database_module_1 = require("./config/database.module");
+const users_module_1 = require("./users/users.module");
+const auth_module_1 = require("./auth/auth.module");
+const metrics_module_1 = require("./metrics/metrics.module");
+const env_manager_module_1 = require("./env-manager/env-manager.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            config_1.ConfigModule.forRoot({ isGlobal: true, load: [database_config_1.default] }),
-            typeorm_1.TypeOrmModule.forRootAsync({
-                imports: [config_1.ConfigModule],
-                inject: [config_1.ConfigService],
-                useFactory: (config) => ({
-                    type: 'postgres',
-                    host: config.get('database.host'),
-                    port: config.get('database.port'),
-                    username: config.get('database.username'),
-                    password: config.get('database.password'),
-                    database: config.get('database.database'),
-                    entities: [metric_entity_1.Metric],
-                    synchronize: false,
-                    ssl: {
-                        rejectUnauthorized: false,
-                    },
-                }),
-            }),
-            typeorm_1.TypeOrmModule.forFeature([metric_entity_1.Metric]),
+            database_module_1.DatabaseModule,
+            users_module_1.UsersModule,
+            auth_module_1.AuthModule,
+            metrics_module_1.MetricsModule,
+            env_manager_module_1.EnvManagerModule,
         ],
-        controllers: [metric_controller_1.MetricsController],
-        providers: [metrics_service_1.MetricsService],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

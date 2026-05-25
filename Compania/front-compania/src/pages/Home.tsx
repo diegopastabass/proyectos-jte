@@ -59,13 +59,11 @@ function App() {
       try {
         const [snapshotRes, nivelEstanque1Res] = await Promise.all([
           fetch("https://app.jteanalytics.cl/compania/snapshot"),
-          fetch(
-            `https://app.jteanalytics.cl/compania/nivel?start=${date}&end=${date}`,
-          ),
+          fetch(`https://app.jteanalytics.cl/compania/nivel`),
         ]);
 
         const snapshotData: Datos = await snapshotRes.json();
-        setHorometro(await fetchWithCache("compania/horometro", date));
+        setHorometro(await fetchWithCache("horometro", date));
 
         setData(snapshotData);
         setNivelEstanque1(await nivelEstanque1Res.json());
@@ -184,6 +182,15 @@ function App() {
             data={nivelEstanque1}
             nivelMax={6}
             nivelAlarma={3.5}
+          />
+        </div>
+
+        <div className="mb-2">
+          <DropdownCardv2
+            isOpen={true}
+            title="Horometro"
+            chartLabel="Horometro"
+            data={horometro}
           />
         </div>
 

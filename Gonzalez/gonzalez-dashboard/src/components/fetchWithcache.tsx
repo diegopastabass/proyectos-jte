@@ -7,9 +7,17 @@ export const fetchWithCache = async (
   endpoint: string,
   endStr: string,
 ): Promise<Metric[]> => {
-  const cacheKey = `jte_cache_${endpoint}`;
+  const oldCacheKey = `jte_cache_${endpoint}`;
+  const cacheKey = `jte_cache_gonzalez_${endpoint}`;
+
+  // Eliminar caché antigua si existe para evitar conflictos con otros clientes
+  if (localStorage.getItem(oldCacheKey)) {
+    localStorage.removeItem(oldCacheKey);
+  }
+
   const cached = localStorage.getItem(cacheKey);
   let data: Metric[] = cached ? JSON.parse(cached) : [];
+
 
   let startStr = "";
   if (data.length > 0) {
@@ -41,7 +49,14 @@ export const fetchWithCacheMulti = async <T extends Record<string, Metric[]>>(
   endpoint: string,
   endStr: string,
 ): Promise<T> => {
-  const cacheKey = `jte_cache_${endpoint}`;
+  const oldCacheKey = `jte_cache_${endpoint}`;
+  const cacheKey = `jte_cache_gonzalez_${endpoint}`;
+
+  // Eliminar caché antigua si existe para evitar conflictos con otros clientes
+  if (localStorage.getItem(oldCacheKey)) {
+    localStorage.removeItem(oldCacheKey);
+  }
+
   const cached = localStorage.getItem(cacheKey);
   const data: Record<string, Metric[]> = cached ? JSON.parse(cached) : {};
 

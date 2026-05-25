@@ -72,8 +72,25 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /**
+   * Calcula el Déficit de Presión de Vapor (VPD) en kPa.
+   * @param tempC Temperatura en grados Celsius
+   * @param humidity Humedad relativa en porcentaje (0-100)
+   * @returns VPD en kPa, redondeado a 2 decimales
+   */
+  static calculateVPD(tempC: number, humidity: number): number {
+    const svp = 0.6108 * Math.exp((17.27 * tempC) / (tempC + 237.3));
+    const avp = svp * (humidity / 100);
+    const vpd = svp - avp;
+    return Math.round(vpd * 100) / 100;
+  }
+
   async findLatestForEachSensor(): Promise<
-    Record<string, { value: number; time: Date }>
+    Record<string, { value: number; time: Date }> & {
+      vpd_calor?: number;
+      vpd_frio?: number;
+      vpd_ambiente?: number;
+    }
   > {
     try {
       const subQuery = this.metricRepository
@@ -112,6 +129,29 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
         },
         {} as Record<string, { value: number; time: Date }>,
       );
+
+      // Calcular VPD para cada zona usando temperatura + humedad del mismo sensor
+      // Sensor 5: T Calor, Sensor 3: HR Calor
+      // Sensor 6: T Frío,  Sensor 4: HR Frío
+      // Sensor 7: T Ambiente, Sensor 8: HR Ambiente
+      if (mappedResults['5'] && mappedResults['3']) {
+        (mappedResults as any).vpd_calor = MetricsService.calculateVPD(
+          Number(mappedResults['5'].value),
+          Number(mappedResults['3'].value),
+        );
+      }
+      if (mappedResults['6'] && mappedResults['4']) {
+        (mappedResults as any).vpd_frio = MetricsService.calculateVPD(
+          Number(mappedResults['6'].value),
+          Number(mappedResults['4'].value),
+        );
+      }
+      if (mappedResults['7'] && mappedResults['8']) {
+        (mappedResults as any).vpd_ambiente = MetricsService.calculateVPD(
+          Number(mappedResults['7'].value),
+          Number(mappedResults['8'].value),
+        );
+      }
 
       this.logger.log(
         `Retrieved latest metrics for each sensor, count: ${results.length}`,

@@ -26,8 +26,8 @@ let SsrCompaniaService = class SsrCompaniaService {
         if (!dto.start || !dto.end)
             return null;
         const startDate = new Date(`${dto.start}T00:00:00Z`);
-        const nextDay = new Date(dto.end);
-        nextDay.setDate(nextDay.getDate() + 1);
+        const nextDay = new Date(`${dto.end}T00:00:00Z`);
+        nextDay.setUTCDate(nextDay.getUTCDate() + 1);
         const endDate = new Date(`${nextDay.toISOString().slice(0, 10)}T00:00:00Z`);
         return { start: startDate, end: endDate };
     }
@@ -113,6 +113,96 @@ let SsrCompaniaService = class SsrCompaniaService {
             time: row.mt_time_2.toISOString(),
             value: Number(row.mt_value),
         }));
+    }
+    async calculateAndCacheHorometro(start, end) {
+        const METRIC_NAME = 'HOROMETRO';
+        const cached = await this.repo.query(`SELECT mt_day, mt_value FROM ssr_compania_daily_metrics WHERE mt_name = $1 AND mt_day BETWEEN $2 AND $3 ORDER BY mt_day ASC`, [METRIC_NAME, start, end]);
+        const metricsMap = new Map();
+        cached.forEach((row) => {
+            const dateStr = typeof row.mt_day === 'string'
+                ? row.mt_day.slice(0, 10)
+                : row.mt_day.toISOString().split('T')[0];
+            metricsMap.set(dateStr, Number(row.mt_value));
+        });
+        const todayStr = new Date().toISOString().split('T')[0];
+        const cachedDates = Array.from(metricsMap.keys()).sort();
+        const recalcFrom = cachedDates.length > 0
+            ? cachedDates[cachedDates.length - 1]
+            : start;
+        const missingDates = [];
+        let currentDate = new Date(`${start}T00:00:00Z`);
+        const endDate = new Date(`${end}T00:00:00Z`);
+        while (currentDate <= endDate) {
+            const dateStr = currentDate.toISOString().split('T')[0];
+            if (!metricsMap.has(dateStr) || dateStr >= recalcFrom) {
+                missingDates.push(dateStr);
+            }
+            currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+        }
+        if (missingDates.length > 0) {
+            const calculated = await this.repo.query(`
+        WITH events AS (
+          SELECT
+            (mt_time_2 AT TIME ZONE 'UTC')::DATE AS day,
+            mt_time_2,
+            CAST(mt_value AS NUMERIC) AS estado,
+            LAG(CAST(mt_value AS NUMERIC)) OVER (
+              PARTITION BY (mt_time_2 AT TIME ZONE 'UTC')::DATE
+              ORDER BY mt_time_2
+            ) AS prev_estado,
+            LAG(mt_time_2) OVER (
+              PARTITION BY (mt_time_2 AT TIME ZONE 'UTC')::DATE
+              ORDER BY mt_time_2
+            ) AS prev_time
+          FROM ssr_compania
+          WHERE mt_name = 'SALA_BOMBAS_FUNCIONANDO'
+            AND (mt_time_2 AT TIME ZONE 'UTC')::DATE = ANY($1::DATE[])
+        ),
+        intervals AS (
+          SELECT
+            day,
+            EXTRACT(EPOCH FROM (mt_time_2 - prev_time)) / 60.0 AS minutes
+          FROM events
+          WHERE estado = 1
+            AND prev_estado IS NOT NULL
+        )
+        SELECT day, COALESCE(SUM(minutes), 0) AS daily_minutes
+        FROM intervals
+        GROUP BY day
+        `, [missingDates]);
+            const calcMap = new Map();
+            for (const row of calculated) {
+                const dateStr = typeof row.day === 'string'
+                    ? row.day.slice(0, 10)
+                    : row.day.toISOString().split('T')[0];
+                calcMap.set(dateStr, Number(row.daily_minutes || 0));
+            }
+            for (const dateStr of missingDates) {
+                const val = calcMap.get(dateStr) ?? 0;
+                await this.repo.query(`INSERT INTO ssr_compania_daily_metrics (mt_name, mt_day, mt_value)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (mt_name, mt_day) DO UPDATE SET mt_value = EXCLUDED.mt_value`, [METRIC_NAME, dateStr, val]);
+                metricsMap.set(dateStr, val);
+            }
+        }
+        const results = [];
+        currentDate = new Date(`${start}T00:00:00Z`);
+        while (currentDate <= endDate) {
+            const dateStr = currentDate.toISOString().split('T')[0];
+            if (metricsMap.has(dateStr)) {
+                results.push({
+                    time: dateStr,
+                    value: Math.round(metricsMap.get(dateStr)),
+                });
+            }
+            currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+        }
+        return results;
+    }
+    async getHorometro(dto) {
+        if (!dto || !dto.start || !dto.end)
+            throw new Error('Se requiere rango de fechas válido.');
+        return this.calculateAndCacheHorometro(dto.start, dto.end);
     }
 };
 exports.SsrCompaniaService = SsrCompaniaService;

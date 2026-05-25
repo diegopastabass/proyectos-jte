@@ -9,4 +9,5 @@ export declare class SsrCompaniaController {
         tiempo_vaciado_formatted: string;
     }>;
     getNivel(dto: DateRangeDto): Promise<import("./models/types").Metric[]>;
+    getHorometro(dto: DateRangeDto): Promise<import("./models/types").Metric[]>;
 }

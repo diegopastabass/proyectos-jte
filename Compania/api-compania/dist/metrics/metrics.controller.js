@@ -27,6 +27,9 @@ let SsrCompaniaController = class SsrCompaniaController {
     getNivel(dto) {
         return this.service.getNivel(dto);
     }
+    getHorometro(dto) {
+        return this.service.getHorometro(dto);
+    }
 };
 exports.SsrCompaniaController = SsrCompaniaController;
 __decorate([
@@ -42,6 +45,13 @@ __decorate([
     __metadata("design:paramtypes", [date_range_dto_1.DateRangeDto]),
     __metadata("design:returntype", void 0)
 ], SsrCompaniaController.prototype, "getNivel", null);
+__decorate([
+    (0, common_1.Get)('horometro'),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [date_range_dto_1.DateRangeDto]),
+    __metadata("design:returntype", void 0)
+], SsrCompaniaController.prototype, "getHorometro", null);
 exports.SsrCompaniaController = SsrCompaniaController = __decorate([
     (0, common_1.Controller)(''),
     __metadata("design:paramtypes", [metrics_service_1.SsrCompaniaService])

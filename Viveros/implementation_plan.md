@@ -43,13 +43,6 @@ This plan outlines the addition of advanced agricultural metrics and reporting t
 
 ---
 
-### [Services] services (Python)
-
-#### [MODIFY] [monitorTemperatura.py](file:///home/diego/Documentos/proyectoEduardo/Proyectos/Viveros/services/monitorTemperatura.py) & [monitorHumedad.py](file:///home/diego/Documentos/proyectoEduardo/Proyectos/Viveros/services/monitorHumedad.py)
-
-- Update alert logic to consider VPD if desired.
-- Add a "System Heartbeat" to monitor if scripts are running correctly.
-
 ## Verification Plan
 
 ### Automated Tests
@@ -61,4 +54,3 @@ This plan outlines the addition of advanced agricultural metrics and reporting t
 
 - Verify the dashboard displays VPD correctly for all three zones.
 - Test the "Download Report" button.
-- Confirm alert triggers for VPD if implemented.

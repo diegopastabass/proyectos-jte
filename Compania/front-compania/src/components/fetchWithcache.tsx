@@ -7,23 +7,33 @@ export const fetchWithCache = async (
   endpoint: string,
   endStr: string,
 ): Promise<Metric[]> => {
-  const cacheKey = `jte_cache_${endpoint}`;
+  const oldCacheKey = `jte_cache_${endpoint}`;
+  const cacheKey = `jte_cache_compania_${endpoint}`;
+
+  // Eliminar caché antigua si existe para evitar conflictos con otros clientes
+  if (localStorage.getItem(oldCacheKey)) {
+    localStorage.removeItem(oldCacheKey);
+  }
+
   const cached = localStorage.getItem(cacheKey);
   let data: Metric[] = cached ? JSON.parse(cached) : [];
 
+  const d = new Date();
+  d.setDate(d.getDate() - 15);
+  const fifteenDaysAgoStr = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Santiago",
+  }).format(d);
+
   let startStr = "";
-  if (data.length > 0) {
+  const hasEnoughHistory = data.length > 0 && data[0].time.split("T")[0] <= fifteenDaysAgoStr;
+  if (hasEnoughHistory) {
     startStr = data[data.length - 1].time.split("T")[0];
   } else {
-    const d = new Date();
-    d.setDate(d.getDate() - 5);
-    startStr = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "America/Santiago",
-    }).format(d);
+    startStr = fifteenDaysAgoStr;
   }
 
   const res = await fetch(
-    `https://app.jteanalytics.cl/${endpoint}?start=${startStr}&end=${endStr}`,
+    `https://app.jteanalytics.cl/compania/${endpoint}?start=${startStr}&end=${endStr}`,
   );
   const newData: Metric[] = await res.json();
 
@@ -35,4 +45,76 @@ export const fetchWithCache = async (
   localStorage.setItem(cacheKey, JSON.stringify(toCache));
 
   return merged;
+};
+
+export const fetchWithCacheMulti = async <T extends Record<string, Metric[]>>(
+  endpoint: string,
+  endStr: string,
+): Promise<T> => {
+  const oldCacheKey = `jte_cache_${endpoint}`;
+  const cacheKey = `jte_cache_compania_${endpoint}`;
+
+  // Eliminar caché antigua si existe para evitar conflictos con otros clientes
+  if (localStorage.getItem(oldCacheKey)) {
+    localStorage.removeItem(oldCacheKey);
+  }
+
+  const cached = localStorage.getItem(cacheKey);
+  const data: Record<string, Metric[]> = cached ? JSON.parse(cached) : {};
+
+  const d = new Date();
+  d.setDate(d.getDate() - 15);
+  const fifteenDaysAgoStr = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Santiago",
+  }).format(d);
+
+  // Find startStr
+  let startStr = "";
+  const keys = Object.keys(data);
+  const hasEnoughHistory =
+    keys.length > 0 &&
+    keys.every(
+      (k) =>
+        data[k] &&
+        data[k].length > 0 &&
+        data[k][0].time.split("T")[0] <= fifteenDaysAgoStr,
+    );
+
+  if (hasEnoughHistory) {
+    startStr = data[keys[0]][data[keys[0]].length - 1].time.split("T")[0];
+  } else {
+    startStr = fifteenDaysAgoStr;
+  }
+
+  const res = await fetch(
+    `https://app.jteanalytics.cl/compania/${endpoint}?start=${startStr}&end=${endStr}`,
+  );
+  const newData: Record<string, Metric[]> = await res.json();
+
+  const merged: Record<string, Metric[]> = {};
+  const toCache: Record<string, Metric[]> = {};
+
+  const allKeys = new Set([...Object.keys(data), ...Object.keys(newData)]);
+
+  allKeys.forEach((k) => {
+    const oldArray = data[k] || [];
+    const newArray = newData[k] || [];
+
+    const newDates = new Set(newArray.map((d) => d.time.split("T")[0]));
+    const filteredOld = oldArray.filter(
+      (d) => !newDates.has(d.time.split("T")[0]),
+    );
+
+    const mergedArray = [...filteredOld, ...newArray];
+    merged[k] = mergedArray;
+
+    const toCacheArray = mergedArray.filter(
+      (d) => d.time.split("T")[0] !== endStr,
+    );
+    toCache[k] = toCacheArray;
+  });
+
+  localStorage.setItem(cacheKey, JSON.stringify(toCache));
+
+  return merged as T;
 };

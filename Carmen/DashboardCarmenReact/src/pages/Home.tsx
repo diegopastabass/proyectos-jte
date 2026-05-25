@@ -13,6 +13,7 @@ import DropdownCardv2 from "../components/DropDownCardv2";
 import ScadaDiagram from "../components/ScadaDiagram";
 import ExportModal from "../components/ExportModal";
 import logoJte from "../assets/logoJte.png";
+import { fetchWithCache } from "../components/fetchWithcache";
 
 // Interfaces
 interface Snapshot {
@@ -91,34 +92,22 @@ function App() {
 
     const now = new Date();
     const end = formatter.format(now);
-    const startDate = new Date(now);
-    startDate.setDate(startDate.getDate() - 15);
-    const start = formatter.format(startDate);
 
     const fetchData = async () => {
       try {
-        const [
-          snapshotRes,
-          horometroPozoRes,
-          horometroSentinaRes,
-          nivelPozoRes,
-          nivelSentinaRes,
-        ] = await Promise.all([
+        const [snapshotRes, nivelPozoRes, nivelSentinaRes] = await Promise.all([
           fetch("https://app.jteanalytics.cl/carmen/snapshot"),
-          fetch(
-            `https://app.jteanalytics.cl/carmen/horometro_bajo?start=${start}&end=${end}`,
-          ),
-          fetch(
-            `https://app.jteanalytics.cl/carmen/horometro_sentina?start=${start}&end=${end}`,
-          ),
+
           fetch(`https://app.jteanalytics.cl/carmen/nivel_bajo`),
           fetch(`https://app.jteanalytics.cl/carmen/nivel_sentina`),
         ]);
 
         const snapshotData: Snapshot = await snapshotRes.json();
         setData(snapshotData);
-        setHorometroChartDataPozo(await horometroPozoRes.json());
-        setHorometroChartDataSentina(await horometroSentinaRes.json());
+        setHorometroChartDataPozo(await fetchWithCache("horometro_bajo", end));
+        setHorometroChartDataSentina(
+          await fetchWithCache("horometro_sentina", end),
+        );
         setNivelChartDataPozo(await nivelPozoRes.json());
         setNivelChartDataSentina(await nivelSentinaRes.json());
       } catch (error) {

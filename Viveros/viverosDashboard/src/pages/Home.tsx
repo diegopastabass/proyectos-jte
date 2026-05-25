@@ -9,6 +9,9 @@ import StatusLed from "../components/StatusLed";
 import ExportHistorial from "../components/ExportarHistorial";
 import LoginModal from "../components/LoginModal";
 import AdminCard from "../components/AdminCard";
+import VpdBadge from "../components/VpdBadge";
+import VpdChart from "../components/VpdChart";
+import logoJte from "../assets/logoJte.png";
 
 interface Metric {
   value: number;
@@ -38,6 +41,9 @@ interface Datos {
   6: Metric; // Temperatura Frio
   7: Metric; // Temperatura Ambiente
   8: Metric; // Humedad Ambiente
+  vpd_calor?: number;
+  vpd_frio?: number;
+  vpd_ambiente?: number;
 }
 
 interface Graph {
@@ -111,7 +117,7 @@ function Home() {
         setLimits(limitsData);
 
         const allTimes = Object.values(metricsData).map((m) =>
-          new Date(m.time).getTime()
+          new Date(m.time).getTime(),
         );
         setLastUpdate(new Date(Math.max(...allTimes)).toISOString());
       } catch (error) {
@@ -125,6 +131,8 @@ function Home() {
     const intervalId = setInterval(fetchData, 120000);
     return () => clearInterval(intervalId);
   }, [date]);
+
+
 
   if (loading) return <Loading />;
 
@@ -194,6 +202,13 @@ function Home() {
               </div>
             </Card>
 
+            {/* VPD Ambiente */}
+            {data.vpd_ambiente !== undefined && (
+              <div className="px-2 pb-1">
+                <VpdBadge vpd={data.vpd_ambiente} />
+              </div>
+            )}
+
             <ToggleCardButton
               isOpen={isOpenAmbiente}
               onToggle={() => setIsOpenAmbiente(!isOpenAmbiente)}
@@ -213,13 +228,25 @@ function Home() {
             color="green"
             data={graph?.[8] || []}
           />
+          {/* Gráfico VPD Ambiente */}
+          {isOpenAmbiente && graph?.[7]?.length && graph?.[8]?.length ? (
+            <div className="card w-100 mb-1">
+              <div className="card-body">
+                <h6 className="card-title mb-3">VPD – Ambiente</h6>
+                <VpdChart
+                  tempData={graph[7]}
+                  humData={graph[8]}
+                  zoneName="Ambiente"
+                  color="rgba(25,135,84,1)"
+                />
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {/* Cámara de Frío */}
         <div className="col-12 col-md-10 col-lg-6 mb-4">
-          {/* Cámara de Frío */}
           <Card>
-            {/* Título de la card */}
             <h5 className="mb-2">Cámara de Frío</h5>
             <Card>
               {/* Sección de Temperatura */}
@@ -243,6 +270,14 @@ function Home() {
                 />
               </div>
             </Card>
+
+            {/* VPD Frío */}
+            {data.vpd_frio !== undefined && (
+              <div className="px-2 pb-1">
+                <VpdBadge vpd={data.vpd_frio} />
+              </div>
+            )}
+
             {/* Indicadores visuales */}
             <StatusLed status={data[2].value} />
 
@@ -267,6 +302,20 @@ function Home() {
             color="blue"
             data={graph?.[4] || []}
           />
+          {/* Gráfico VPD Frío */}
+          {isOpenFrio && graph?.[6]?.length && graph?.[4]?.length ? (
+            <div className="card w-100 mb-1">
+              <div className="card-body">
+                <h6 className="card-title mb-3">VPD – Cámara de Frío</h6>
+                <VpdChart
+                  tempData={graph[6]}
+                  humData={graph[4]}
+                  zoneName="Frío"
+                  color="rgba(13,110,253,1)"
+                />
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {/* Cámara de Calor */}
@@ -295,6 +344,14 @@ function Home() {
                 />
               </div>
             </Card>
+
+            {/* VPD Calor */}
+            {data.vpd_calor !== undefined && (
+              <div className="px-2 pb-1">
+                <VpdBadge vpd={data.vpd_calor} />
+              </div>
+            )}
+
             <StatusLed status={data[1].value} />
             <ToggleCardButton
               isOpen={isOpenCalor}
@@ -316,13 +373,28 @@ function Home() {
             color="red"
             data={graph?.[3] || []}
           />
+          {/* Gráfico VPD Calor */}
+          {isOpenCalor && graph?.[5]?.length && graph?.[3]?.length ? (
+            <div className="card w-100 mb-1">
+              <div className="card-body">
+                <h6 className="card-title mb-3">VPD – Cámara de Calor</h6>
+                <VpdChart
+                  tempData={graph[5]}
+                  humData={graph[3]}
+                  zoneName="Calor"
+                  color="rgba(220,53,69,1)"
+                />
+              </div>
+            </div>
+          ) : null}
         </div>
 
-        {/* Exportar a Excel */}
+        {/* Exportar */}
         <div className="col-12 col-md-10 col-lg-6 mb-4">
           <Card>
-            <h5 className="mb-2">Exportar Data a Excel</h5>
+            <h5 className="mb-2">Exportar</h5>
             <ExportHistorial />
+
           </Card>
         </div>
       </div>
@@ -331,13 +403,7 @@ function Home() {
 
       <footer className="d-flex flex-wrap justify-content-center align-items-center py-3 px-4 border-top mt-auto">
         <p className="mb-0 text-body-secondary">&copy; 2025 JTE Analytics.</p>
-        <img
-          src="/src/assets/logoJte.png"
-          alt="logo"
-          width={40}
-          height={24}
-          className="ms-2"
-        />
+        <img src={logoJte} alt="logo" width={40} height={24} className="ms-2" />
       </footer>
     </div>
   );

@@ -171,7 +171,7 @@ export class SsrCompaniaService {
         : start;
 
     const missingDates: string[] = [];
-    let currentDate = new Date(`${recalcFrom}T00:00:00Z`);
+    let currentDate = new Date(`${start}T00:00:00Z`);
     const endDate = new Date(`${end}T00:00:00Z`);
 
     while (currentDate <= endDate) {
@@ -249,7 +249,10 @@ export class SsrCompaniaService {
     while (currentDate <= endDate) {
       const dateStr = currentDate.toISOString().split('T')[0];
       if (metricsMap.has(dateStr)) {
-        results.push({ time: dateStr, value: metricsMap.get(dateStr)! });
+        results.push({
+          time: dateStr,
+          value: Math.round(metricsMap.get(dateStr)!),
+        });
       }
       currentDate.setUTCDate(currentDate.getUTCDate() + 1);
     }

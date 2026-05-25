@@ -12,4 +12,6 @@ export declare class SsrCompaniaService {
         tiempo_vaciado_formatted: string;
     }>;
     getNivel(dto: DateRangeDto): Promise<Metric[]>;
+    private calculateAndCacheHorometro;
+    getHorometro(dto: DateRangeDto): Promise<Metric[]>;
 }

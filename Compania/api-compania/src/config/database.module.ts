@@ -1,5 +1,5 @@
-import { Module } from "@nestjs/common";
-import { DatabaseConfig } from "./database.config";
+import { Module } from '@nestjs/common';
+import { DatabaseConfig } from './database.config';
 
 @Module({
   providers: [DatabaseConfig],

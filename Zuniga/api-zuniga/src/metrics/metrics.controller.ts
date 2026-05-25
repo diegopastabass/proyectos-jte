@@ -35,4 +35,9 @@ export class SsrZunigaController {
   getCaudal(@Query() dto: DateRangeDto) {
     return this.service.getCaudal(dto);
   }
+
+  @Get('snapshot-cumpeo')
+  getSnapshotCumpeo() {
+    return this.service.getSnapshotCumpeo();
+  }
 }

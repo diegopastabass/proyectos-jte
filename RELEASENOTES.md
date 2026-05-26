@@ -11,3 +11,9 @@ Optimizaciones para la velocidad de carga de la página.
 ## Compañía:
 
 Cálculo de Horómetro en base a la actividad de la bomba.
+
+## Viveros: 
+
+Se agrega cálculo de VPD, falta agregar reportes semanales.
+
+

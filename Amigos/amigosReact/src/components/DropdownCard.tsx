@@ -18,7 +18,7 @@ ChartJS.register(
   LineElement,
   Tooltip,
   Legend,
-  Title
+  Title,
 );
 
 interface DropdownCardProps {
@@ -37,7 +37,7 @@ function DropdownCard({ isOpen, title, data, chartLabel }: DropdownCardProps) {
     new Date(d.time).toLocaleTimeString("es-CL", {
       hour: "2-digit",
       minute: "2-digit",
-    })
+    }),
   );
 
   const values = data.map((d) => d.value);

@@ -6,7 +6,7 @@ import os
 from psycopg2.extras import RealDictCursor
 from psycopg2 import pool
 from logging.handlers import RotatingFileHandler
-from datetime import timedelta
+from datetime import timedelta, datetime
 from dotenv import load_dotenv
 
 
@@ -35,12 +35,15 @@ DB_CONFIG = {
 API_URL = os.getenv("API_URL")
 TOKEN = os.getenv("API_TOKEN")
 TO = os.getenv("API_TO")
+TO_ADMIN = os.getenv("API_TO_ADMIN")
 
 NOMBRE_ESTANQUE_ESPECIAL = {
-    "CASUTO--slave.AI12": "Casuto"
+    "CASUTO--slave.AI12": "Casuto",
+    "BBAJO_NUEVO--slave.nivel_balto": "Bucalemu Alto"
 }
 
 INTERVALO_MONITOREO = 600
+alertas_desconexion_enviadas = set()
 
 # ================== LOGGING ==================
 logger = logging.getLogger("MonitoreoEstanques")
@@ -81,13 +84,10 @@ def formatear_nombre_estanque(mt_name: str) -> str:
 def obtener_niveles():
     """
     Devuelve un dict con las dos últimas mediciones por estanque.
-    Incluye los mt_name que contienen '%nivel%' O el nombre especial.
+    Incluye los mt_name de los 4 estanques de interés.
     """
-    
-    # mt_name especial para Casuto
-    casuto_mt_name = list(NOMBRE_ESTANQUE_ESPECIAL.keys())[0]
 
-    query = f"""
+    query = """
     SELECT mt_name, mt_value, mt_time_2
     FROM (
         SELECT
@@ -96,7 +96,7 @@ def obtener_niveles():
             mt_time_2,
             ROW_NUMBER() OVER (PARTITION BY mt_name ORDER BY mt_time_2 DESC) AS rn
         FROM ssr_bucalemu
-        WHERE mt_name LIKE '%nivel%' OR mt_name = '{casuto_mt_name}'
+        WHERE mt_name IN ('CASUTO--slave.AI12', 'BBAJO_NUEVO--slave.nivel_balto', 'ssr_bucalemu_bajo_nivel', 'ssr_nilahue_nivel')
     ) AS sub
     WHERE rn <= 2
     ORDER BY mt_name, rn;
@@ -137,9 +137,11 @@ def obtener_niveles():
         if conn:
             connection_pool.putconn(conn)
 
-def enviar_alerta(mensaje: str):
+def enviar_alerta(mensaje: str, destino: str = None):
+    if destino is None:
+        destino = TO
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
-    data = {"token": TOKEN, "to": TO, "body": mensaje}
+    data = {"token": TOKEN, "to": destino, "body": mensaje}
 
     try:
         response = requests.post(API_URL, data=data, headers=headers, timeout=10)
@@ -167,6 +169,7 @@ def calcular_tiempo_vaciado(actual, anterior, t_actual, t_anterior):
 
 def monitorear_estanques():
     global INTERVALO_MONITOREO # Permite modificar la variable global
+    global alertas_desconexion_enviadas
 
     niveles = obtener_niveles()
     if not niveles:
@@ -176,6 +179,7 @@ def monitorear_estanques():
     # Reiniciar el intervalo de monitoreo al valor por defecto
     INTERVALO_MONITOREO_TEMP = 600
     alerta_activa = False # Para saber si se activó alguna condición y cambiar el intervalo
+    ahora = datetime.now()
 
     for nombre, datos in niveles.items():
         if "actual" not in datos or "anterior" not in datos:
@@ -186,6 +190,34 @@ def monitorear_estanques():
         t_actual = datos["actual"]["tiempo"]
         t_anterior = datos["anterior"]["tiempo"]
 
+        # 1. Verificación de desconexión
+        if isinstance(t_actual, datetime):
+            if t_actual.tzinfo:
+                ahora_tz = datetime.now(t_actual.tzinfo)
+                delta_desconexion = ahora_tz - t_actual
+            else:
+                delta_desconexion = ahora - t_actual
+                
+            if delta_desconexion > timedelta(minutes=30):
+                if nombre not in alertas_desconexion_enviadas:
+                    mensaje_desc = (
+                        f"⚠️ ALERTA DESCONEXIÓN DE EQUIPO BUCALEMU ⚠️\n"
+                        f"Estanque: {nombre}\n"
+                        f"No se han recibido datos en los últimos 30 minutos.\n"
+                        f"Última actualización: {t_actual.strftime('%Y-%m-%d %H:%M:%S')}"
+                    )
+                    logger.warning(f"Desconexión detectada en {nombre}. Enviando alerta al admin.")
+                    enviar_alerta(mensaje_desc, TO_ADMIN)
+                    alertas_desconexion_enviadas.add(nombre)
+                
+                # Si está desconectado, es mejor no enviar alertas de nivel que podrían ser datos viejos
+                continue
+            else:
+                if nombre in alertas_desconexion_enviadas:
+                    logger.info(f"Equipo reconectado: {nombre}")
+                    alertas_desconexion_enviadas.remove(nombre)
+
+        # 2. Verificación de niveles y rebalses
         if (actual < 1 and actual < anterior) and not (nombre == "Bucalemu Alto" or nombre == "Casuto" ):
             tiempo = calcular_tiempo_vaciado(actual, anterior, t_actual, t_anterior)
             mensaje = (

@@ -228,6 +228,20 @@ const styles = StyleSheet.create({
   },
 });
 
+const checklistLabels: Record<string, string> = {
+  reaprieteConexionesFuerza: "Reapriete conexiones eléctricas de fuerza",
+  reaprieteConexionesControl: "Reapriete conexiones eléctricas de control",
+  limpiezaComponentesElectronicos: "Limpieza componentes electrónicos",
+  revisionRuidosExtranos: "Revisión ruidos extraños en bombas",
+  pruebasFuncionamiento: "Pruebas de funcionamiento",
+  limpiezaComponentesElectricos: "Limpieza componentes eléctricos",
+  verificacionControlPID: "Verificación control PID",
+  verificacionMedidorPresion: "Verificación medidor de presión",
+  ajustesParametros: "Ajustes de parámetros",
+  verificacionControlTelemetria: "Verificación control Telemetria",
+  verificacionMedidorCaudal: "Verificación medidor de caudal",
+};
+
 interface Props {
   data: ReportData;
 }
@@ -236,6 +250,36 @@ export const PDFReport = ({ data }: Props) => {
   // Determinar si hay imágenes para incluir la página de fotos
   const hasPhotos =
     Array.isArray(data.capturedImages) && data.capturedImages.length > 0;
+
+  const isStandard = data.type === "Atención de Falla" || data.type === "Mejora en Infraestructura";
+  const isSalaBombas = data.type === "Mantención Preventiva de Sala de Bombas";
+  const isTableroElectrico = data.type === "Mantención Preventiva de Tablero Eléctrico";
+
+  const renderChecklistTable = (title: string, sectionData: Record<string, string>) => (
+    <View style={styles.section} wrap={false}>
+      <Text style={styles.sectionHeader}>{title}</Text>
+      <View style={styles.table}>
+        <View style={styles.tableHeader}>
+          <View style={styles.colDesc}>
+            <Text style={styles.tableHeaderText}>TAREA</Text>
+          </View>
+          <View style={styles.colQty}>
+            <Text style={styles.tableHeaderText}>ESTADO</Text>
+          </View>
+        </View>
+        {Object.entries(sectionData).map(([key, value], index) => (
+          <View key={index} style={styles.tableRow}>
+            <View style={styles.colDesc}>
+              <Text>{checklistLabels[key] || key}</Text>
+            </View>
+            <View style={styles.colQty}>
+              <Text>{value}</Text>
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
 
   return (
     <Document>
@@ -292,68 +336,88 @@ export const PDFReport = ({ data }: Props) => {
           </View>
         </View>
 
-        {/* Secciones técnicas */}
-        <View style={styles.section}>
-          <Text style={styles.sectionHeader}>1. DIAGNÓSTICO / DESCRIPCIÓN</Text>
-          <View style={styles.contentBlock}>
-            <Text>{data.description}</Text>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionHeader}>2. DESARROLLO DE ACTIVIDADES</Text>
-          <View style={styles.contentBlock}>
-            {data.developments && data.developments.length > 0 ? (
-              data.developments.map((dev, index) => (
-                <View key={index} style={styles.listItem}>
-                  <Text style={styles.bullet}>-</Text>
-                  <Text style={{ flex: 1 }}>{dev}</Text>
-                </View>
-              ))
-            ) : (
-              <Text style={{ fontStyle: "italic", color: "#666" }}>
-                Sin detalles de desarrollo registrados.
-              </Text>
-            )}
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionHeader}>3. SOLUCIÓN TÉCNICA</Text>
-          <View style={styles.contentBlock}>
-            {data.solutions.map((sol, index) => (
-              <View key={index} style={styles.listItem}>
-                <Text style={styles.bullet}>•</Text>
-                <Text style={{ flex: 1 }}>{sol}</Text>
+        {/* Secciones técnicas o Checklists */}
+        {isStandard && (
+          <>
+            <View style={styles.section}>
+              <Text style={styles.sectionHeader}>1. DIAGNÓSTICO / DESCRIPCIÓN</Text>
+              <View style={styles.contentBlock}>
+                <Text>{data.description}</Text>
               </View>
-            ))}
-          </View>
-        </View>
-
-        {data.materials.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionHeader}>4. REPUESTOS E INSUMOS</Text>
-            <View style={styles.table}>
-              <View style={styles.tableHeader}>
-                <View style={styles.colDesc}>
-                  <Text style={styles.tableHeaderText}>DESCRIPCIÓN</Text>
-                </View>
-                <View style={styles.colQty}>
-                  <Text style={styles.tableHeaderText}>CANT.</Text>
-                </View>
-              </View>
-              {data.materials.map((mat, index) => (
-                <View key={index} style={styles.tableRow}>
-                  <View style={styles.colDesc}>
-                    <Text>{mat.description}</Text>
-                  </View>
-                  <View style={styles.colQty}>
-                    <Text>{mat.quantity}</Text>
-                  </View>
-                </View>
-              ))}
             </View>
-          </View>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionHeader}>2. DESARROLLO DE ACTIVIDADES</Text>
+              <View style={styles.contentBlock}>
+                {data.developments && data.developments.length > 0 ? (
+                  data.developments.map((dev, index) => (
+                    <View key={index} style={styles.listItem}>
+                      <Text style={styles.bullet}>-</Text>
+                      <Text style={{ flex: 1 }}>{dev}</Text>
+                    </View>
+                  ))
+                ) : (
+                  <Text style={{ fontStyle: "italic", color: "#666" }}>
+                    Sin detalles de desarrollo registrados.
+                  </Text>
+                )}
+              </View>
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionHeader}>3. SOLUCIÓN TÉCNICA</Text>
+              <View style={styles.contentBlock}>
+                {data.solutions.map((sol, index) => (
+                  <View key={index} style={styles.listItem}>
+                    <Text style={styles.bullet}>•</Text>
+                    <Text style={{ flex: 1 }}>{sol}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {data.materials.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionHeader}>4. REPUESTOS E INSUMOS</Text>
+                <View style={styles.table}>
+                  <View style={styles.tableHeader}>
+                    <View style={styles.colDesc}>
+                      <Text style={styles.tableHeaderText}>DESCRIPCIÓN</Text>
+                    </View>
+                    <View style={styles.colQty}>
+                      <Text style={styles.tableHeaderText}>CANT.</Text>
+                    </View>
+                  </View>
+                  {data.materials.map((mat, index) => (
+                    <View key={index} style={styles.tableRow}>
+                      <View style={styles.colDesc}>
+                        <Text>{mat.description}</Text>
+                      </View>
+                      <View style={styles.colQty}>
+                        <Text>{mat.quantity}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+          </>
+        )}
+
+        {isSalaBombas && data.checklistSalaBombas && (
+          <>
+            {renderChecklistTable("1. BOMBAS Y VARIADORES DE FRECUENCIA", data.checklistSalaBombas.bombasVariadoresFrecuencia)}
+            {renderChecklistTable("2. TABLERO DE ALIMENTACIÓN", data.checklistSalaBombas.tableroAlimentacion)}
+            {renderChecklistTable("3. PARÁMETROS DE CONFIGURACIÓN", data.checklistSalaBombas.parametrosConfiguracion)}
+          </>
+        )}
+
+        {isTableroElectrico && data.checklistTableroElectrico && (
+          <>
+            {renderChecklistTable("1. BOMBAS Y PARTIDOR SUAVE", data.checklistTableroElectrico.bombasPartidorSuave)}
+            {renderChecklistTable("2. TABLERO DE ALIMENTACIÓN", data.checklistTableroElectrico.tableroAlimentacion)}
+            {renderChecklistTable("3. PARÁMETROS DE CONFIGURACIÓN", data.checklistTableroElectrico.parametrosConfiguracion)}
+          </>
         )}
 
         <Text

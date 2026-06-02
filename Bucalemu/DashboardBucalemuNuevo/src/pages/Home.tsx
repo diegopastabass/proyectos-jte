@@ -10,6 +10,7 @@ import Error from "./Error";
 import DropdownCardv3 from "../components/DropDownCardv3";
 import ScadaDiagram from "../components/ScadaDiagram";
 import logoJte from "../assets/logoJte.png";
+import State from "../components/StatesV2";
 
 interface Metric {
   time: string;
@@ -26,6 +27,12 @@ interface Datos {
   ssr_bucalemu_alto_nivel: Metric;
   ssr_nilahue_caudal: Metric;
   ssr_nilahue_totalizador: Metric;
+  "BBAJO_NUEVO--slave.automatico": Metric;
+  "BBAJO_NUEVO--slave.bomba": Metric;
+  "BBAJO_NUEVO--slave.falla": Metric;
+  "BBAJO_NUEVO--slave.manual": Metric;
+  "BBAJO_NUEVO--slave.nivel_balto": Metric;
+  "BBAJO_NUEVO--slave.REGF828": Metric;
 }
 
 interface DatosVaciado {
@@ -255,15 +262,15 @@ function App() {
       <div className="col-12 mb-1">
         <Card className="mb-2">
           <CardBody
-            date={data.ssr_bucalemu_alto_nivel.time}
+            date={data["BBAJO_NUEVO--slave.nivel_balto"]?.time}
             title="Bucalemu Alto"
             text1={[
               "Nivel",
-              `${data.ssr_bucalemu_alto_nivel.value.toFixed(2)} m`,
+              `${data["BBAJO_NUEVO--slave.nivel_balto"]?.value?.toFixed(2) ?? "--"} m`,
             ]}
             text2={[
               "Volumen Actual",
-              `${((60 / 7) * data.ssr_bucalemu_alto_nivel.value).toFixed(2)} m³`,
+              `${((60 / 7) * (data["BBAJO_NUEVO--slave.nivel_balto"]?.value ?? 0)).toFixed(2)} m³`,
             ]}
             text3={[
               "T. Vaciado",
@@ -275,7 +282,7 @@ function App() {
             ]}
           />
           <TankLevelCircular
-            nivelActual={data.ssr_bucalemu_alto_nivel.value}
+            nivelActual={data["BBAJO_NUEVO--slave.nivel_balto"]?.value ?? 0}
             nivelMaximo={4.25}
           />
           <ToggleCardButton
@@ -291,6 +298,17 @@ function App() {
           data={chartData?.ssr_bucalemu_alto_nivel || []}
           nivelAlarma={1}
           nivelMax={5}
+        />
+      </div>
+
+      {/* Estado Bucalemu Bajo Nuevo */}
+      <div className="col-12 mb-1">
+        <State
+          title="Estado Tablero Bucalemu Bajo"
+          automatico={data["BBAJO_NUEVO--slave.automatico"]?.value.toString()}
+          bomba={data["BBAJO_NUEVO--slave.bomba"]?.value.toString()}
+          falla={data["BBAJO_NUEVO--slave.falla"]?.value.toString()}
+          manual={data["BBAJO_NUEVO--slave.manual"]?.value.toString()}
         />
       </div>
 
@@ -354,6 +372,9 @@ function App() {
           <ScadaDiagram data={data} vaciado={vData} />
         </div>
       </div>
+
+      {/* Estado Bucalemu Bajo Nuevo (Col 3, Row 3) */}
+      <div style={{ gridColumn: "3", gridRow: "3" }}></div>
 
       {/* Nivel Estanque (Col 3, Row 1) */}
       <div style={{ gridColumn: "3", gridRow: "1" }}>

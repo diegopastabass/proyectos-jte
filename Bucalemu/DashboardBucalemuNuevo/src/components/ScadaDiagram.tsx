@@ -3,7 +3,7 @@ import Tank from "./Tank";
 import newTankImage from "../assets/newTank.png";
 import newPumpImage from "../assets/newPump.png";
 import newElbowImage from "../assets/newElbow.png";
-import Tank2 from "./Tank2";
+import State from "./StatesV2";
 
 interface Data {
   data: Datos;
@@ -20,6 +20,11 @@ interface Datos {
   ssr_bucalemu_alto_nivel: Metric;
   ssr_nilahue_caudal: Metric;
   ssr_nilahue_totalizador: Metric;
+  "BBAJO_NUEVO--slave.nivel_balto": Metric;
+  "BBAJO_NUEVO--slave.automatico": Metric;
+  "BBAJO_NUEVO--slave.bomba": Metric;
+  "BBAJO_NUEVO--slave.falla": Metric;
+  "BBAJO_NUEVO--slave.manual": Metric;
 }
 
 interface DatosVaciado {
@@ -48,7 +53,7 @@ const ScadaDiagram: React.FC<Data> = ({ data, vaciado }) => {
   const mainContainerStyle: CSSProperties = {
     position: "relative",
     width: "100%",
-    height: "590px",
+    height: "600px",
     overflowX: "auto",
   };
 
@@ -68,6 +73,17 @@ const ScadaDiagram: React.FC<Data> = ({ data, vaciado }) => {
   };
 
   const getX = (index: number) => (RENDER_SIZE + GAP) * index + 100;
+
+  // Estilo específico para el estado del tablero Bucalemu Bajo
+  // El tanque ocupa: badge (~22px) + imagen (RENDER_SIZE=200px) + textos (~110px) + alert (~44px) ≈ 376px
+  const TANK_TOTAL_HEIGHT = 22 + RENDER_SIZE + 110 + 44; // ~376px
+  const stateBucalemuBajoStyle: CSSProperties = {
+    position: "absolute",
+    top: TANK_TOTAL_HEIGHT + 10, // justo debajo del tanque con 10px de margen
+    left: getX(2),
+    width: RENDER_SIZE,
+    zIndex: 20,
+  };
 
   return (
     <div style={mainContainerStyle}>
@@ -96,13 +112,21 @@ const ScadaDiagram: React.FC<Data> = ({ data, vaciado }) => {
         time={data.ssr_nilahue_nivel.time}
         image={imageAssets.newTank}
         volume={data.ssr_nilahue_nivel.value}
-        maxVolume={4.25}
+        maxVolume={4.35}
         name="Nilahue"
         tiempoVaciado={
           vaciado?.t_vaciado_nilahue_nivel == "0s"
             ? "Llenando"
             : vaciado?.t_vaciado_nilahue_nivel
         }
+      />
+      <State
+        title="Estado Tablero Bucalemu Bajo"
+        automatico={data["BBAJO_NUEVO--slave.automatico"]?.value.toString()}
+        bomba={data["BBAJO_NUEVO--slave.bomba"]?.value.toString()}
+        falla={data["BBAJO_NUEVO--slave.falla"]?.value.toString()}
+        manual={data["BBAJO_NUEVO--slave.manual"]?.value.toString()}
+        style={stateBucalemuBajoStyle}
       />
 
       <Tank
@@ -132,7 +156,7 @@ const ScadaDiagram: React.FC<Data> = ({ data, vaciado }) => {
         time={data.ssr_bucalemu_bajo_nivel.time}
         image={imageAssets.newTank}
         volume={data.ssr_bucalemu_bajo_nivel.value}
-        maxVolume={4.25}
+        maxVolume={4.35}
         name="Bucalemu Bajo"
         tiempoVaciado={
           vaciado?.t_vaciado_bucalemu_bajo_nivel == "0s"
@@ -141,15 +165,15 @@ const ScadaDiagram: React.FC<Data> = ({ data, vaciado }) => {
         }
       />
 
-      <Tank2
+      <Tank
         spriteWidth={SPRITE_SIZE}
         spriteHeight={SPRITE_SIZE}
         displaySize={RENDER_SIZE}
         positionX={getX(3)}
         positionY={0}
-        time={data.ssr_bucalemu_alto_nivel.time}
+        time={data["BBAJO_NUEVO--slave.nivel_balto"]?.time}
         image={imageAssets.newTank}
-        volume={data.ssr_bucalemu_alto_nivel.value}
+        volume={data["BBAJO_NUEVO--slave.nivel_balto"]?.value ?? 0}
         maxVolume={4.25}
         name="Bucalemu Alto"
         tiempoVaciado={

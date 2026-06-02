@@ -10,6 +10,9 @@ import { Raw, Repository } from 'typeorm';
 import { CreateMetricDto } from '../models/dto/create-metric.dto';
 import { DateRangeDto } from '../models/dto/date-range.dto';
 import { Metric } from '../models/metric.entity';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 
 export class Total {
   time: string;
@@ -28,6 +31,10 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
   private metricsBuffer: CreateMetricDto[] = [];
   private flushInterval: NodeJS.Timeout;
 
+  private lastDataArrivalTime: number = Date.now();
+  private noDataAlertSent: boolean = false;
+  private noDataCheckInterval: NodeJS.Timeout;
+
   constructor(
     @InjectRepository(Metric)
     private readonly metricRepository: Repository<Metric>,
@@ -37,16 +44,58 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     this.flushInterval = setInterval(() => {
       this.flushMetrics();
     }, 240000);
+
+    this.noDataCheckInterval = setInterval(() => {
+      this.checkDataArrival();
+    }, 60000);
   }
 
   onModuleDestroy() {
     clearInterval(this.flushInterval);
+    clearInterval(this.noDataCheckInterval);
     this.flushMetrics();
+  }
+
+  private appendToPostLog(message: string) {
+    const logsDir = path.join(
+      os.homedir(),
+      'Documentos/proyectoEduardo/Proyectos/Bucalemu/api-bucalemu-postgres/logs',
+    );
+    const logFile = path.join(logsDir, 'logs-post.txt');
+
+    try {
+      if (!fs.existsSync(logsDir)) {
+        fs.mkdirSync(logsDir, { recursive: true });
+      }
+      const timestamp = new Date().toISOString();
+      fs.appendFileSync(logFile, `[${timestamp}] ${message}\n`);
+    } catch (e) {
+      this.logger.error('Failed to write to logs-post.txt', e);
+    }
+  }
+
+  private checkDataArrival() {
+    const timeSinceLastData = Date.now() - this.lastDataArrivalTime;
+    // 30 minutos = 30 * 60 * 1000 = 1800000 ms
+    if (timeSinceLastData > 1800000) {
+      if (!this.noDataAlertSent) {
+        this.appendToPostLog(
+          'ALERTA: Han pasado más de 30 minutos sin recibir datos nuevos.',
+        );
+        this.noDataAlertSent = true;
+      }
+    }
   }
 
   async createMetric(
     dto: CreateMetricDto,
   ): Promise<{ success: boolean; message: string }> {
+    this.lastDataArrivalTime = Date.now();
+    this.noDataAlertSent = false;
+    this.appendToPostLog(
+      `Nuevo dato recibido - Nombre: ${dto.mt_name}, Value: ${dto.mt_value}`,
+    );
+
     this.metricsBuffer.push(dto);
 
     if (this.metricsBuffer.length >= 100) {
@@ -73,6 +122,9 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
       this.logger.log(`Bulk inserted ${dataToSave.length} metrics`);
     } catch (error) {
       this.logger.error('Error in bulk insert', error);
+      this.appendToPostLog(
+        `ERROR de inserción a postgres: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -110,6 +162,8 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
         finalValue = finalValue / 100;
       } else if (metric.mt_name === 'CASUTO--slave.AI32') {
         finalName = 'ssr_casuto_bateria';
+      } else if (metric.mt_name === 'BBAJO_NUEVO--slave.nivel_balto') {
+        finalName = 'BBAJO_NUEVO--slave.nivel_balto';
       }
 
       result[finalName] = {
@@ -144,7 +198,7 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
         FROM "ssr_bucalemu"
       ) as subquery
       WHERE subquery.rn <= 100
-      AND (subquery."mt_name" LIKE '%nivel' OR subquery."mt_name" = 'CASUTO--slave.AI12')
+      AND subquery."mt_name" IN ('CASUTO--slave.AI12', 'BBAJO_NUEVO--slave.nivel_balto', 'ssr_bucalemu_bajo_nivel', 'ssr_nilahue_nivel')
       ORDER BY subquery."mt_name", subquery.rn DESC;
     `;
 
@@ -167,6 +221,8 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
       if (name === 'CASUTO--slave.AI12') {
         name = 'ssr_casuto_nivel';
         value = value / 100;
+      } else if (name === 'BBAJO_NUEVO--slave.nivel_balto') {
+        name = 'ssr_bucalemu_alto_nivel';
       }
 
       if (!grouped[name]) {
@@ -192,7 +248,7 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
           "mt_time_2",
           ROW_NUMBER() OVER (PARTITION BY "mt_name" ORDER BY "mt_time_2" DESC) AS rn
         FROM "ssr_bucalemu"
-        WHERE "mt_name" LIKE '%nivel' OR "mt_name" = 'CASUTO--slave.AI12'
+        WHERE "mt_name" IN ('CASUTO--slave.AI12', 'BBAJO_NUEVO--slave.nivel_balto', 'ssr_bucalemu_bajo_nivel', 'ssr_nilahue_nivel')
       ) t
       WHERE t.rn <= 2
       ORDER BY t."mt_name", t.rn;
@@ -212,12 +268,17 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
       const grouped: Record<string, { value: number; time: string }[]> = {};
       rows.forEach((row) => {
         let value = Number(row.mt_value);
-        if (row.mt_name === 'CASUTO--slave.AI12') {
+        let name = row.mt_name;
+
+        if (name === 'CASUTO--slave.AI12') {
+          name = 'ssr_casuto_nivel';
           value = value / 100;
+        } else if (name === 'BBAJO_NUEVO--slave.nivel_balto') {
+          name = 'ssr_bucalemu_alto_nivel';
         }
 
-        if (!grouped[row.mt_name]) grouped[row.mt_name] = [];
-        grouped[row.mt_name].push({
+        if (!grouped[name]) grouped[name] = [];
+        grouped[name].push({
           value: value,
           time: new Date(row.mt_time_2).toISOString(),
         });
@@ -240,12 +301,7 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
           timestamp2,
         );
 
-        let key: string;
-        if (name === 'CASUTO--slave.AI12') {
-          key = 't_vaciado_casuto_nivel';
-        } else {
-          key = `t_vaciado_${name.replace(/^ssr_/, '')}`;
-        }
+        const key = `t_vaciado_${name.replace(/^ssr_/, '')}`;
 
         result[key] = isNaN(segundos)
           ? 'NaN'

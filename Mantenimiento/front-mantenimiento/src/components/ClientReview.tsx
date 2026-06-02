@@ -15,11 +15,20 @@ export const ClientReview = ({ data, onCorrect, onApprove }: Props) => {
       <div className="card-body">
         <h6 className="text-muted">Resumen de trabajos realizados:</h6>
         <div className="alert alert-light border">
-          <p className="mb-2"><strong>Diagnóstico:</strong> {data.description}</p>
-          <strong>Soluciones:</strong>
-          <ul className="mb-0">
-            {data.solutions.map((s, i) => <li key={i}>{s}</li>)}
-          </ul>
+          {data.type === "Atención de Falla" || data.type === "Mejora en Infraestructura" ? (
+            <>
+              <p className="mb-2"><strong>Diagnóstico:</strong> {data.description}</p>
+              <strong>Soluciones:</strong>
+              <ul className="mb-0">
+                {data.solutions.map((s, i) => <li key={i}>{s}</li>)}
+              </ul>
+            </>
+          ) : (
+            <>
+              <p className="mb-2"><strong>Tipo de Mantenimiento:</strong> {data.type}</p>
+              <p className="mb-0 text-muted small">Se ha completado el checklist correspondiente y el registro fotográfico.</p>
+            </>
+          )}
         </div>
 
         <div className="form-check mb-3">

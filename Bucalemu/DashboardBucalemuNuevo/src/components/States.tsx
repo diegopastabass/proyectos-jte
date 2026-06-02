@@ -1,3 +1,5 @@
+import React from "react";
+
 interface StateProps {
   children: React.ReactNode;
   style?: React.CSSProperties;
@@ -21,9 +23,10 @@ function State(props: StateProps) {
 }
 
 interface CardBodyProps {
-  automatico: string; // "1" o "0"
-  bomba: string;
-  falla: string;
+  automatico: number;
+  bomba: number;
+  falla: number;
+  manual: number;
 }
 
 const indicadorBase: React.CSSProperties = {
@@ -31,36 +34,43 @@ const indicadorBase: React.CSSProperties = {
   marginLeft: "10px",
   padding: "5px 10px",
   color: "white",
-  borderRadius: "12px", // más redondeado
-  fontSize: "0.8rem", // texto más pequeño
-  minWidth: "110px", // mismo ancho para todos
+  borderRadius: "12px",
+  fontSize: "0.8rem",
+  minWidth: "110px",
   textAlign: "center",
 };
 
 const getEstadoStyle = (
-  valor: string,
-  tipo: "automatico" | "bomba" | "falla"
+  valor: number,
+  tipo: "automatico" | "bomba" | "falla" | "manual"
 ): React.CSSProperties => {
-  const activo = valor === "1";
+  const activo = valor === 1;
 
   if (tipo === "falla") {
     return {
       ...indicadorBase,
-      backgroundColor: activo ? "orange" : "gray",
+      backgroundColor: activo ? "#e53e3e" : "#718096",
+    };
+  }
+
+  if (tipo === "manual") {
+    return {
+      ...indicadorBase,
+      backgroundColor: activo ? "#ed8936" : "#718096",
     };
   }
 
   return {
     ...indicadorBase,
-    backgroundColor: activo ? "green" : "gray",
+    backgroundColor: activo ? "#38a169" : "#718096",
   };
 };
 
 const getLabel = (
-  valor: string,
-  tipo: "automatico" | "bomba" | "falla"
+  valor: number,
+  tipo: "automatico" | "bomba" | "falla" | "manual"
 ): string => {
-  const activo = valor === "1";
+  const activo = valor === 1;
 
   switch (tipo) {
     case "automatico":
@@ -68,35 +78,54 @@ const getLabel = (
     case "bomba":
       return activo ? "Encendida" : "Apagada";
     case "falla":
-      return activo ? "Con falla" : "Sin falla";
+      return activo ? "Con Falla" : "Sin Falla";
+    case "manual":
+      return activo ? "Manual" : "Automático";
   }
 };
 
 export function StateBody(props: CardBodyProps) {
-  const { automatico, bomba, falla } = props;
+  const { automatico, bomba, falla, manual } = props;
 
   return (
     <>
-      <h6 className="card-title">Estado Tablero</h6>
+      <h6 className="card-title mb-3" style={{ fontWeight: 700 }}>
+        Estado — Bucalemu Bajo Nuevo
+      </h6>
 
       <div className="d-flex justify-content-between align-items-center mb-2">
-        <span>Modo:</span>
+        <span className="text-muted" style={{ fontSize: "0.85rem" }}>
+          Modo:
+        </span>
         <span style={getEstadoStyle(automatico, "automatico")}>
           {getLabel(automatico, "automatico")}
         </span>
       </div>
 
       <div className="d-flex justify-content-between align-items-center mb-2">
-        <span>Bomba:</span>
+        <span className="text-muted" style={{ fontSize: "0.85rem" }}>
+          Bomba:
+        </span>
         <span style={getEstadoStyle(bomba, "bomba")}>
           {getLabel(bomba, "bomba")}
         </span>
       </div>
 
       <div className="d-flex justify-content-between align-items-center mb-2">
-        <span>Estado:</span>
+        <span className="text-muted" style={{ fontSize: "0.85rem" }}>
+          Falla:
+        </span>
         <span style={getEstadoStyle(falla, "falla")}>
           {getLabel(falla, "falla")}
+        </span>
+      </div>
+
+      <div className="d-flex justify-content-between align-items-center mb-2">
+        <span className="text-muted" style={{ fontSize: "0.85rem" }}>
+          Control:
+        </span>
+        <span style={getEstadoStyle(manual, "manual")}>
+          {getLabel(manual, "manual")}
         </span>
       </div>
     </>

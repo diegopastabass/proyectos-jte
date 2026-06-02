@@ -41,6 +41,12 @@ interface Props {
   onSubmit: () => void;
   isSaving: boolean;
   isEditing: boolean;
+  onChecklistChange: (
+    type: "salaBombas" | "tableroElectrico",
+    section: string,
+    field: string,
+    value: string
+  ) => void;
 }
 
 export const ReportEditor = ({
@@ -61,6 +67,7 @@ export const ReportEditor = ({
   onRemoveDevelopment,
   onSubmit,
   isSaving,
+  onChecklistChange,
 }: Props) => {
   // Estado local del modal de cámara
   const [cameraModal, setCameraModal] = useState<{
@@ -106,6 +113,33 @@ export const ReportEditor = ({
 
   const capturedImages = data.capturedImages ?? [];
 
+  const isStandard = data.type === "Atención de Falla" || data.type === "Mejora en Infraestructura";
+  const isSalaBombas = data.type === "Mantención Preventiva de Sala de Bombas";
+  const isTableroElectrico = data.type === "Mantención Preventiva de Tablero Eléctrico";
+
+  const renderCheckSelect = (
+    type: "salaBombas" | "tableroElectrico",
+    section: string,
+    field: string,
+    label: string,
+    value: string
+  ) => (
+    <div className="d-flex justify-content-between align-items-center border-bottom py-2">
+      <span>{label}</span>
+      <select
+        className="form-select form-select-sm w-auto"
+        style={{ minWidth: "150px" }}
+        value={value}
+        onChange={(e) => onChecklistChange(type, section, field, e.target.value)}
+      >
+        <option value="">Seleccione...</option>
+        <option value="Realizado">Realizado</option>
+        <option value="No Realizado">No Realizado</option>
+        <option value="N/A">N/A</option>
+      </select>
+    </div>
+  );
+
   return (
     <>
       <form onSubmit={(e) => e.preventDefault()}>
@@ -119,9 +153,10 @@ export const ReportEditor = ({
               value={data.type}
               onChange={(e) => onChange("type", e.target.value)}
             >
-              <option>Mantención Preventiva</option>
-              <option>Atención de Falla</option>
-              <option>Mejora en Infraestructura</option>
+              <option value="Atención de Falla">Atención de Falla</option>
+              <option value="Mejora en Infraestructura">Mejora en Infraestructura</option>
+              <option value="Mantención Preventiva de Sala de Bombas">Mantención Preventiva de Sala de Bombas</option>
+              <option value="Mantención Preventiva de Tablero Eléctrico">Mantención Preventiva de Tablero Eléctrico</option>
             </select>
           </div>
           <div className="col-md-4">
@@ -210,8 +245,10 @@ export const ReportEditor = ({
           </div>
         </div>
 
-        {/* ── DIAGNÓSTICO ──────────────────────────────────────────────── */}
-        <h5 className="mb-3 mt-4">Diagnóstico</h5>
+        {isStandard && (
+          <>
+            {/* ── DIAGNÓSTICO ──────────────────────────────────────────────── */}
+            <h5 className="mb-3 mt-4">Diagnóstico</h5>
         <div className="mb-3">
           <select
             className="form-select mb-3"
@@ -288,6 +325,66 @@ export const ReportEditor = ({
         >
           + Item Solución
         </button>
+          </>
+        )}
+
+        {isSalaBombas && data.checklistSalaBombas && (
+          <>
+            <h5 className="mb-3 mt-4">Bombas y Variadores de Frecuencia</h5>
+            <div className="mb-3">
+              {renderCheckSelect("salaBombas", "bombasVariadoresFrecuencia", "reaprieteConexionesFuerza", "Reapriete conexiones eléctricas de fuerza", data.checklistSalaBombas.bombasVariadoresFrecuencia.reaprieteConexionesFuerza)}
+              {renderCheckSelect("salaBombas", "bombasVariadoresFrecuencia", "reaprieteConexionesControl", "Reapriete conexiones eléctricas de control", data.checklistSalaBombas.bombasVariadoresFrecuencia.reaprieteConexionesControl)}
+              {renderCheckSelect("salaBombas", "bombasVariadoresFrecuencia", "limpiezaComponentesElectronicos", "Limpieza componentes electrónicos", data.checklistSalaBombas.bombasVariadoresFrecuencia.limpiezaComponentesElectronicos)}
+              {renderCheckSelect("salaBombas", "bombasVariadoresFrecuencia", "revisionRuidosExtranos", "Revisión ruidos extraños en bombas", data.checklistSalaBombas.bombasVariadoresFrecuencia.revisionRuidosExtranos)}
+              {renderCheckSelect("salaBombas", "bombasVariadoresFrecuencia", "pruebasFuncionamiento", "Pruebas de funcionamiento", data.checklistSalaBombas.bombasVariadoresFrecuencia.pruebasFuncionamiento)}
+            </div>
+            
+            <h5 className="mb-3 mt-4">Tablero de Alimentación</h5>
+            <div className="mb-3">
+              {renderCheckSelect("salaBombas", "tableroAlimentacion", "reaprieteConexionesFuerza", "Reapriete conexiones eléctricas de fuerza", data.checklistSalaBombas.tableroAlimentacion.reaprieteConexionesFuerza)}
+              {renderCheckSelect("salaBombas", "tableroAlimentacion", "reaprieteConexionesControl", "Reapriete conexiones eléctricas de control", data.checklistSalaBombas.tableroAlimentacion.reaprieteConexionesControl)}
+              {renderCheckSelect("salaBombas", "tableroAlimentacion", "limpiezaComponentesElectricos", "Limpieza componentes eléctricos", data.checklistSalaBombas.tableroAlimentacion.limpiezaComponentesElectricos)}
+              {renderCheckSelect("salaBombas", "tableroAlimentacion", "pruebasFuncionamiento", "Pruebas de funcionamiento", data.checklistSalaBombas.tableroAlimentacion.pruebasFuncionamiento)}
+            </div>
+
+            <h5 className="mb-3 mt-4">Parámetros de Configuración</h5>
+            <div className="mb-3">
+              {renderCheckSelect("salaBombas", "parametrosConfiguracion", "verificacionControlPID", "Verificación control PID", data.checklistSalaBombas.parametrosConfiguracion.verificacionControlPID)}
+              {renderCheckSelect("salaBombas", "parametrosConfiguracion", "verificacionMedidorPresion", "Verificación medidor de presión", data.checklistSalaBombas.parametrosConfiguracion.verificacionMedidorPresion)}
+              {renderCheckSelect("salaBombas", "parametrosConfiguracion", "ajustesParametros", "Ajustes de parámetros", data.checklistSalaBombas.parametrosConfiguracion.ajustesParametros)}
+              {renderCheckSelect("salaBombas", "parametrosConfiguracion", "pruebasFuncionamiento", "Pruebas de funcionamiento", data.checklistSalaBombas.parametrosConfiguracion.pruebasFuncionamiento)}
+            </div>
+          </>
+        )}
+
+        {isTableroElectrico && data.checklistTableroElectrico && (
+          <>
+            <h5 className="mb-3 mt-4">Bombas y Partidor Suave</h5>
+            <div className="mb-3">
+              {renderCheckSelect("tableroElectrico", "bombasPartidorSuave", "reaprieteConexionesFuerza", "Reapriete conexiones eléctricas de fuerza", data.checklistTableroElectrico.bombasPartidorSuave.reaprieteConexionesFuerza)}
+              {renderCheckSelect("tableroElectrico", "bombasPartidorSuave", "reaprieteConexionesControl", "Reapriete conexiones eléctricas de control", data.checklistTableroElectrico.bombasPartidorSuave.reaprieteConexionesControl)}
+              {renderCheckSelect("tableroElectrico", "bombasPartidorSuave", "limpiezaComponentesElectronicos", "Limpieza componentes electrónicos", data.checklistTableroElectrico.bombasPartidorSuave.limpiezaComponentesElectronicos)}
+              {renderCheckSelect("tableroElectrico", "bombasPartidorSuave", "revisionRuidosExtranos", "Revisión ruidos extraños en bombas", data.checklistTableroElectrico.bombasPartidorSuave.revisionRuidosExtranos)}
+              {renderCheckSelect("tableroElectrico", "bombasPartidorSuave", "pruebasFuncionamiento", "Pruebas de funcionamiento", data.checklistTableroElectrico.bombasPartidorSuave.pruebasFuncionamiento)}
+            </div>
+            
+            <h5 className="mb-3 mt-4">Tablero de Alimentación</h5>
+            <div className="mb-3">
+              {renderCheckSelect("tableroElectrico", "tableroAlimentacion", "reaprieteConexionesFuerza", "Reapriete conexiones eléctricas de fuerza", data.checklistTableroElectrico.tableroAlimentacion.reaprieteConexionesFuerza)}
+              {renderCheckSelect("tableroElectrico", "tableroAlimentacion", "reaprieteConexionesControl", "Reapriete conexiones eléctricas de control", data.checklistTableroElectrico.tableroAlimentacion.reaprieteConexionesControl)}
+              {renderCheckSelect("tableroElectrico", "tableroAlimentacion", "limpiezaComponentesElectricos", "Limpieza componentes eléctricos", data.checklistTableroElectrico.tableroAlimentacion.limpiezaComponentesElectricos)}
+              {renderCheckSelect("tableroElectrico", "tableroAlimentacion", "pruebasFuncionamiento", "Pruebas de funcionamiento", data.checklistTableroElectrico.tableroAlimentacion.pruebasFuncionamiento)}
+            </div>
+
+            <h5 className="mb-3 mt-4">Parámetros de Configuración</h5>
+            <div className="mb-3">
+              {renderCheckSelect("tableroElectrico", "parametrosConfiguracion", "verificacionControlTelemetria", "Verificación control Telemetria", data.checklistTableroElectrico.parametrosConfiguracion.verificacionControlTelemetria)}
+              {renderCheckSelect("tableroElectrico", "parametrosConfiguracion", "verificacionMedidorCaudal", "Verificación medidor de caudal", data.checklistTableroElectrico.parametrosConfiguracion.verificacionMedidorCaudal)}
+              {renderCheckSelect("tableroElectrico", "parametrosConfiguracion", "ajustesParametros", "Ajustes de parámetros", data.checklistTableroElectrico.parametrosConfiguracion.ajustesParametros)}
+              {renderCheckSelect("tableroElectrico", "parametrosConfiguracion", "pruebasFuncionamiento", "Pruebas de funcionamiento", data.checklistTableroElectrico.parametrosConfiguracion.pruebasFuncionamiento)}
+            </div>
+          </>
+        )}
 
         {/* ── OBSERVACIONES ────────────────────────────────────────────── */}
         <h5 className="mb-3 mt-4">Observaciones Generales</h5>
@@ -318,8 +415,10 @@ export const ReportEditor = ({
           + Item Observación
         </button>
 
-        {/* ── MATERIALES ───────────────────────────────────────────────── */}
-        <h5 className="mb-3 mt-4">Repuestos / Materiales (Opcional)</h5>
+        {isStandard && (
+          <>
+            {/* ── MATERIALES ───────────────────────────────────────────────── */}
+            <h5 className="mb-3 mt-4">Repuestos / Materiales (Opcional)</h5>
         {data.materials.map((mat, index) => (
           <div key={index} className="row g-2 mb-2 align-items-center">
             <div className="col-12 col-md-6">
@@ -362,6 +461,8 @@ export const ReportEditor = ({
         >
           + Agregar Material
         </button>
+          </>
+        )}
 
         {/* ── REGISTRO FOTOGRÁFICO ─────────────────────────────────────── */}
         <h5 className="mb-2 mt-4">Registro Fotográfico</h5>

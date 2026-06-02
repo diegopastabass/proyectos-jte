@@ -113,6 +113,29 @@ function ReportForm({ onBack, isAdmin, reportId }: Props) {
       }));
   };
 
+  const handleChecklistChange = (
+    type: "salaBombas" | "tableroElectrico",
+    section: string,
+    field: string,
+    value: string
+  ) => {
+    setData((p) => {
+      const checklistKey = type === "salaBombas" ? "checklistSalaBombas" : "checklistTableroElectrico";
+      const checklist = p[checklistKey] as any;
+      if (!checklist) return p;
+      return {
+        ...p,
+        [checklistKey]: {
+          ...checklist,
+          [section]: {
+            ...checklist[section],
+            [field]: value,
+          },
+        },
+      };
+    });
+  };
+
   const handleStartClosing = () => {
     if (reportId && data.techSignature && data.clientSignature) {
       if (
@@ -197,6 +220,7 @@ function ReportForm({ onBack, isAdmin, reportId }: Props) {
             onSubmit={handleStartClosing}
             isSaving={isSaving}
             isEditing={!!reportId}
+            onChecklistChange={handleChecklistChange}
           />
         );
       case "signTech":

@@ -3,6 +3,54 @@ export interface Material {
   quantity: number;
 }
 
+export type CheckStatus = "Realizado" | "No Realizado" | "N/A" | "";
+
+export interface ChecklistSalaBombas {
+  bombasVariadoresFrecuencia: {
+    reaprieteConexionesFuerza: CheckStatus;
+    reaprieteConexionesControl: CheckStatus;
+    limpiezaComponentesElectronicos: CheckStatus;
+    revisionRuidosExtranos: CheckStatus;
+    pruebasFuncionamiento: CheckStatus;
+  };
+  tableroAlimentacion: {
+    reaprieteConexionesFuerza: CheckStatus;
+    reaprieteConexionesControl: CheckStatus;
+    limpiezaComponentesElectricos: CheckStatus;
+    pruebasFuncionamiento: CheckStatus;
+  };
+  parametrosConfiguracion: {
+    verificacionControlPID: CheckStatus;
+    verificacionMedidorPresion: CheckStatus;
+    ajustesParametros: CheckStatus;
+    pruebasFuncionamiento: CheckStatus;
+  };
+}
+
+export interface ChecklistTableroElectrico {
+  bombasPartidorSuave: {
+    reaprieteConexionesFuerza: CheckStatus;
+    reaprieteConexionesControl: CheckStatus;
+    limpiezaComponentesElectronicos: CheckStatus;
+    revisionRuidosExtranos: CheckStatus;
+    pruebasFuncionamiento: CheckStatus;
+  };
+  tableroAlimentacion: {
+    reaprieteConexionesFuerza: CheckStatus;
+    reaprieteConexionesControl: CheckStatus;
+    limpiezaComponentesElectricos: CheckStatus;
+    pruebasFuncionamiento: CheckStatus;
+  };
+  parametrosConfiguracion: {
+    verificacionControlTelemetria: CheckStatus;
+    verificacionMedidorCaudal: CheckStatus;
+    ajustesParametros: CheckStatus;
+    pruebasFuncionamiento: CheckStatus;
+  };
+}
+
+export type ReportType = "Atención de Falla" | "Mejora en Infraestructura" | "Mantención Preventiva de Sala de Bombas" | "Mantención Preventiva de Tablero Eléctrico";
+
 export const initialData: ReportData = {
   startDate: new Date().toISOString().slice(0, 16),
   endDate: new Date().toISOString().slice(0, 16),
@@ -26,6 +74,48 @@ export const initialData: ReportData = {
   isApproved: false,
   // Campo nuevo: arreglo de imágenes capturadas durante la sesión
   capturedImages: [],
+  checklistSalaBombas: {
+    bombasVariadoresFrecuencia: {
+      reaprieteConexionesFuerza: "",
+      reaprieteConexionesControl: "",
+      limpiezaComponentesElectronicos: "",
+      revisionRuidosExtranos: "",
+      pruebasFuncionamiento: "",
+    },
+    tableroAlimentacion: {
+      reaprieteConexionesFuerza: "",
+      reaprieteConexionesControl: "",
+      limpiezaComponentesElectricos: "",
+      pruebasFuncionamiento: "",
+    },
+    parametrosConfiguracion: {
+      verificacionControlPID: "",
+      verificacionMedidorPresion: "",
+      ajustesParametros: "",
+      pruebasFuncionamiento: "",
+    },
+  },
+  checklistTableroElectrico: {
+    bombasPartidorSuave: {
+      reaprieteConexionesFuerza: "",
+      reaprieteConexionesControl: "",
+      limpiezaComponentesElectronicos: "",
+      revisionRuidosExtranos: "",
+      pruebasFuncionamiento: "",
+    },
+    tableroAlimentacion: {
+      reaprieteConexionesFuerza: "",
+      reaprieteConexionesControl: "",
+      limpiezaComponentesElectricos: "",
+      pruebasFuncionamiento: "",
+    },
+    parametrosConfiguracion: {
+      verificacionControlTelemetria: "",
+      verificacionMedidorCaudal: "",
+      ajustesParametros: "",
+      pruebasFuncionamiento: "",
+    },
+  },
 };
 
 export interface User {
@@ -50,7 +140,7 @@ export interface ReportSummary {
 export interface ReportData {
   startDate: string;
   endDate: string;
-  type: "Mantención Preventiva" | "Atención de Falla";
+  type: ReportType;
   client: {
     name: string;
     address: string;
@@ -82,6 +172,8 @@ export interface ReportData {
    * Se incluyen en el PDF si el arreglo no está vacío.
    */
   capturedImages: CapturedImage[];
+  checklistSalaBombas?: ChecklistSalaBombas;
+  checklistTableroElectrico?: ChecklistTableroElectrico;
 }
 
 /**

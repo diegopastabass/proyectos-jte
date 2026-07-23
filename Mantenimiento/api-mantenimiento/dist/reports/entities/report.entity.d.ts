@@ -5,6 +5,7 @@ export declare class Report {
     clientName: string;
     status: string;
     data: any;
+    images: string[];
     createdAt: Date;
     updatedAt: Date;
     user: User;

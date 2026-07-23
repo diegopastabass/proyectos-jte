@@ -17,7 +17,7 @@ ChartJS.register(
   BarElement,
   Tooltip,
   Legend,
-  Title
+  Title,
 );
 
 interface DropdownCardProps {
@@ -29,6 +29,7 @@ interface DropdownCardProps {
     value: number;
   }[];
   date?: string;
+  divisor: number;
 }
 
 function DropdownCardv3({
@@ -37,9 +38,10 @@ function DropdownCardv3({
   data,
   chartLabel,
   date,
+  divisor,
 }: DropdownCardProps) {
   const labels = data.map((d) => new Date(d.time).toISOString().split("T")[0]);
-  const values = data.map((d) => d.value);
+  const values = data.map((d) => d.value / divisor);
 
   const chartData = {
     labels,
@@ -86,11 +88,11 @@ function DropdownCardv3({
 
   return (
     <div
-      className={`mt-2 mb-2 mt-lg-0 mb-lg-0 ${
+      className={`mt-2 mb-2 mt-lg-0 mb-lg-0 w-100 ${
         isOpen ? "show" : "collapse-card"
       }`}
     >
-      <Card>
+      <Card style={{ maxWidth: "100%" }}>
         <CardBody title={`Detalle ${title}`} date={date} />
         <div style={{ height: "230px" }}>
           <Bar data={chartData} options={options} />

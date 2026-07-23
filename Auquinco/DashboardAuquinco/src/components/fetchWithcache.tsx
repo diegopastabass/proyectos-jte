@@ -7,7 +7,7 @@ export const fetchWithCache = async (
   endpoint: string,
   endStr: string,
 ): Promise<Metric[]> => {
-  const cacheKey = `jte_cache_${endpoint}`;
+  const cacheKey = `jte_cache_auquinco${endpoint}`;
   const cached = localStorage.getItem(cacheKey);
   let data: Metric[] = cached ? JSON.parse(cached) : [];
 
@@ -90,4 +90,3 @@ export const fetchWithCacheMulti = async <T extends Record<string, Metric[]>>(
 
   return merged as T;
 };
-

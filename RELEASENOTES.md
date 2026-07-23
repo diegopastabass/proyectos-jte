@@ -5,7 +5,8 @@
 - **Nuevos Formularios Preventivos**: Se implementaron dos nuevos tipos de reportes: "Mantención Preventiva de Sala de Bombas" y "Mantención Preventiva de Tablero Eléctrico", basados en las listas de chequeo de referencia.
 - **Ocultamiento de Secciones Irrelevantes**: Para los nuevos tipos preventivos se ocultan las secciones estándar ("Diagnóstico", "Desarrollo", "Solución Técnica" y "Repuestos/Materiales"), dejando un flujo adaptado a listas de verificación.
 - **Gestión de Checklists**: Creación de flujos interactivos en el frontend para responder a cada ítem con los estados `Realizado`, `No Realizado` o `N/A`, soportando el registro fotográfico y observaciones generales.
-- **PDFs Dinámicos con Tablas de Checklists**: Se adaptó `PDFReport.tsx` para generar de forma dinámica tablas separadas por secciones para las listas de chequeo, mostrando cada tarea y su estado respectivo, y omitiendo las secciones estándar.
+- **Flujo de Firma Simplificado**: Para los formularios preventivos, se deshabilitó el proceso de verificación/firma del cliente y entrega de documentos. Solo se requiere la firma del técnico, quien actúa como "Operador".
+- **PDFs Dinámicos con Tablas de Checklists**: Se adaptó `PDFReport.tsx` para generar de forma dinámica tablas separadas por secciones para las listas de chequeo, mostrando cada tarea y su estado respectivo, y omitiendo las secciones estándar. Además, en los PDF de estos formularios se oculta el recuadro de firma del cliente y se centra la firma del operador.
 - **Compatibilidad de Backend sin Migración**: Se estructuraron los datos bajo campos opcionales dentro de la propiedad `data` (guardada como JSONB en PostgreSQL), permitiendo guardar y recuperar los nuevos formularios sin necesidad de alterar el backend NestJS.
 
 # 2026-05-25

@@ -10,11 +10,12 @@ import logo from "../assets/logoZuniga.png";
 
 export interface ReportItem {
   label: string;
-  value: number;
+  value: number | string;
   unit: string;
   location: string;
   time: string;
   image?: string;
+  isNR?: boolean;
 }
 
 export interface ReportHeader {
@@ -167,24 +168,36 @@ export const PDFMeasurementReport = ({ data }: { data: ReportJson }) => (
         </View>
 
         {data.items.map((item, index) => (
-          <View key={index} style={styles.tableRow}>
+          <View
+            key={index}
+            style={[
+              styles.tableRow,
+              item.isNR ? { backgroundColor: "#fff8f0" } : {},
+            ]}
+          >
             <View style={styles.colItem}>
-              <Text>{item.label}</Text>
+              <Text style={item.isNR ? { color: "#999" } : {}}>
+                {item.label}
+              </Text>
             </View>
             <View style={styles.colVal}>
-              <Text>
-                {item.value} {item.unit}
+              <Text style={item.isNR ? { color: "#aaa", fontStyle: "italic" } : {}}>
+                {item.isNR ? "N/R" : `${item.value} ${item.unit}`}
               </Text>
             </View>
             <View style={styles.colLoc}>
-              <Text>{item.location || "-"}</Text>
+              <Text style={item.isNR ? { color: "#aaa", fontStyle: "italic" } : {}}>
+                {item.isNR ? "—" : (item.location || "-")}
+              </Text>
             </View>
             <View style={styles.colTime}>
-              <Text>
-                {new Date(item.time).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+              <Text style={item.isNR ? { color: "#aaa", fontStyle: "italic" } : {}}>
+                {item.isNR
+                  ? "N/R"
+                  : new Date(item.time).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
               </Text>
             </View>
           </View>

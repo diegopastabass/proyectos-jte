@@ -1,6 +1,5 @@
 import React, { type CSSProperties } from "react";
 import Tank from "./Tank";
-import Pipe from "./Pipe";
 import Pump from "./Pump";
 import Elbow from "./Elbow";
 import States from "./States";
@@ -46,15 +45,18 @@ interface ScadaDiagramProps {
   data: Snapshot;
   hor: string;
   tot: string;
+  planta: 1 | 2;
 }
 
 const SPRITE_SIZE = 300;
 
-const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
-  const hasWaterFlow = data.snapshot.bomba.value === 1;
-
+const ScadaDiagram: React.FC<ScadaDiagramProps> = ({
+  data,
+  hor,
+  tot,
+  planta,
+}) => {
   const nivelMaxEstanque = 3;
-  const nivelMaxEstanque2 = 3;
 
   const imageAssets = {
     newTank: tankImage,
@@ -66,27 +68,86 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
 
   const containerStyle: CSSProperties = {
     position: "relative",
-    maxWidth: "900px",
+    width: "100%",
+    maxWidth: "600px",
     height: "600px",
     borderRadius: "8px",
+    margin: "0 auto",
   };
+
+  if (planta === 1) {
+    const hasWaterFlow = data.snapshot.bomba_p1.value === 1;
+
+    return (
+      <div>
+        <div style={containerStyle}>
+          <States
+            style={{
+              maxWidth: "250px",
+              maxHeight: "210px",
+              marginBottom: "8px",
+            }}
+            title="Estado Tablero Planta 1"
+            automatico_p1={data.snapshot.automatico_p1.value.toString()}
+            bomba_p1={data.snapshot.bomba_p1.value.toString()}
+            asimetria_p1={data.snapshot.asimetria_p1.value.toString()}
+            falla_p1={data.snapshot.falla_p1.value.toString()}
+          />
+          <States
+            title="Estado Presurizadora"
+            style={{ maxWidth: "250px", maxHeight: "150px" }}
+            falla_vdf1_p1={data.snapshot.falla_vdf1_p1.value.toString()}
+            falla_vdf2_p1={data.snapshot.falla_vdf2_p1.value.toString()}
+            presion={data.snapshot.presion.value.toFixed(2)}
+          />
+
+          {/* Bomba P1 */}
+          <Pump
+            spriteWidth={SPRITE_SIZE}
+            spriteHeight={SPRITE_SIZE}
+            sentido={0}
+            image={imageAssets.newPump}
+            isActive={hasWaterFlow}
+            style={{ top: 263, left: 5 }}
+          />
+
+          {/* Codo P1 */}
+          <Elbow
+            spriteWidth={SPRITE_SIZE}
+            spriteHeight={SPRITE_SIZE}
+            a={0}
+            b={0}
+            image={imageAssets.newElbow}
+            hasWaterFlow={hasWaterFlow}
+            style={{ top: -36, left: 5 }}
+          />
+
+          {/* Estanque 1 */}
+          <Tank
+            spriteWidth={SPRITE_SIZE}
+            spriteHeight={SPRITE_SIZE}
+            positionX={300}
+            positionY={0}
+            image={imageAssets.newTank}
+            volume={data.snapshot.estanque.value}
+            maxVolume={nivelMaxEstanque}
+            style={{ top: 0, left: 305 }}
+            name="Estanque 1"
+            labelX={320}
+            labelY={-80}
+            tiempoVaciado={data.tiempo_vaciado_est_1_formatted}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Planta 2
+  const hasWaterFlow = data.snapshot.bomba.value === 1;
 
   return (
     <div>
       <div style={containerStyle}>
-        <States
-          style={{
-            maxWidth: "250px",
-            maxHeight: "210px",
-            marginBottom: "8px",
-          }}
-          title="Estado Tablero Planta 1"
-          automatico_p1={data.snapshot.automatico_p1.value.toString()}
-          bomba_p1={data.snapshot.bomba_p1.value.toString()}
-          asimetria_p1={data.snapshot.asimetria_p1.value.toString()}
-          falla_p1={data.snapshot.falla_p1.value.toString()}
-        />
-
         <States
           title="Estado Tablero Planta 2"
           style={{ maxWidth: "250px", maxHeight: "210px", marginBottom: "8px" }}
@@ -96,25 +157,17 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           falla={data.snapshot.falla.value.toString()}
         />
 
-        <States
-          title="Estado Presurizadora"
-          style={{ maxWidth: "250px", maxHeight: "150px" }}
-          falla_vdf1_p1={data.snapshot.falla_vdf1_p1.value.toString()}
-          falla_vdf2_p1={data.snapshot.falla_vdf2_p1.value.toString()}
-          presion={data.snapshot.presion.value.toFixed(2)}
-        />
-
-        {/* 1. Bomba - Posición (0, 300) */}
+        {/* Bomba P2 */}
         <Pump
           spriteWidth={SPRITE_SIZE}
           spriteHeight={SPRITE_SIZE}
           sentido={0}
           image={imageAssets.newPump}
           isActive={hasWaterFlow}
-          style={{ top: 300, left: 5 }}
+          style={{ top: 263, left: 5 }}
         />
 
-        {/* 2. Codo - Posición (0, 0) */}
+        {/* Codo P2 */}
         <Elbow
           spriteWidth={SPRITE_SIZE}
           spriteHeight={SPRITE_SIZE}
@@ -122,54 +175,28 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           b={0}
           image={imageAssets.newElbow}
           hasWaterFlow={hasWaterFlow}
-          style={{ top: 0, left: 5 }}
+          style={{ top: -36, left: 5 }}
           freatico={data.snapshot.freatico.value}
           horometro_diario={Number(hor)}
           horometro_total={data.snapshot.horometro.value}
-        />
-
-        {/* 3. Tubería - Posición (300, 0) */}
-        <Pipe
-          spriteWidth={SPRITE_SIZE}
-          spriteHeight={SPRITE_SIZE}
-          sentido={1}
-          image={imageAssets.newPipe}
-          hasWaterFlow={hasWaterFlow}
-          style={{ top: 0, left: 305 }}
-          caudal={data.snapshot.caudal.value}
           totalizador_diario={Number(tot)}
           totalizador_total={data.snapshot.totalizador.value}
+          caudal={data.snapshot.caudal.value}
         />
 
-        {/* 4. Tanque Principal - Posición (600, 0). Max Volume: 7 */}
+        {/* Estanque 2 */}
         <Tank
           spriteWidth={SPRITE_SIZE}
           spriteHeight={SPRITE_SIZE}
-          positionX={600}
+          positionX={300}
           positionY={0}
           image={imageAssets.newTank}
-          volume={data.snapshot.estanque.value}
-          maxVolume={nivelMaxEstanque}
-          style={{ top: 0, left: 605 }}
-          name="Estanque 1"
-          labelX={620}
-          labelY={-300}
-          tiempoVaciado={data.tiempo_vaciado_est_1_formatted}
-        />
-
-        {/* 5. Tanque Secundario - Posición (600, 0). Max Volume: 7 */}
-        <Tank
-          spriteWidth={SPRITE_SIZE}
-          spriteHeight={SPRITE_SIZE}
-          positionX={600}
-          positionY={0}
-          image={imageAssets.newTank2}
           volume={data.snapshot.estanque_2.value}
-          maxVolume={nivelMaxEstanque2}
-          style={{ top: 0, left: 905 }}
+          maxVolume={nivelMaxEstanque}
+          style={{ top: 0, left: 305 }}
           name="Estanque 2"
-          labelX={920}
-          labelY={-510}
+          labelX={320}
+          labelY={70}
           tiempoVaciado={data.tiempo_vaciado_est_2_formatted}
         />
       </div>

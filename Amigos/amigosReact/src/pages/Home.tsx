@@ -3,18 +3,19 @@
 import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import MetricCard from "../components/MetricCard";
-import TimeSeriesChart from "../components/TimeSeriesChart";
+import GraphCard from "../components/GraphCard";
 import Loading from "./Loading";
 import type { Metric, Snapshot } from "../components/types";
 import ExportModal from "../components/ExportModal";
 import logoJte from "../assets/logoJte.png";
+import { fetchWithCache } from "../components/fetchWithcache";
 
 function Home() {
   // HOOKS
   const [loading, setLoading] = useState(true);
 
   const [snapshotData, setSnapshotData] = useState<Snapshot>({} as Snapshot);
-  const [totalizadorData, setTotalizadorData] = useState<Metric[]>([]); 
+  const [totalizadorData, setTotalizadorData] = useState<Metric[]>([]);
   const [caudalData, setCaudalData] = useState<Metric[]>([]);
   const [nivelData, setNivelData] = useState<Metric[]>([]);
 
@@ -31,30 +32,18 @@ function Home() {
 
     const now = new Date();
     const end = formatter.format(now);
-    const startDate = new Date(now);
-    startDate.setDate(startDate.getDate() - 15);
-    const start = formatter.format(startDate);
 
     const fetchData = async () => {
       try {
-        const [
-          snapshotRes,
-          totalizadorRes,
-          caudalRes,
-          nivelRes,
-        ] = await Promise.all([
+        const [snapshotRes, caudalRes, nivelRes] = await Promise.all([
           fetch("https://app.jteanalytics.cl/amigos/snapshot"),
-          fetch(`https://app.jteanalytics.cl/amigos/totalizador?start=${start}&end=${end}`),
           fetch(`https://app.jteanalytics.cl/amigos/caudal`),
           fetch(`https://app.jteanalytics.cl/amigos/nivel`),
         ]);
 
         const snapshotResJson = await snapshotRes.json();
         setSnapshotData(snapshotResJson);
-
-        const totalizadorResJson = await totalizadorRes.json();
-        setTotalizadorData(totalizadorResJson);
-
+        setTotalizadorData(await fetchWithCache("totalizador", end));
         const caudalResJson = await caudalRes.json();
         setCaudalData(caudalResJson);
 
@@ -81,7 +70,7 @@ function Home() {
   const snapshotArray: Metric[] = Object.values(snapshotData);
 
   const lastMetric = snapshotArray.reduce((a, b) =>
-    new Date(a.time) > new Date(b.time) ? a : b
+    new Date(a.time) > new Date(b.time) ? a : b,
   );
 
   return (
@@ -96,7 +85,7 @@ function Home() {
           </Navbar>
         </div>
 
-        <div className="container-fluid flex-grow-1 px-4 mb-1">
+        <div className="container-fluid flex-grow-1 px-4 mb-1 w-100">
           {/* SECCIÓN DE METRIC CARDS */}
           <div className="row g-3 mb-4">
             {/* Metric Card 1: 1/3 en large, apilada en medium/small */}
@@ -121,22 +110,24 @@ function Home() {
             <div className="col-lg-4 col-md-12 col-sm-12">
               <MetricCard
                 title="Nivel Pozo"
-                value={(snapshotData.pozo.value /10).toFixed(2)}
+                value={(snapshotData.pozo.value / 10).toFixed(2)}
                 unit="m"
                 barColor="warning"
               />
             </div>
           </div>
 
-          {/* SECCIÓN DE GRÁFICOS (TIME SERIES CHARTS) */}
+          {/* SECCIÓN DE GRÁFICOS */}
           {/* Gráfico 1: Ancho completo en todos los tamaños */}
           <div className="row g-3 mb-3">
             <div className="col-12">
-              <TimeSeriesChart
-                title="Totalizador por día"
-                metrics={totalizadorData}
-                barColor="rgba(13, 110, 230, 0.5)"
-                chartType="bar"
+              <GraphCard
+                isOpen={true}
+                title="Totalizador"
+                chartLabel="Totalizador por día (m³)"
+                initialData={totalizadorData}
+                type="totalizador"
+                divisor={10}
               />
             </div>
           </div>
@@ -144,11 +135,15 @@ function Home() {
           {/* Gráfico 2: Ancho completo en todos los tamaños */}
           <div className="row g-3 mb-3">
             <div className="col-12">
-              <TimeSeriesChart
-                title="Caudal Instantáneo"
-                metrics={caudalData}
-                barColor="rgba(13, 110, 230, 1)"
-                chartType="line"
+              <GraphCard
+                isOpen={true}
+                title="Caudal"
+                chartLabel="Caudal Instantáneo (l/s)"
+                initialData={caudalData}
+                type="caudal"
+                divisor={10}
+                nivelMax={180}
+                fetchEndpoint="https://app.jteanalytics.cl/amigos/caudal"
               />
             </div>
           </div>
@@ -156,11 +151,15 @@ function Home() {
           {/* Gráfico 3: Ancho completo en todos los tamaños */}
           <div className="row g-3 mb-3">
             <div className="col-12">
-              <TimeSeriesChart
+              <GraphCard
+                isOpen={true}
                 title="Nivel Pozo"
-                metrics={nivelData}
-                barColor="rgba(13, 110, 230, 1)"
-                chartType="line"
+                chartLabel="Nivel Pozo (m)"
+                initialData={nivelData}
+                type="nivel"
+                nivelMax={20}
+                divisor={10}
+                fetchEndpoint="https://app.jteanalytics.cl/amigos/nivel"
               />
             </div>
           </div>
@@ -169,12 +168,7 @@ function Home() {
         {/* Footer */}
         <footer className="mt-4 w-75 d-flex flex-wrap justify-content-between align-items-center py-3 px-4 border-top border-secondary">
           <p className="text-body-secondary">&copy; 2025 JTE Analytics.</p>
-          <img
-            src={logoJte}
-            alt="logo"
-            width={40}
-            height={24}
-          />
+          <img src={logoJte} alt="logo" width={40} height={24} />
         </footer>
       </div>
       <ExportModal show={isOpenExport} onClose={() => setIsOpenExport(false)} />

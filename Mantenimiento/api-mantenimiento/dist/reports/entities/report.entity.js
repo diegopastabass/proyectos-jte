@@ -18,6 +18,7 @@ let Report = class Report {
     clientName;
     status;
     data;
+    images;
     createdAt;
     updatedAt;
     user;
@@ -46,7 +47,16 @@ __decorate([
     __metadata("design:type", Object)
 ], Report.prototype, "data", void 0);
 __decorate([
-    (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
+    (0, typeorm_1.Column)({ type: 'jsonb', default: [] }),
+    __metadata("design:type", Array)
+], Report.prototype, "images", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        name: 'created_at',
+        type: 'timestamp',
+        nullable: false,
+        default: () => 'CURRENT_TIMESTAMP',
+    }),
     __metadata("design:type", Date)
 ], Report.prototype, "createdAt", void 0);
 __decorate([

@@ -5,16 +5,13 @@ import Navbar from "../components/Navbar";
 import States from "../components/States";
 import Loading from "./Loading";
 import ToggleCardButton from "../components/ToggelCardButton";
-import DropdownCard from "../components/DropdownCard";
-import DropdownCardv2 from "../components/DropDownCardv2";
-import DropdownCardv3 from "../components/DropDownCardv3";
+import GraphCard from "../components/GraphCard";
 import ScadaDiagram from "../components/ScadaDiagram";
 import ExportModal from "../components/ExportModal";
 import Error from "./Error";
 import "../index.css";
 import { fetchWithCache } from "../components/fetchWithcache";
 import logoJte from "../assets/logoJte.png";
-import DropdownCardv4 from "../components/DropdownCardv4";
 
 interface Snapshot {
   snapshot: Datos;
@@ -210,15 +207,17 @@ function App() {
             onToggle={() => setIsOpenEstanque(!isOpenEstanque)}
           />
         </Card>
-        <DropdownCard
+        <GraphCard
           className="mb-4 d-below-1500-none d-1500-block"
           isOpen={isOpenEstanque}
           title="Estanque 1"
           chartLabel="Nivel del Estanque (m)"
-          data={nivelChartData}
+          initialData={nivelChartData}
+          type="nivel"
           divisor={100}
           nivelMax={nivelMaxEstanque}
           nivelAlarma={nivelAlarma}
+          fetchEndpoint="https://app.jteanalytics.cl/auquinco/nivel"
         />
       </div>
       {/* Bomba */}
@@ -253,24 +252,28 @@ function App() {
             onToggle={() => setIsOpenBomba(!isOpenBomba)}
           />
         </Card>
-        <DropdownCard
+        <GraphCard
           isOpen={isOpenBomba}
           title="Caudal"
           chartLabel="Caudal de Impulsión (l/s)"
-          data={caudalChartData}
+          initialData={caudalChartData}
+          type="caudal"
           nivelMax={nivelMaxCaudal}
+          fetchEndpoint="https://app.jteanalytics.cl/auquinco/caudal"
         />
-        <DropdownCardv3
+        <GraphCard
           isOpen={isOpenBomba}
           title="Totalizador Diario"
           chartLabel="Totalizador en m³"
-          data={totalizadorChartData}
+          initialData={totalizadorChartData}
+          type="totalizador"
         />{" "}
-        <DropdownCardv3
+        <GraphCard
           isOpen={isOpenBomba}
           title="Horómetro"
           chartLabel="Horómetro"
-          data={horometroChartData}
+          initialData={horometroChartData}
+          type="horometro"
         />
       </div>
       {/* Panel de Estados */}
@@ -302,26 +305,32 @@ function App() {
         kw3={(data.snapshot.KW3.value / 10).toFixed(2)}
       />
       <div className="col-12 col-lg-4 mb-1">
-        <DropdownCardv4
+        <GraphCard
           isOpen={true}
           title="Voltaje"
           chartLabel="Voltaje (V)"
-          data={voltajeChartData}
+          initialData={voltajeChartData}
+          type="voltaje"
           divisor={100}
+          fetchEndpoint="https://app.jteanalytics.cl/auquinco/voltaje"
         />
-        <DropdownCardv4
+        <GraphCard
           isOpen={true}
           title="Voltaje Neutro"
           chartLabel="Voltaje (V)"
-          data={voltajeNeutroChartData}
+          initialData={voltajeNeutroChartData}
+          type="voltaje-neutro"
           divisor={100}
+          fetchEndpoint="https://app.jteanalytics.cl/auquinco/voltaje-neutro"
         />
-        <DropdownCardv4
+        <GraphCard
           isOpen={true}
           title="Corriente"
           chartLabel="Corriente (A)"
-          data={corrienteChartData}
+          initialData={corrienteChartData}
+          type="corriente"
           divisor={100}
+          fetchEndpoint="https://app.jteanalytics.cl/auquinco/corriente"
         />
       </div>
     </>
@@ -355,25 +364,29 @@ function App() {
       </div>
       {/* Estanque 1 (2,0) */}
       <div style={{ gridColumn: "3", gridRow: "1" }}>
-        <DropdownCard
+        <GraphCard
           isOpen={true}
           title="Estanque Nuevo"
           chartLabel="Nivel del Estanque (m)"
-          data={nivelChartData}
+          initialData={nivelChartData}
+          type="nivel"
           nivelMax={4}
           divisor={100}
           nivelAlarma={nivelAlarma}
+          fetchEndpoint="https://app.jteanalytics.cl/auquinco/nivel"
         />
       </div>
 
       {/* Caudal (2,2) */}
       <div style={{ gridColumn: "3", gridRow: "2" }}>
-        <DropdownCard
+        <GraphCard
           isOpen={true}
           title="Caudal"
           chartLabel="Caudal de Impulsión (l/s)"
-          data={caudalChartData}
+          initialData={caudalChartData}
+          type="caudal"
           nivelMax={nivelMaxCaudal}
+          fetchEndpoint="https://app.jteanalytics.cl/auquinco/caudal"
         />
       </div>
 
@@ -387,47 +400,55 @@ function App() {
           gap: "1rem",
         }}
       >
-        <DropdownCardv2
+        <GraphCard
           isOpen={true}
           title="Horómetro Diario"
           chartLabel="Horómetro"
-          data={horometroChartData}
+          initialData={horometroChartData}
+          type="horometro"
         />
-        <DropdownCardv3
+        <GraphCard
           isOpen={true}
           title="Totalizador Diario"
           chartLabel="Totalizador en m³"
-          data={totalizadorChartData}
+          initialData={totalizadorChartData}
+          type="totalizador"
         />
       </div>
 
       <div style={{ gridColumn: "1", gridRow: "4" }}>
-        <DropdownCardv4
+        <GraphCard
           isOpen={true}
           title="Voltaje"
           chartLabel="Voltaje (V)"
+          initialData={voltajeChartData}
+          type="voltaje"
           divisor={100}
-          data={voltajeChartData}
+          fetchEndpoint="https://app.jteanalytics.cl/auquinco/voltaje"
         />
       </div>
 
       <div style={{ gridColumn: "2", gridRow: "4" }}>
-        <DropdownCardv4
+        <GraphCard
           isOpen={true}
           title="Voltaje Neutro"
           chartLabel="Voltaje (V)"
+          initialData={voltajeNeutroChartData}
+          type="voltaje-neutro"
           divisor={100}
-          data={voltajeNeutroChartData}
+          fetchEndpoint="https://app.jteanalytics.cl/auquinco/voltaje-neutro"
         />
       </div>
 
       <div style={{ gridColumn: "3", gridRow: "4" }}>
-        <DropdownCardv4
+        <GraphCard
           isOpen={true}
           title="Corriente"
           chartLabel="Corriente (A)"
-          data={corrienteChartData}
+          initialData={corrienteChartData}
+          type="corriente"
           divisor={100}
+          fetchEndpoint="https://app.jteanalytics.cl/auquinco/corriente"
         />
       </div>
     </div>

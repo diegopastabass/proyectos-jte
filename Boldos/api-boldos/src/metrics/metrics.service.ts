@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Raw } from 'typeorm';
+import * as fs from 'fs';
 import { Telemetria } from './models/metrics.entity';
 import { DateRangeDto } from './models/dto/date-range.dto';
 import { MetricSnapshot, Metric } from './models/types';
@@ -30,6 +31,23 @@ export class SsrBoldosService {
     return { start: startDate, end: endDate };
   }
 
+  private async getAlarmLevel(): Promise<number> {
+    try {
+      const envPath = 'C:\\AutomatizationServices\\boldos\\.env';
+      const content = await fs.promises.readFile(envPath, 'utf8');
+      const match = content.match(/^NIVEL_ALERTA=(.+)$/m);
+      if (match && match[1]) {
+        const val = parseFloat(match[1].trim());
+        if (!isNaN(val)) return val;
+      }
+    } catch (error: any) {
+      if (error.code !== 'ENOENT') {
+        console.error('Error al leer NIVEL_ALERTA desde .env:', error);
+      }
+    }
+    return 1.5; // Valor por defecto
+  }
+
   // Snapshot
   async getSnapshot(): Promise<{
     snapshot: MetricSnapshot;
@@ -37,6 +55,7 @@ export class SsrBoldosService {
     tiempo_vaciado_est_1_formatted: string;
     tiempo_vaciado_est_2: number;
     tiempo_vaciado_est_2_formatted: string;
+    nivel_alerta: number;
   }> {
     const results = await this.repo.query(`
     SELECT t.mt_name, t.mt_value, t.mt_time_2
@@ -71,26 +90,44 @@ export class SsrBoldosService {
       const mediciones = await this.repo.find({
         where: { mt_name: nombreEstanque },
         order: { mt_time_2: 'DESC' },
-        take: 2,
+        take: 5,
       });
 
       if (mediciones.length < 2) {
         return { tiempo: 0, formatted: 'Llenando...' };
       }
 
-      const [actual, anterior] = mediciones;
-      const nivel_actual = Number(actual.mt_value);
-      const nivel_anterior = Number(anterior.mt_value);
+      const n = mediciones.length;
+      const t0 = mediciones[n - 1].mt_time_2.getTime() / 1000;
 
-      const t_actual = actual.mt_time_2.getTime() / 1000;
-      const t_anterior = anterior.mt_time_2.getTime() / 1000;
+      let sum_t = 0, sum_y = 0, sum_ty = 0, sum_t2 = 0;
+      
+      mediciones.forEach((m) => {
+        const t = (m.mt_time_2.getTime() / 1000) - t0;
+        const y = Number(m.mt_value);
+        sum_t += t;
+        sum_y += y;
+        sum_ty += t * y;
+        sum_t2 += t * t;
+      });
 
-      if (!(nivel_actual < nivel_anterior && t_actual > t_anterior)) {
+      const divisor = n * sum_t2 - sum_t * sum_t;
+      if (divisor === 0) {
+        return { tiempo: 0, formatted: 'Nivel estable' };
+      }
+
+      const pendiente = (n * sum_ty - sum_t * sum_y) / divisor;
+
+      if (Math.abs(pendiente) < 1e-8) {
+        return { tiempo: 0, formatted: 'Nivel estable' };
+      }
+
+      if (pendiente > 0) {
         return { tiempo: 0, formatted: 'Llenando...' };
       }
 
-      const tasa_vaciado =
-        (nivel_anterior - nivel_actual) / (t_actual - t_anterior);
+      const tasa_vaciado = -pendiente;
+      const nivel_actual = Number(mediciones[0].mt_value);
       const tiempo = Math.round(nivel_actual / tasa_vaciado);
 
       const h = Math.floor(tiempo / 3600);
@@ -108,12 +145,15 @@ export class SsrBoldosService {
     const est_1 = await calcularTiempoVaciado('SSR_BOLDOS--slave.estanque');
     const est_2 = await calcularTiempoVaciado('SSR_BOLDOS--slave.estanque_2');
 
+    const nivel_alerta = await this.getAlarmLevel();
+
     return {
       snapshot,
       tiempo_vaciado_est_1: est_1.tiempo,
       tiempo_vaciado_est_1_formatted: est_1.formatted,
       tiempo_vaciado_est_2: est_2.tiempo,
       tiempo_vaciado_est_2_formatted: est_2.formatted,
+      nivel_alerta,
     };
   }
 

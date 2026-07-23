@@ -176,7 +176,9 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
 
       const results = await this.metricRepository
         .createQueryBuilder('m')
-        .where('m.sensor_id IN (:...sensorIds)', { sensorIds: [3, 4, 5, 6] })
+        .where('m.sensor_id IN (:...sensorIds)', {
+          sensorIds: [3, 4, 5, 6, 7, 8],
+        })
         .andWhere('m.time BETWEEN :startDate AND :endDate', {
           startDate: startDateTime,
           endDate: endDateTime,
@@ -221,7 +223,7 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
   > {
     try {
       // IDs de los sensores que nos interesan
-      const sensorIds = [3, 4, 5, 6];
+      const sensorIds = [3, 4, 5, 6, 7, 8];
 
       // Creamos un arreglo para guardar los resultados
       const grouped: Record<string, { value: number; time: Date }[]> = {};
@@ -298,7 +300,7 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
       const startDateTime = new Date(`${date}T00:00:00`);
       const endDateTime = new Date(`${date}T23:59:59`);
 
-      const sensorIds = [3, 4, 5, 6];
+      const sensorIds = [3, 4, 5, 6, 7, 8];
 
       const results = await this.metricRepository
         .createQueryBuilder('m')

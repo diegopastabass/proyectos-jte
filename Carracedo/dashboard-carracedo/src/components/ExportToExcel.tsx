@@ -82,7 +82,10 @@ export default function ExportToExcel({ onClose }: ExportToExcelProps) {
         ["Fecha", "Valor", "Unidad"],
         ...data.map((item) => {
           const date = new Date(item.time);
-          const formattedDate = date.toISOString().split("T")[0];
+          const formattedDate =
+            selectedOption === "totalizador"
+              ? date.toISOString().split("T")[0]
+              : date.toISOString().replace("T", " ").substring(0, 19);
           return [formattedDate, item.value, "m³"];
         }),
       ];

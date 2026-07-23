@@ -42,13 +42,18 @@ interface ScadaDiagramProps {
 
 const SPRITE_SIZE = 300;
 
-const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, horometro, totalizador }) => {
+const ScadaDiagram: React.FC<ScadaDiagramProps> = ({
+  data,
+  horometro,
+  totalizador,
+}) => {
   const hasWaterFlow = data.snapshot.bomba.value === 1;
 
   const latestHorometro =
     horometro.length > 0 ? horometro[horometro.length - 1].value : 0;
-  
-  const latestTotalizador = totalizador.length > 0 ? totalizador[totalizador.length - 1].value : 0;
+
+  const latestTotalizador =
+    totalizador.length > 0 ? totalizador[totalizador.length - 1].value : 0;
 
   const imageAssets = {
     newTank: newTankImage,
@@ -61,7 +66,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, horometro, totalizado
   const containerStyle: CSSProperties = {
     position: "relative",
     maxWidth: "1200px",
-    height: "600px",
+    height: "630px",
     borderRadius: "8px",
   };
 
@@ -125,8 +130,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, horometro, totalizado
           style={{ top: 0, left: 570 }}
           name="Estanque 350m³"
           labelOffsetX={35}
-          tiempoVaciado={data.tiempo_vaciado_formatted
-          }
+          tiempoVaciado={data.tiempo_vaciado_formatted}
         />
 
         {/* 5. Tanque Secundario - Posición (900, 0). Max Volume: 2 */}

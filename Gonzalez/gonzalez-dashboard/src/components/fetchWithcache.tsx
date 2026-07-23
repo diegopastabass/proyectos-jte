@@ -21,7 +21,14 @@ export const fetchWithCache = async (
 
   let startStr = "";
   if (data.length > 0) {
-    startStr = data[data.length - 1].time.split("T")[0];
+    const d5 = new Date();
+    d5.setDate(d5.getDate() - 5);
+    const fiveDaysAgoStr = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Santiago",
+    }).format(d5);
+
+    const lastCacheDateStr = data[data.length - 1].time.split("T")[0];
+    startStr = fiveDaysAgoStr < lastCacheDateStr ? fiveDaysAgoStr : lastCacheDateStr;
   } else {
     const d = new Date();
     d.setDate(d.getDate() - 15);
@@ -64,7 +71,14 @@ export const fetchWithCacheMulti = async <T extends Record<string, Metric[]>>(
   let startStr = "";
   const keys = Object.keys(data);
   if (keys.length > 0 && data[keys[0]] && data[keys[0]].length > 0) {
-    startStr = data[keys[0]][data[keys[0]].length - 1].time.split("T")[0];
+    const d5 = new Date();
+    d5.setDate(d5.getDate() - 5);
+    const fiveDaysAgoStr = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Santiago",
+    }).format(d5);
+
+    const lastCacheDateStr = data[keys[0]][data[keys[0]].length - 1].time.split("T")[0];
+    startStr = fiveDaysAgoStr < lastCacheDateStr ? fiveDaysAgoStr : lastCacheDateStr;
   } else {
     const d = new Date();
     d.setDate(d.getDate() - 15);

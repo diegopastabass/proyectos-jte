@@ -85,7 +85,10 @@ export default function Dashboard({
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `Cotizacion_${quote.folio}.pdf`;
+      
+      const fileNameParts = [quote.folio, quote.data.project, quote.data.company].filter(Boolean);
+      link.download = `${fileNameParts.join('_').replace(/\s+/g, '_')}.pdf`;
+      
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

@@ -16,6 +16,11 @@ export class SsrCocalanController {
     return this.service.getHorometro(dto);
   }
 
+  @Get('totalizador')
+  getTotalizador(@Query() dto: DateRangeDto) {
+    return this.service.getTotalizador(dto);
+  }
+
   @Get('nivel')
   getNivel(@Query() dto: DateRangeDto) {
     return this.service.getNivel(dto);

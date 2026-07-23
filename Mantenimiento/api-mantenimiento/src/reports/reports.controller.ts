@@ -67,6 +67,11 @@ export class ReportsController {
     return this.reportsService.create(createReportDto, userId, files ?? []);
   }
 
+  @Get('clients/names')
+  getUniqueClientNames() {
+    return this.reportsService.getUniqueClientNames();
+  }
+
   @Get()
   findAll() {
     return this.reportsService.findAll();

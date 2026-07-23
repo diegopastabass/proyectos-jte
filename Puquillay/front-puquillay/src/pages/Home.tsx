@@ -13,7 +13,7 @@ import DropdownCardv3 from "../components/DropDownCardv3";
 import ScadaDiagram from "../components/ScadaDiagram";
 import ExportModal from "../components/ExportModal";
 import logoJte from "../assets/logoJte.png";
-
+import { fetchWithCache } from "../components/fetchWithcache";
 // Interfaces
 interface Snapshot {
   snapshot: Datos;
@@ -72,29 +72,20 @@ function App() {
 
     const now = new Date();
     const end = formatter.format(now);
-    const startDate = new Date(now);
-    startDate.setDate(startDate.getDate() - 15);
-    const start = formatter.format(startDate);
 
     const fetchData = async () => {
       try {
-        const [snapshotRes, totalizadorRes, horometroRes, nivelRes, caudalRes] =
-          await Promise.all([
-            fetch("https://app.jteanalytics.cl/puquillay/snapshot"),
-            fetch(
-              `https://app.jteanalytics.cl/puquillay/totalizador?start=${start}&end=${end}`,
-            ),
-            fetch(
-              `https://app.jteanalytics.cl/puquillay/horometro?start=${start}&end=${end}`,
-            ),
-            fetch(`https://app.jteanalytics.cl/puquillay/nivel`),
-            fetch(`https://app.jteanalytics.cl/puquillay/caudal`),
-          ]);
+        const [snapshotRes, nivelRes, caudalRes] = await Promise.all([
+          fetch("https://app.jteanalytics.cl/puquillay/snapshot"),
+
+          fetch(`https://app.jteanalytics.cl/puquillay/nivel`),
+          fetch(`https://app.jteanalytics.cl/puquillay/caudal`),
+        ]);
 
         const snapshotData: Snapshot = await snapshotRes.json();
         setData(snapshotData);
-        setTotalizadorData(await totalizadorRes.json());
-        setHorometroData(await horometroRes.json());
+        setTotalizadorData(await fetchWithCache("totalizador", end));
+        setHorometroData(await fetchWithCache("horometro", end));
         setNivelData(await nivelRes.json());
         setCaudalData(await caudalRes.json());
       } catch (error) {

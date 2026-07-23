@@ -7,6 +7,7 @@ import Loading from "./Loading";
 import ToggleCardButton from "../components/ToggelCardButton";
 import DropdownCard from "../components/DropdownCard";
 import DropdownCardv2 from "../components/DropDownCardv2";
+import DropdownCardv3 from "../components/DropDownCardv3";
 import ScadaDiagram from "../components/ScadaDiagram";
 import ExportModal from "../components/ExportModal";
 import Error from "./Error";
@@ -26,6 +27,7 @@ interface Datos {
   solar: Metric;
   bomba: Metric;
   horometro: Metric;
+  totalizador: Metric; // Dividir entre 10
 }
 
 interface Metric {
@@ -40,6 +42,7 @@ function App() {
   const [nivelChartData, setNivelData] = useState<Metric[]>([]);
 
   const [horometroChartData, setHorometro] = useState<Metric[]>([]);
+  const [totalizadorChartData, setTotalizador] = useState<Metric[]>([]);
 
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1500);
   const [isOpenExport, setIsOpenExport] = useState(false);
@@ -77,6 +80,7 @@ function App() {
         setData(snapshotData);
         setNivelData(await nivelRes.json());
         setHorometro(await fetchWithCache("cocalan/horometro", end));
+        setTotalizador(await fetchWithCache("cocalan/totalizador", end));
       } catch (error) {
         console.error("Error al cargar datos:", error);
       } finally {
@@ -100,14 +104,17 @@ function App() {
       ? horometroChartData[horometroChartData.length - 1].value
       : 0;
 
-  const minutesToHHMM = (mins: number): string => {
-    const hours = Math.floor(mins / 60);
-    const minutes = mins % 60;
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
-      2,
-      "0",
-    )}`;
-  };
+  const ultimoTotalizador =
+    totalizadorChartData.length > 0
+      ? totalizadorChartData[totalizadorChartData.length - 1].value
+      : 0;
+
+
+  const horHoras = Math.floor(ultimoHorometro / 60);
+  const horMinutos = ultimoHorometro % 60;
+
+  const horHorasT = Math.floor(data.snapshot.horometro.value / 60);
+  const horMinutosT = data.snapshot.horometro.value % 60;
 
   // =====================
   // VISTA MÓVIL
@@ -155,8 +162,16 @@ function App() {
         <Card>
           <CardBody
             title="Bomba"
-            text7={["Horómetro Diario", minutesToHHMM(ultimoHorometro)]}
-            text8={["Horómetro Total (minutos)", data.snapshot.horometro.value]}
+            text7={["Horómetro Diario", `${horHoras} h ${horMinutos} m`]}
+            text8={["Horómetro Total", `${horHorasT} h ${horMinutosT} m`]}
+            text2={[
+              "Totalizador Diario",
+              (ultimoTotalizador / 10).toFixed(2) + " m³",
+            ]}
+            text3={[
+              "Totalizador Total",
+              (data.snapshot.totalizador.value / 10).toFixed(2) + " m³",
+            ]}
           />
           <ToggleCardButton
             isOpen={isOpenBomba}
@@ -168,6 +183,13 @@ function App() {
           title="Horómetro"
           chartLabel="Horómetro"
           data={horometroChartData}
+        />
+        <DropdownCardv3
+          isOpen={isOpenBomba}
+          title="Totalizador"
+          chartLabel="Totalizador"
+          data={totalizadorChartData}
+          divisor={10}
         />
       </div>
       {/* Panel de Estados */}
@@ -197,7 +219,11 @@ function App() {
       {/* Diagrama SCADA (ocupa 2/3 del ancho) */}
       <div style={{ gridColumn: "1", gridRow: "1 / span 2" }}>
         <div className="card w-100 p-4 justify-content-center h-100">
-          <ScadaDiagram data={data} hor={ultimoHorometro.toFixed(2)} />
+          <ScadaDiagram
+            data={data}
+            hor={ultimoHorometro.toFixed(2)}
+            tot={ultimoTotalizador.toFixed(2)}
+          />
         </div>
       </div>
 
@@ -221,6 +247,17 @@ function App() {
           title="Horómetro Diario"
           chartLabel="Horómetro"
           data={horometroChartData}
+        />
+      </div>
+
+      {/* Gráfico de Totalizador (ocupa todo el ancho, fila 3) */}
+      <div className="w-100" style={{ gridColumn: "1 / -1", gridRow: "3" }}>
+        <DropdownCardv3
+          isOpen={true}
+          title="Totalizador"
+          chartLabel="Totalizador"
+          data={totalizadorChartData}
+          divisor={10}
         />
       </div>
     </div>

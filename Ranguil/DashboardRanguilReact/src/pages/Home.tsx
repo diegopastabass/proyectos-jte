@@ -14,6 +14,10 @@ import ScadaDiagram from "../components/ScadaDiagram";
 import ExportModal from "../components/ExportModal";
 import Error from "./Error";
 import logoJte from "../assets/logoJte.png";
+import {
+  fetchWithCache,
+  fetchWithCacheMulti,
+} from "../components/fetchWithcache";
 
 interface Snapshot {
   snapshot: Datos;
@@ -101,37 +105,23 @@ function App() {
 
     const now = new Date();
     const end = formatter.format(now);
-    const startDate = new Date(now);
-    startDate.setDate(startDate.getDate() - 15);
-    const start = formatter.format(startDate);
 
     const fetchData = async () => {
       try {
         const [
           snapshotRes,
-          totalizadorRes,
-          horometroRes,
           nivelRes,
           nivel2Res,
           caudalRes,
-          kwhRes,
           voltajeRes,
           corrienteRes,
           presionRes,
         ] = await Promise.all([
           fetch("https://app.jteanalytics.cl/ranguil/snapshot"),
-          fetch(
-            `https://app.jteanalytics.cl/ranguil/totalizador?start=${start}&end=${end}`,
-          ),
-          fetch(
-            `https://app.jteanalytics.cl/ranguil/horometro?start=${start}&end=${end}`,
-          ),
+
           fetch(`https://app.jteanalytics.cl/ranguil/nivel`),
           fetch(`https://app.jteanalytics.cl/ranguil/nivel2`),
           fetch(`https://app.jteanalytics.cl/ranguil/caudal`),
-          fetch(
-            `https://app.jteanalytics.cl/ranguil/kwh?start=${start}&end=${end}`,
-          ),
           fetch(`https://app.jteanalytics.cl/ranguil/voltaje`),
           fetch(`https://app.jteanalytics.cl/ranguil/corriente`),
           fetch(`https://app.jteanalytics.cl/ranguil/presion`),
@@ -139,12 +129,12 @@ function App() {
 
         const snapshotData: Snapshot = await snapshotRes.json();
         setData(snapshotData);
-        setTotalizadorData(await totalizadorRes.json());
-        setHorometroData(await horometroRes.json());
+        setTotalizadorData(await fetchWithCache("totalizador", end));
+        setHorometroData(await fetchWithCache("horometro", end));
         setNivelData(await nivelRes.json());
         setNivel2Data(await nivel2Res.json());
         setCaudalData(await caudalRes.json());
-        setKwhData(await kwhRes.json());
+        setKwhData(await fetchWithCacheMulti("kwh", end));
         setVoltajeData(await voltajeRes.json());
         setCorrienteData(await corrienteRes.json());
         setPresionData(await presionRes.json());

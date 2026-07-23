@@ -1,0 +1,24 @@
+Necesito implementar una funcionalidad para leer dinámicamente un nivel de alarma desde un archivo .env y usarlo en mi aplicación (backend en NestJS y frontend en React). 
+
+Los archivos que debes modificar son:
+1. Backend: @[RUTA_AL_METRICS_SERVICE_AQUI] (Ej: /.../api-boldos/src/metrics/metrics.service.ts)
+2. Frontend: @[RUTA_AL_HOME_TSX_AQUI] (Ej: /.../DashboardBoldos/src/pages/Home.tsx)
+
+Por favor, realiza los siguientes cambios exactos:
+
+**En el Backend (metrics.service.ts):**
+1. Importa el módulo de Node nativo: `import * as fs from 'fs';` en la cabecera.
+2. Crea un método privado y asíncrono llamado `getAlarmLevel()` que:
+   - Lea el archivo asíncronamente desde la ruta absoluta de Windows: '[RUTA_AL_ARCHIVO_ENV]' (Ej: C:\AutomatizationServices\cliente\.env). Considera que esto corre en un VPS con Windows Server y PM2.
+   - Use una expresión regular o el método que prefieras para buscar la variable '[NOMBRE_VARIABLE_ENV]' (Ej: NIVEL_ALERTA) y devuelva su valor numérico.
+   - Envuelve la lectura en un try/catch (ignorando el error si el archivo no existe o hay problemas de lectura) y retorna un valor por defecto de [VALOR_POR_DEFECTO] (Ej: 1.5) si algo falla.
+3. En el método `getSnapshot()`, agrega '[NOMBRE_VARIABLE_RETORNO]: number' (Ej: nivel_alerta: number;) a la firma de la promesa de retorno.
+4. Llama a `await this.getAlarmLevel()` dentro de `getSnapshot()` y agrega el valor retornado al objeto final que se entrega al cliente.
+
+**En el Frontend (Home.tsx):**
+1. Agrega el nuevo campo '[NOMBRE_VARIABLE_RETORNO]: number' a la interfaz `Snapshot`.
+2. Busca la declaración de la variable estática del nivel de alarma (por ejemplo: `const [NOMBRE_VARIABLE_LOCAL] = 2;`) y elimínala.
+3. Justo después de la validación de carga de datos (después de los `if (loading) ...` e `if (!data) ...`), define dinámicamente la constante así: `const [NOMBRE_VARIABLE_LOCAL] = data.[NOMBRE_VARIABLE_RETORNO] ?? [VALOR_POR_DEFECTO];`
+
+Utiliza herramientas para editar múltiples bloques si es necesario, y asegúrate de no romper el resto del funcionamiento actual.
+

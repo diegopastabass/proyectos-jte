@@ -3,10 +3,11 @@ import React from "react";
 interface CardProps {
   children: React.ReactNode;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 function Card(props: CardProps) {
-  const { children, className } = props;
+  const { children, className, style } = props;
   return (
     <div
       className={`card ${className}`}
@@ -15,6 +16,7 @@ function Card(props: CardProps) {
         maxWidth: "1500px",
         minHeight: "50px",
         maxHeight: "430px",
+        ...style,
       }}
     >
       <div className="card-body">{children}</div>

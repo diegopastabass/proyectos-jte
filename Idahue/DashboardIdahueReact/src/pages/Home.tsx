@@ -13,6 +13,7 @@ import DropdownCardv2 from "../components/DropDownCardv2";
 import ScadaDiagram from "../components/ScadaDiagram";
 import ExportModal from "../components/ExportModal";
 import logoJte from "../assets/logoJte.png";
+import { fetchWithCache } from "../components/fetchWithcache";
 
 // Interfaces
 interface Snapshot {
@@ -86,34 +87,19 @@ function App() {
 
     const now = new Date();
     const end = formatter.format(now);
-    const startDate = new Date(now);
-    startDate.setDate(startDate.getDate() - 15);
-    const start = formatter.format(startDate);
-
     const fetchData = async () => {
       try {
-        const [
-          snapshotRes,
-          horometroP1Res,
-          horometroP2Res,
-          nivelP1Res,
-          nivelP2Res,
-        ] = await Promise.all([
+        const [snapshotRes, nivelP1Res, nivelP2Res] = await Promise.all([
           fetch("https://app.jteanalytics.cl/idahue/snapshot"),
-          fetch(
-            `https://app.jteanalytics.cl/idahue/horometro_planta1?start=${start}&end=${end}`,
-          ),
-          fetch(
-            `https://app.jteanalytics.cl/idahue/horometro_planta2?start=${start}&end=${end}`,
-          ),
+
           fetch(`https://app.jteanalytics.cl/idahue/nivel_planta1`),
           fetch(`https://app.jteanalytics.cl/idahue/nivel_planta2`),
         ]);
 
         const snapshotData: Snapshot = await snapshotRes.json();
         setData(snapshotData);
-        setHorometroChartDataP1(await horometroP1Res.json());
-        setHorometroChartDataP2(await horometroP2Res.json());
+        setHorometroChartDataP1(await fetchWithCache("horometro_planta1", end));
+        setHorometroChartDataP2(await fetchWithCache("horometro_planta2", end));
         setNivelChartDataP1(await nivelP1Res.json());
         setNivelChartDataP2(await nivelP2Res.json());
       } catch (error) {

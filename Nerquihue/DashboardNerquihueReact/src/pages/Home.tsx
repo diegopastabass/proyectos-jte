@@ -14,6 +14,7 @@ import ScadaDiagram from "../components/ScadaDiagram";
 import ExportModal from "../components/ExportModal";
 import DropdownCardv4 from "../components/DropdownCardv4";
 import logoJte from "../assets/logoJte.png";
+import { fetchWithCache } from "../components/fetchWithcache";
 
 // Interfaces
 interface Snapshot {

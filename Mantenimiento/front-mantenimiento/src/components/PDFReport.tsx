@@ -251,11 +251,17 @@ export const PDFReport = ({ data }: Props) => {
   const hasPhotos =
     Array.isArray(data.capturedImages) && data.capturedImages.length > 0;
 
-  const isStandard = data.type === "Atención de Falla" || data.type === "Mejora en Infraestructura";
+  const isStandard =
+    data.type === "Atención de Falla" ||
+    data.type === "Mejora en Infraestructura";
   const isSalaBombas = data.type === "Mantención Preventiva de Sala de Bombas";
-  const isTableroElectrico = data.type === "Mantención Preventiva de Tablero Eléctrico";
+  const isTableroElectrico =
+    data.type === "Mantención Preventiva de Tablero Eléctrico";
 
-  const renderChecklistTable = (title: string, sectionData: Record<string, string>) => (
+  const renderChecklistTable = (
+    title: string,
+    sectionData: Record<string, string>,
+  ) => (
     <View style={styles.section} wrap={false}>
       <Text style={styles.sectionHeader}>{title}</Text>
       <View style={styles.table}>
@@ -340,14 +346,18 @@ export const PDFReport = ({ data }: Props) => {
         {isStandard && (
           <>
             <View style={styles.section}>
-              <Text style={styles.sectionHeader}>1. DIAGNÓSTICO / DESCRIPCIÓN</Text>
+              <Text style={styles.sectionHeader}>
+                1. DIAGNÓSTICO / DESCRIPCIÓN
+              </Text>
               <View style={styles.contentBlock}>
                 <Text>{data.description}</Text>
               </View>
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.sectionHeader}>2. DESARROLLO DE ACTIVIDADES</Text>
+              <Text style={styles.sectionHeader}>
+                2. DESARROLLO DE ACTIVIDADES
+              </Text>
               <View style={styles.contentBlock}>
                 {data.developments && data.developments.length > 0 ? (
                   data.developments.map((dev, index) => (
@@ -406,17 +416,35 @@ export const PDFReport = ({ data }: Props) => {
 
         {isSalaBombas && data.checklistSalaBombas && (
           <>
-            {renderChecklistTable("1. BOMBAS Y VARIADORES DE FRECUENCIA", data.checklistSalaBombas.bombasVariadoresFrecuencia)}
-            {renderChecklistTable("2. TABLERO DE ALIMENTACIÓN", data.checklistSalaBombas.tableroAlimentacion)}
-            {renderChecklistTable("3. PARÁMETROS DE CONFIGURACIÓN", data.checklistSalaBombas.parametrosConfiguracion)}
+            {renderChecklistTable(
+              "1. BOMBAS Y VARIADORES DE FRECUENCIA",
+              data.checklistSalaBombas.bombasVariadoresFrecuencia,
+            )}
+            {renderChecklistTable(
+              "2. TABLERO DE ALIMENTACIÓN",
+              data.checklistSalaBombas.tableroAlimentacion,
+            )}
+            {renderChecklistTable(
+              "3. PARÁMETROS DE CONFIGURACIÓN",
+              data.checklistSalaBombas.parametrosConfiguracion,
+            )}
           </>
         )}
 
         {isTableroElectrico && data.checklistTableroElectrico && (
           <>
-            {renderChecklistTable("1. BOMBAS Y PARTIDOR SUAVE", data.checklistTableroElectrico.bombasPartidorSuave)}
-            {renderChecklistTable("2. TABLERO DE ALIMENTACIÓN", data.checklistTableroElectrico.tableroAlimentacion)}
-            {renderChecklistTable("3. PARÁMETROS DE CONFIGURACIÓN", data.checklistTableroElectrico.parametrosConfiguracion)}
+            {renderChecklistTable(
+              "1. BOMBAS Y PARTIDOR SUAVE",
+              data.checklistTableroElectrico.bombasPartidorSuave,
+            )}
+            {renderChecklistTable(
+              "2. TABLERO DE ALIMENTACIÓN",
+              data.checklistTableroElectrico.tableroAlimentacion,
+            )}
+            {renderChecklistTable(
+              "3. PARÁMETROS DE CONFIGURACIÓN",
+              data.checklistTableroElectrico.parametrosConfiguracion,
+            )}
           </>
         )}
 
@@ -461,7 +489,12 @@ export const PDFReport = ({ data }: Props) => {
         )}
 
         {/* Firmas */}
-        <View style={styles.signatureSection}>
+        <View
+          style={{
+            ...styles.signatureSection,
+            justifyContent: isStandard ? "space-between" : "center",
+          }}
+        >
           <View style={styles.signatureBlock}>
             <View style={styles.signatureLine}>
               {data.techSignature && (
@@ -469,21 +502,25 @@ export const PDFReport = ({ data }: Props) => {
               )}
             </View>
             <Text style={styles.signerName}>{data.techName}</Text>
-            <Text style={styles.signerRole}>Técnico Especialista</Text>
+            <Text style={styles.signerRole}>
+              {isStandard ? "Técnico Especialista" : "Técnico Especialista"}
+            </Text>
           </View>
 
-          <View style={styles.signatureBlock}>
-            <View style={styles.signatureLine}>
-              {data.clientSignature && (
-                <Image
-                  src={data.clientSignature}
-                  style={styles.signatureImage}
-                />
-              )}
+          {isStandard && (
+            <View style={styles.signatureBlock}>
+              <View style={styles.signatureLine}>
+                {data.clientSignature && (
+                  <Image
+                    src={data.clientSignature}
+                    style={styles.signatureImage}
+                  />
+                )}
+              </View>
+              <Text style={styles.signerName}>{data.clientSigner}</Text>
+              <Text style={styles.signerRole}>Recepción Cliente</Text>
             </View>
-            <Text style={styles.signerName}>{data.clientSigner}</Text>
-            <Text style={styles.signerRole}>Recepción Cliente</Text>
-          </View>
+          )}
         </View>
 
         <Text

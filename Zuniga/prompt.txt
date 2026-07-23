@@ -1,0 +1,28 @@
+Actúa como un desarrollador Frontend experto en React y Chart.js. Tu objetivo es refactorizar el dashboard principal de este proyecto (generalmente en `Home.tsx`) reemplazando el uso del componente obsoleto `DropdownCard.tsx` por el nuevo componente `GraphCard.tsx`.
+
+Este cambio se enfoca principalmente en los gráficos de tipo "nivel" y "caudal", los cuales ahora tendrán la capacidad de consultar datos históricos mediante un DatePicker.
+
+Por favor, sigue estas instrucciones paso a paso:
+
+1. **Reemplazo en la vista (`Home.tsx`):**
+   - Identifica todas las instancias donde se utiliza `DropdownCard` para mostrar datos de nivel de estanques y caudales.
+   - Reemplázalos por el nuevo componente `GraphCard`. 
+   - Elimina la importación de `DropdownCard` y asegúrate de importar `GraphCard`.
+
+2. **Mapeo de Propiedades (Props):**
+   - Transforma la prop `data` (del componente antiguo) a `initialData`.
+   - Agrega la prop `type` y asígnale el valor correspondiente (`"nivel"` o `"caudal"`).
+   - Agrega la prop `fetchEndpoint` apuntando a la ruta de la API correcta para ese gráfico (por ejemplo, `https://api.midominio.cl/cliente/nivel`).
+   - Mantén las props `isOpen`, `title`, `chartLabel`, `nivelMax` y `nivelAlarma` (si existen).
+   - **Importante:** El nuevo `GraphCard` no acepta la prop `className`. Si el `DropdownCard` original tenía clases CSS asignadas (ej. para ocultar/mostrar elementos en distintas resoluciones), debes envolver el `<GraphCard />` dentro de un `<div className="...">` que conserve esas clases para no romper el diseño responsivo.
+   - **Manejo de Divisores:** Si el componente original o la lógica previa transformaba valores (por ejemplo, dividiendo los datos en cm por 100 para mostrarlos en metros mediante una validación del título como "Estanque Nuevo"), debes pasar explícitamente la propiedad `divisor={100}` al `GraphCard` correspondiente.
+
+3. **Ajuste de Dimensiones en `GraphCard.tsx` (Prevención de bugs visuales):**
+   - Revisa el código del componente `GraphCard.tsx`.
+   - Debido a que `GraphCard` incluye un DatePicker en la parte inferior para los gráficos de "nivel" y "caudal", la tarjeta se vuelve intrínsecamente más alta. Esto provoca que el contenedor Flexbox/Grid principal estire todas las tarjetas de la misma fila, generando enormes espacios vacíos bajo los títulos.
+   - Para solucionar esto, asegúrate de que el contenedor del gráfico (`<div style={{ height: "..." }}>` que envuelve a `<Line />` o `<Bar />`) tenga un tamaño dinámico: 
+     - Si `type === "nivel" || type === "caudal"`, la altura debe ser `"180px"`.
+     - Para los demás tipos, debe ser `"230px"`.
+   - De ser necesario, ajusta el espaciado del contenedor del DatePicker usando clases de Bootstrap (por ejemplo, `pt-2 pb-1`) y añade el estilo en línea `marginTop: "auto"` para mantenerlo fijado abajo. Esto mantendrá la altura total idéntica al diseño anterior.
+
+Por favor, revisa el código de `Home.tsx` y `GraphCard.tsx` y procede con los cambios indicados. Asegúrate de verificar mediante tu consola que el código TypeScript compila correctamente después de la refactorización.

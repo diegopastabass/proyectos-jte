@@ -2,7 +2,6 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
@@ -31,7 +30,12 @@ export class Report {
   @Column({ type: 'jsonb', default: [] })
   images: string[];
 
-  @CreateDateColumn({ name: 'created_at' })
+  @Column({
+    name: 'created_at',
+    type: 'timestamp',
+    nullable: false,
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   createdAt: Date;
 
   @UpdateDateColumn({ name: 'updated_at' })

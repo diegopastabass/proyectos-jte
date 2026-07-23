@@ -21,6 +21,7 @@ interface DatosSnapshot {
   solar: Metric;
   bomba: Metric;
   horometro: Metric;
+  totalizador: Metric;
 }
 
 interface Metric {
@@ -31,11 +32,12 @@ interface Metric {
 interface ScadaDiagramProps {
   data: Snapshot;
   hor: string;
+  tot: string;
 }
 
 const SPRITE_SIZE = 300;
 
-const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor }) => {
+const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
   const hasWaterFlow = data.snapshot.bomba.value === 1;
 
   const nivelMaxEstanque = 4;
@@ -89,6 +91,8 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor }) => {
           style={{ top: 0, left: 5 }}
           horometro_diario={Number(hor)}
           horometro_total={data.snapshot.horometro.value}
+          totalizador_diario={Number(tot)}
+          totalizador_total={data.snapshot.totalizador.value}
         />
 
         {/* 3. Tubería - Posición (300, 0) */}

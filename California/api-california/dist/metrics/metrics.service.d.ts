@@ -1,0 +1,20 @@
+import { Repository } from 'typeorm';
+import { Telemetria } from './models/metrics.entity';
+import { DateRangeDto } from './models/dto/date-range.dto';
+import { MetricSnapshot, Metric } from './models/types';
+export declare class SsrCaliforniaService {
+    private repo;
+    private readonly logger;
+    constructor(repo: Repository<Telemetria>);
+    private normalizeDateRange;
+    getSnapshot(): Promise<{
+        snapshot: MetricSnapshot;
+        tiempo_vaciado: number;
+        tiempo_vaciado_formatted: string;
+    }>;
+    private calculateAndCacheDaily;
+    getTotalizador(dto: DateRangeDto): Promise<Metric[]>;
+    getHorometro(dto: DateRangeDto): Promise<Metric[]>;
+    getNivel(dto: DateRangeDto): Promise<Metric[]>;
+    getNivel2(dto: DateRangeDto): Promise<Metric[]>;
+}

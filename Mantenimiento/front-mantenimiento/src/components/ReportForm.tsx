@@ -12,14 +12,22 @@ interface Props {
   onBack?: () => void;
   isAdmin: boolean;
   reportId?: string | null;
+  cloneData?: ReportData | null;
 }
 
 type Step = "form" | "signTech" | "reviewClient" | "signClient" | "completed";
 
-function ReportForm({ onBack, isAdmin, reportId }: Props) {
+function ReportForm({ onBack, isAdmin, reportId, cloneData }: Props) {
   const [data, setData] = useState<ReportData>(initialData);
   const [isSaving, setIsSaving] = useState(false);
   const [step, setStep] = useState<Step>("form");
+  // Helper function to get local ISO string
+  const getLocalISOString = (date = new Date()) => {
+    const offset = date.getTimezoneOffset() * 60000;
+    return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+  };
+
+  const [createdAt, setCreatedAt] = useState(getLocalISOString());
 
   useEffect(() => {
     if (reportId) {
@@ -32,6 +40,9 @@ function ReportForm({ onBack, isAdmin, reportId }: Props) {
               loadedData.developments = [""];
             }
             setData(loadedData);
+            if (res.data.createdAt) {
+              setCreatedAt(getLocalISOString(new Date(res.data.createdAt)));
+            }
           }
         } catch (error) {
           console.error(error);
@@ -39,10 +50,20 @@ function ReportForm({ onBack, isAdmin, reportId }: Props) {
         }
       };
       loadReport();
+    } else if (cloneData) {
+      // Modo clonado: precargar con datos del informe original (sin firmas, sin OT)
+      const cloned = { ...cloneData };
+      if (!cloned.developments) {
+        cloned.developments = [""];
+      }
+      setData(cloned);
+      // El clon es un informe nuevo: usar fecha actual
+      setCreatedAt(getLocalISOString());
     } else {
       setData(initialData);
+      setCreatedAt(getLocalISOString());
     }
-  }, [reportId]);
+  }, [reportId, cloneData]);
 
   const handleChange = (field: keyof ReportData, value: any) =>
     setData((p) => ({ ...p, [field]: value }));
@@ -137,7 +158,9 @@ function ReportForm({ onBack, isAdmin, reportId }: Props) {
   };
 
   const handleStartClosing = () => {
-    if (reportId && data.techSignature && data.clientSignature) {
+    const isChecklist = data.type === "Mantención Preventiva de Sala de Bombas" || data.type === "Mantención Preventiva de Tablero Eléctrico";
+
+    if (reportId && data.techSignature && (data.clientSignature || isChecklist)) {
       if (
         window.confirm(
           "¿Desea guardar los cambios directamente sin volver a firmar?",
@@ -156,9 +179,20 @@ function ReportForm({ onBack, isAdmin, reportId }: Props) {
     setStep("signTech");
   };
 
-  const handleTechSign = (signature: string) => {
-    setData((prev) => ({ ...prev, techSignature: signature }));
-    setStep("reviewClient");
+  const handleTechSign = async (signature: string) => {
+    const isChecklist = data.type === "Mantención Preventiva de Sala de Bombas" || data.type === "Mantención Preventiva de Tablero Eléctrico";
+    
+    if (isChecklist) {
+      const finalData = { ...data, techSignature: signature, isApproved: true };
+      const savedData = await saveToDatabase(finalData);
+      if (savedData) {
+        setData(savedData);
+        setStep("completed");
+      }
+    } else {
+      setData((prev) => ({ ...prev, techSignature: signature }));
+      setStep("reviewClient");
+    }
   };
 
   const handleClientSign = async (signature: string) => {
@@ -179,6 +213,7 @@ function ReportForm({ onBack, isAdmin, reportId }: Props) {
         clientName: currentData.client.name,
         status: currentData.status,
         data: currentData,
+        createdAt: new Date(createdAt).toISOString(),
       };
 
       if (reportId) {
@@ -219,8 +254,9 @@ function ReportForm({ onBack, isAdmin, reportId }: Props) {
             onRemoveDevelopment={removeDev}
             onSubmit={handleStartClosing}
             isSaving={isSaving}
-            isEditing={!!reportId}
             onChecklistChange={handleChecklistChange}
+            createdAt={createdAt}
+            onCreatedAtChange={setCreatedAt}
           />
         );
       case "signTech":
@@ -267,6 +303,16 @@ function ReportForm({ onBack, isAdmin, reportId }: Props) {
           <button className="btn btn-outline-secondary" onClick={onBack}>
             <i className="bi bi-arrow-left"></i> Volver
           </button>
+        </div>
+      )}
+      {/* Banner informativo al clonar */}
+      {cloneData && !reportId && step === "form" && (
+        <div className="alert alert-success d-flex align-items-center gap-2 mb-3" role="alert">
+          <i className="bi bi-copy fs-5"></i>
+          <div>
+            <strong>Modo Clonado</strong> — Estás creando un nuevo informe basado en uno existente.
+            Edita los datos necesarios y completa el proceso de firmas para guardarlo.
+          </div>
         </div>
       )}
       <div className="card shadow mb-4">

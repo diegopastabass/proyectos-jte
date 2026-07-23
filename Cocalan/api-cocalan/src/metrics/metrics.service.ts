@@ -102,7 +102,9 @@ export class SsrCocalanService {
         return { tiempo, formatted };
       };
 
-      const estanque = await calcularTiempoVaciado('SSR_COCALAN--slave.estanque');
+      const estanque = await calcularTiempoVaciado(
+        'SSR_COCALAN--slave.estanque',
+      );
 
       return {
         snapshot,
@@ -221,6 +223,25 @@ export class SsrCocalanService {
       );
     } catch (error) {
       this.logger.error(`Error en getHorometro: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  // Totalizador
+  async getTotalizador(dto: DateRangeDto): Promise<Metric[]> {
+    try {
+      if (!dto || !dto.start || !dto.end)
+        throw new Error('Se requiere rango de fechas válido.');
+      return await this.calculateAndCacheDaily(
+        'SSR_COCALAN--slave.totalizador',
+        dto.start,
+        dto.end,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Error en getTotalizador: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }

@@ -6,6 +6,7 @@ import Loading from "./Loading";
 import type { Metric, Snapshot } from "../components/types";
 import ExportModal from "../components/ExportModal";
 import logoJte from "../assets/logoJte.png";
+import { fetchWithCache } from "../components/fetchWithcache";
 
 function Home() {
   // HOOKS
@@ -29,26 +30,20 @@ function Home() {
 
     const now = new Date();
     const end = formatter.format(now);
-    const startDate = new Date(now);
-    startDate.setDate(startDate.getDate() - 15);
-    const start = formatter.format(startDate);
 
     const fetchData = async () => {
       try {
-        const [snapshotRes, totalizadorRes, caudalRes, nivelRes] =
-          await Promise.all([
-            fetch("https://app.jteanalytics.cl/carracedo/snapshot"),
-            fetch(
-              `https://app.jteanalytics.cl/carracedo/totalizador?start=${start}&end=${end}`,
-            ),
-            fetch(`https://app.jteanalytics.cl/carracedo/caudal`),
-            fetch(`https://app.jteanalytics.cl/carracedo/nivel`),
-          ]);
+        const [snapshotRes, caudalRes, nivelRes] = await Promise.all([
+          fetch("https://app.jteanalytics.cl/carracedo/snapshot"),
+
+          fetch(`https://app.jteanalytics.cl/carracedo/caudal`),
+          fetch(`https://app.jteanalytics.cl/carracedo/nivel`),
+        ]);
 
         const snapshotResJson = await snapshotRes.json();
         setSnapshotData(snapshotResJson);
 
-        const totalizadorResJson = await totalizadorRes.json();
+        const totalizadorResJson = await fetchWithCache("totalizador", end);
         setTotalizadorData(totalizadorResJson);
 
         const caudalResJson = await caudalRes.json();

@@ -4,7 +4,8 @@ import { UpdateReportDto } from './dto/update-report.dto';
 export declare class ReportsController {
     private readonly reportsService;
     constructor(reportsService: ReportsService);
-    create(createReportDto: CreateReportDto, req: any): Promise<import("./entities/report.entity").Report>;
+    create(createReportDto: CreateReportDto, files: Express.Multer.File[], req: any): Promise<import("./entities/report.entity").Report>;
+    getUniqueClientNames(): Promise<string[]>;
     findAll(): Promise<import("./entities/report.entity").Report[]>;
     findOne(id: string): Promise<import("./entities/report.entity").Report>;
     update(id: string, updateReportDto: UpdateReportDto): Promise<import("./entities/report.entity").Report>;

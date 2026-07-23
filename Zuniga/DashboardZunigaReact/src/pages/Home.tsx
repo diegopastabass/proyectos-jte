@@ -6,10 +6,8 @@ import State, { StateBody } from "../components/States";
 import "../index.css";
 import Loading from "./Loading";
 import ToggleCardButton from "../components/ToggelCardButton";
-import DropdownCard from "../components/DropdownCard";
+import GraphCard from "../components/GraphCard";
 import Error from "./Error";
-import DropdownCardv2 from "../components/DropDownCardv2";
-import DropdownCardv3 from "../components/DropDownCardv3";
 import ScadaDiagram from "../components/ScadaDiagram";
 import ExportModal from "../components/ExportModal";
 import lgoJte from "../assets/logoJte.png";
@@ -158,47 +156,55 @@ function App() {
         </div>
 
         <div className="col-12 col-lg-4 order-1 order-lg-2 mb-1">
-          <DropdownCard
+          <GraphCard
             isOpen={true}
             title="Estanque 350 m³"
             chartLabel="Nivel del Estanque (m)"
-            data={nivelEstanque1}
+            initialData={nivelEstanque1}
+            type="nivel"
+            fetchEndpoint="https://app.jteanalytics.cl/zuniga/nivel"
             nivelMax={7}
             nivelAlarma={2}
           />
-          <DropdownCard
+          <GraphCard
             isOpen={true}
             title="Estanque 2 m³"
             chartLabel="Nivel del Estanque (m)"
-            data={nivelEstanque2}
+            initialData={nivelEstanque2}
+            type="nivel"
+            fetchEndpoint="https://app.jteanalytics.cl/zuniga/nivel2"
             nivelMax={2}
           />
         </div>
 
         <div className="w-100 row g-2 p-0 order-2 justify-content-center">
           <div className="col-12 col-lg-4">
-            <DropdownCard
+            <GraphCard
               isOpen
               title="Caudal"
               chartLabel="Caudal (l/s)"
-              data={caudal}
+              initialData={caudal}
+              type="caudal"
+              fetchEndpoint="https://app.jteanalytics.cl/zuniga/caudal"
               nivelMax={50}
             />
           </div>
           <div className="col-12 col-lg-4">
-            <DropdownCardv2
+            <GraphCard
               isOpen
               title="Horómetro Diario"
               chartLabel="Horómetro"
-              data={horometro}
+              initialData={horometro}
+              type="horometro"
             />
           </div>
           <div className="col-12 col-lg-4">
-            <DropdownCardv3
+            <GraphCard
               isOpen
               title="Totalizador Diario"
               chartLabel="Totalizador (m³)"
-              data={totalizador}
+              initialData={totalizador}
+              type="totalizador"
             />
           </div>
         </div>
@@ -244,11 +250,13 @@ function App() {
         </div>
 
         <div className="mb-2">
-          <DropdownCard
+          <GraphCard
             isOpen={isOpenEstanque}
             title="Estanque 350 m³"
             chartLabel="Nivel (m)"
-            data={nivelEstanque1}
+            initialData={nivelEstanque1}
+            type="nivel"
+            fetchEndpoint="https://app.jteanalytics.cl/zuniga/nivel"
             nivelMax={7}
             nivelAlarma={2}
           />
@@ -276,11 +284,13 @@ function App() {
         </div>
 
         <div className="mb-2">
-          <DropdownCard
+          <GraphCard
             isOpen={isOpenEstanque2}
             title="Estanque 2 m³"
             chartLabel="Nivel (m)"
-            data={nivelEstanque2}
+            initialData={nivelEstanque2}
+            type="nivel"
+            fetchEndpoint="https://app.jteanalytics.cl/zuniga/nivel2"
             nivelMax={2}
           />
         </div>
@@ -317,24 +327,28 @@ function App() {
         </div>
 
         <div className="mb-2">
-          <DropdownCard
+          <GraphCard
             isOpen={isOpenBomba}
             title="Caudal"
             chartLabel="Caudal (l/s)"
-            data={caudal}
+            initialData={caudal}
+            type="caudal"
+            fetchEndpoint="https://app.jteanalytics.cl/zuniga/caudal"
             nivelMax={50}
           />
-          <DropdownCardv2
+          <GraphCard
             isOpen={isOpenBomba}
             title="Horómetro Diario"
             chartLabel="Horómetro"
-            data={horometro}
+            initialData={horometro}
+            type="horometro"
           />
-          <DropdownCardv3
+          <GraphCard
             isOpen={isOpenBomba}
             title="Totalizador Diario"
             chartLabel="Totalizador (m³)"
-            data={totalizador}
+            initialData={totalizador}
+            type="totalizador"
           />
         </div>
 

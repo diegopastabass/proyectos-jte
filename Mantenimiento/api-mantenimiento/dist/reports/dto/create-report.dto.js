@@ -15,6 +15,7 @@ class CreateReportDto {
     clientName;
     status;
     data;
+    createdAt;
 }
 exports.CreateReportDto = CreateReportDto;
 __decorate([
@@ -31,4 +32,9 @@ __decorate([
     (0, class_validator_1.IsObject)(),
     __metadata("design:type", Object)
 ], CreateReportDto.prototype, "data", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateReportDto.prototype, "createdAt", void 0);
 //# sourceMappingURL=create-report.dto.js.map

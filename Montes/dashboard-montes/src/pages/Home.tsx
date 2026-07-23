@@ -8,6 +8,7 @@ import ExportModal from "../components/ExportModal";
 import lgoJte from "../assets/logoJte.png";
 import { fillMissingDates } from "../assets/utilities";
 import Error from "./Error";
+import { fetchWithCache } from "../components/fetchWithcache";
 
 function Home() {
   const [loading, setLoading] = useState(true);
@@ -38,55 +39,45 @@ function Home() {
 
     const now = new Date();
     const end = formatter.format(now);
-    const startDate = new Date(now);
-    startDate.setDate(startDate.getDate() - 20);
-    const start = formatter.format(startDate);
 
     const fetchData = async () => {
       try {
-        const [
-          latestRes,
-          riles_totalizadorRes,
-          riles_caudalRes,
-          general_totalizadorRes,
-          general_caudalRes,
-          riles_totalizador_horaRes,
-        ] = await Promise.all([
-          fetch("https://app.jteanalytics.cl/montes/latest"),
-          fetch(
-            `https://app.jteanalytics.cl/montes/totalizador/montes_riles_totalizador?start=${start}&end=${end}`,
-          ),
-          fetch(
-            `https://app.jteanalytics.cl/montes/caudal/montes_riles_caudal`,
-          ),
-          fetch(
-            `https://app.jteanalytics.cl/montes/totalizador/montes_general_totalizador?start=${start}&end=${end}`,
-          ),
-          fetch(
-            `https://app.jteanalytics.cl/montes/caudal/montes_general_caudal`,
-          ),
-          fetch(
-            `https://app.jteanalytics.cl/montes/totalizador-hora/montes_riles_totalizador`,
-          ),
-        ]);
+        const [latestRes, riles_caudalRes, general_caudalRes] =
+          await Promise.all([
+            fetch("https://app.jteanalytics.cl/montes/latest"),
+            fetch(
+              `https://app.jteanalytics.cl/montes/caudal/montes_riles_caudal`,
+            ),
+            fetch(
+              `https://app.jteanalytics.cl/montes/caudal/montes_general_caudal`,
+            ),
+          ]);
 
         const latestResJson = await latestRes.json();
         setLatestData(latestResJson);
 
-        const riles_totalizadorResJson = await riles_totalizadorRes.json();
+        const riles_totalizadorResJson = await fetchWithCache(
+          "totalizador/montes_riles_totalizador",
+          end,
+        );
         setRilesTotalizador(riles_totalizadorResJson);
 
         const riles_caudalResJson = await riles_caudalRes.json();
         setRilesCaudal(riles_caudalResJson);
 
-        const general_totalizadorResJson = await general_totalizadorRes.json();
+        const general_totalizadorResJson = await fetchWithCache(
+          "totalizador/montes_general_totalizador",
+          end,
+        );
         setGeneralTotalizador(general_totalizadorResJson);
 
         const general_caudalResJson = await general_caudalRes.json();
         setGeneralCaudal(general_caudalResJson);
 
-        const riles_totalizador_horaResJson =
-          await riles_totalizador_horaRes.json();
+        const riles_totalizador_horaResJson = await fetchWithCache(
+          "totalizador-hora/montes_riles_totalizador",
+          end,
+        );
         setRilesTotalizadorHora(riles_totalizador_horaResJson);
       } catch (error) {
         console.error("Error al cargar datos:", error);

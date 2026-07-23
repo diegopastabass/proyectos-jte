@@ -6,13 +6,12 @@ import State, { StateBody } from "../components/States";
 import "../index.css";
 import Loading from "./Loading";
 import ToggleCardButton from "../components/ToggelCardButton";
-import DropdownCard from "../components/DropdownCard";
+import GraphCard from "../components/GraphCard";
 import Error from "./Error";
-import DropdownCardv2 from "../components/DropDownCardv2";
-import DropdownCardv3 from "../components/DropDownCardv3";
 import ScadaDiagram from "../components/ScadaDiagram";
 import ExportModal from "../components/ExportModal";
 import logoJte from "../assets/logoJte.png";
+import { fetchWithCache } from "../components/fetchWithcache";
 
 // Interfaces
 interface Snapshot {
@@ -70,28 +69,19 @@ function App() {
 
     const now = new Date();
     const end = formatter.format(now);
-    const startDate = new Date(now);
-    startDate.setDate(startDate.getDate() - 15);
-    const start = formatter.format(startDate);
 
     const fetchData = async () => {
       try {
-        const [snapshotRes, totalizadorRes, horometroRes, nivelRes] =
-          await Promise.all([
-            fetch("https://app.jteanalytics.cl/aromos/snapshot"),
-            fetch(
-              `https://app.jteanalytics.cl/aromos/totalizador?start=${start}&end=${end}`,
-            ),
-            fetch(
-              `https://app.jteanalytics.cl/aromos/horometro?start=${start}&end=${end}`,
-            ),
-            fetch(`https://app.jteanalytics.cl/aromos/nivel`),
-          ]);
+        const [snapshotRes, nivelRes] = await Promise.all([
+          fetch("https://app.jteanalytics.cl/aromos/snapshot"),
+
+          fetch(`https://app.jteanalytics.cl/aromos/nivel`),
+        ]);
 
         const snapshotData: Snapshot = await snapshotRes.json();
         setData(snapshotData);
-        setTotalizadorData(await totalizadorRes.json());
-        setHorometroData(await horometroRes.json());
+        setTotalizadorData(await fetchWithCache("totalizador", end));
+        setHorometroData(await fetchWithCache("horometro", end));
         setNivelData(await nivelRes.json());
       } catch (error) {
         console.error("Error al cargar datos:", error);
@@ -154,13 +144,15 @@ function App() {
             onToggle={() => setIsOpenEstanque(!isOpenEstanque)}
           />
         </Card>
-        <DropdownCard
-          className="mb-4"
+        <GraphCard
           isOpen={isOpenEstanque}
           title="Estanque"
           chartLabel="Nivel del Estanque (m)"
-          data={nivelChartData}
+          initialData={nivelChartData}
+          type="nivel"
           nivelAlarma={2}
+          nivelMax={4}
+          fetchEndpoint="https://app.jteanalytics.cl/aromos/nivel"
         />
       </div>
 
@@ -187,19 +179,21 @@ function App() {
           />
         </Card>
         <div className="my-2">
-          <DropdownCardv2
+          <GraphCard
             isOpen={isOpenBomba}
             title="Horómetro Diario"
             chartLabel="Horómetro"
-            data={horometroChartData}
+            initialData={horometroChartData}
+            type="horometro"
           />
         </div>
         <div className="my-2">
-          <DropdownCardv3
+          <GraphCard
             isOpen={isOpenBomba}
             title="Totalizador Diario"
             chartLabel="Totalizador en m³"
-            data={totalizadorChartData}
+            initialData={totalizadorChartData}
+            type="totalizador"
           />
         </div>
       </div>
@@ -245,15 +239,17 @@ function App() {
         </div>
       </div>
 
-      {/* Nivel Estanque (Col 3, Row 1) */}
-      <div style={{ gridColumn: "3", gridRow: "1" }}>
-        <DropdownCard
+      {/* Nivel Estanque (Col 3, Row 1 y 2) */}
+      <div style={{ gridColumn: "3", gridRow: "1 / 3" }}>
+        <GraphCard
           isOpen={true}
           title="Estanque"
           chartLabel="Nivel del Estanque (m)"
-          data={nivelChartData}
+          initialData={nivelChartData}
+          type="nivel"
           nivelAlarma={1.7}
-          nivelMax={3.5}
+          nivelMax={4}
+          fetchEndpoint="https://app.jteanalytics.cl/aromos/nivel"
         />
       </div>
 
@@ -267,19 +263,21 @@ function App() {
         }}
       >
         <div style={{ flex: 1 }}>
-          <DropdownCardv2
+          <GraphCard
             isOpen={true}
             title="Horómetro Diario"
             chartLabel="Horómetro"
-            data={horometroChartData}
+            initialData={horometroChartData}
+            type="horometro"
           />
         </div>
         <div style={{ flex: 1 }}>
-          <DropdownCardv3
+          <GraphCard
             isOpen={true}
             title="Totalizador Diario"
             chartLabel="Totalizador en m³"
-            data={totalizadorChartData}
+            initialData={totalizadorChartData}
+            type="totalizador"
           />
         </div>
       </div>

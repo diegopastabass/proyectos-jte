@@ -59,6 +59,13 @@ export default function Home({
     }
   };
 
+  // Mediciones de cloro que siempre deben aparecer en el informe
+  const CHLORO_LABELS = [
+    { label: "Cloro en Caseta", unit: "ppm", hasLocation: false },
+    { label: "Cloro Red Punto 1", unit: "ppm", hasLocation: true },
+    { label: "Cloro Red Punto 2", unit: "ppm", hasLocation: true },
+  ];
+
   const handleDownload = async (id: string) => {
     setDownloadingId(id);
     try {
@@ -67,8 +74,29 @@ export default function Home({
 
       const reportData = res.data;
 
+      // Completar mediciones de cloro faltantes con N/R
+      const existingLabels: string[] = (reportData.items || []).map(
+        (i: any) => i.label,
+      );
+      const nrRows = CHLORO_LABELS.filter(
+        (c) => !existingLabels.includes(c.label),
+      ).map((c) => ({
+        label: c.label,
+        value: "N/R" as any,
+        unit: "",
+        location: c.hasLocation ? "N/R" : "-",
+        time: reportData.header.date,
+        image: undefined,
+        isNR: true,
+      }));
+
+      const enrichedData = {
+        ...reportData,
+        items: [...(reportData.items || []), ...nrRows],
+      };
+
       const blob = await pdf(
-        <PDFMeasurementReport data={reportData} />,
+        <PDFMeasurementReport data={enrichedData} />,
       ).toBlob();
 
       saveAs(blob, `Reporte_Sesion_${id}.pdf`);
@@ -183,13 +211,10 @@ export default function Home({
                           <button
                             className="btn btn-sm btn-outline-primary"
                             onClick={() => handleDownload(session.id)}
-                            disabled={
-                              downloadingId === session.id ||
-                              session.state === "0"
-                            }
+                            disabled={downloadingId === session.id}
                             title={
                               session.state === "0"
-                                ? "La sesión debe completarse antes de descargar el informe"
+                                ? "Descargar informe parcial (cloros pendientes aparecerán como N/R)"
                                 : "Descargar informe PDF"
                             }
                           >

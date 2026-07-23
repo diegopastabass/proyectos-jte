@@ -12,7 +12,6 @@ function Card(props: CardProps) {
       className={`card ${className}`}
       style={{
         width: "100%",
-        maxWidth: "1500px",
         minHeight: "50px",
         maxHeight: "430px",
       }}

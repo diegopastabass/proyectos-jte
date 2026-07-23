@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import MetricCard from "../components/MetricCard";
 import TimeSeriesChart from "../components/TimeSeriesChart";
+import GraphCard from "../components/GraphCard";
 import Loading from "./Loading";
 import type { Metric, Snapshot } from "../components/types";
 import ExportModal from "../components/ExportModal";
 import logoJte from "../assets/logoJte.png";
-
+import { fetchWithCache } from "../components/fetchWithcache";
 function Home() {
   // HOOKS
   const [loading, setLoading] = useState(true);
@@ -29,27 +30,20 @@ function Home() {
 
     const now = new Date();
     const end = formatter.format(now);
-    const startDate = new Date(now);
-    startDate.setDate(startDate.getDate() - 15);
-    const start = formatter.format(startDate);
 
     const fetchData = async () => {
       try {
-        const [snapshotRes, totalizadorRes, caudalRes, nivelRes] =
-          await Promise.all([
-            fetch("https://app.jteanalytics.cl/araucarias/snapshot"),
-            fetch(
-              `https://app.jteanalytics.cl/araucarias/totalizador?start=${start}&end=${end}`,
-            ),
-            fetch(`https://app.jteanalytics.cl/araucarias/caudal`),
-            fetch(`https://app.jteanalytics.cl/araucarias/nivel`),
-          ]);
+        const [snapshotRes, caudalRes, nivelRes] = await Promise.all([
+          fetch("https://app.jteanalytics.cl/araucarias/snapshot"),
+
+          fetch(`https://app.jteanalytics.cl/araucarias/caudal`),
+          fetch(`https://app.jteanalytics.cl/araucarias/nivel`),
+        ]);
 
         const snapshotResJson = await snapshotRes.json();
         setSnapshotData(snapshotResJson);
 
-        const totalizadorResJson = await totalizadorRes.json();
-        setTotalizadorData(totalizadorResJson);
+        setTotalizadorData(await fetchWithCache("totalizador", end));
 
         const caudalResJson = await caudalRes.json();
         setCaudalData(caudalResJson);
@@ -141,12 +135,15 @@ function Home() {
           {/* Gráfico 2: Ancho completo en todos los tamaños */}
           <div className="row g-3 mb-3">
             <div className="col-12">
-              <TimeSeriesChart
+              <GraphCard
+                isOpen={true}
                 title="Caudal"
-                metrics={caudalData}
+                chartLabel="Caudal"
+                initialData={caudalData}
+                type="caudal"
+                nivelMax={50}
+                fetchEndpoint="https://app.jteanalytics.cl/araucarias/caudal"
                 divisor={1}
-                barColor="rgba(13, 110, 230, 1)"
-                chartType="line"
               />
             </div>
           </div>
@@ -154,13 +151,15 @@ function Home() {
           {/* Gráfico 3: Ancho completo en todos los tamaños */}
           <div className="row g-3 mb-3">
             <div className="col-12">
-              <TimeSeriesChart
+              <GraphCard
+                isOpen={true}
                 title="Nivel Pozo"
-                metrics={nivelData}
-                divisor={100}
+                chartLabel="Nivel Pozo"
+                initialData={nivelData}
+                type="nivel"
                 nivelMax={100}
-                barColor="rgba(13, 110, 230, 1)"
-                chartType="line"
+                fetchEndpoint="https://app.jteanalytics.cl/araucarias/nivel"
+                divisor={100}
               />
             </div>
           </div>

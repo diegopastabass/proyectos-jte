@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { type ReportData, type Material, type CapturedImage } from "../types";
 import PhotoCaptureModal from "./PhotoCaptureModal";
 import { v4 as uuidv4 } from "uuid";
+import api from "../api";
 
 // Campos de contexto predefinidos para guiar al técnico.
 // El técnico puede usar cualquiera de ellos, o todos, según el trabajo realizado.
@@ -40,13 +41,15 @@ interface Props {
 
   onSubmit: () => void;
   isSaving: boolean;
-  isEditing: boolean;
   onChecklistChange: (
     type: "salaBombas" | "tableroElectrico",
     section: string,
     field: string,
-    value: string
+    value: string,
   ) => void;
+  /** Fecha de creación editable (solo modo creación). Formato "YYYY-MM-DDTHH:mm". */
+  createdAt?: string;
+  onCreatedAtChange?: (value: string) => void;
 }
 
 export const ReportEditor = ({
@@ -68,6 +71,8 @@ export const ReportEditor = ({
   onSubmit,
   isSaving,
   onChecklistChange,
+  createdAt,
+  onCreatedAtChange,
 }: Props) => {
   // Estado local del modal de cámara
   const [cameraModal, setCameraModal] = useState<{
@@ -75,6 +80,22 @@ export const ReportEditor = ({
     fieldId: string;
     fieldLabel: string;
   }>({ show: false, fieldId: "", fieldLabel: "" });
+
+  const [clientOptions, setClientOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        const res = await api.get("/app/reports/clients/names");
+        if (Array.isArray(res.data)) {
+          setClientOptions(res.data);
+        }
+      } catch (error) {
+        console.error("Error fetching client names", error);
+      }
+    };
+    fetchClients();
+  }, []);
 
   const openCamera = (fieldId: string, fieldLabel: string) => {
     setCameraModal({ show: true, fieldId, fieldLabel });
@@ -113,16 +134,19 @@ export const ReportEditor = ({
 
   const capturedImages = data.capturedImages ?? [];
 
-  const isStandard = data.type === "Atención de Falla" || data.type === "Mejora en Infraestructura";
+  const isStandard =
+    data.type === "Atención de Falla" ||
+    data.type === "Mejora en Infraestructura";
   const isSalaBombas = data.type === "Mantención Preventiva de Sala de Bombas";
-  const isTableroElectrico = data.type === "Mantención Preventiva de Tablero Eléctrico";
+  const isTableroElectrico =
+    data.type === "Mantención Preventiva de Tablero Eléctrico";
 
   const renderCheckSelect = (
     type: "salaBombas" | "tableroElectrico",
     section: string,
     field: string,
     label: string,
-    value: string
+    value: string,
   ) => (
     <div className="d-flex justify-content-between align-items-center border-bottom py-2">
       <span>{label}</span>
@@ -130,7 +154,9 @@ export const ReportEditor = ({
         className="form-select form-select-sm w-auto"
         style={{ minWidth: "150px" }}
         value={value}
-        onChange={(e) => onChecklistChange(type, section, field, e.target.value)}
+        onChange={(e) =>
+          onChecklistChange(type, section, field, e.target.value)
+        }
       >
         <option value="">Seleccione...</option>
         <option value="Realizado">Realizado</option>
@@ -154,9 +180,15 @@ export const ReportEditor = ({
               onChange={(e) => onChange("type", e.target.value)}
             >
               <option value="Atención de Falla">Atención de Falla</option>
-              <option value="Mejora en Infraestructura">Mejora en Infraestructura</option>
-              <option value="Mantención Preventiva de Sala de Bombas">Mantención Preventiva de Sala de Bombas</option>
-              <option value="Mantención Preventiva de Tablero Eléctrico">Mantención Preventiva de Tablero Eléctrico</option>
+              <option value="Mejora en Infraestructura">
+                Mejora en Infraestructura
+              </option>
+              <option value="Mantención Preventiva de Sala de Bombas">
+                Mantención Preventiva de Sala de Bombas
+              </option>
+              <option value="Mantención Preventiva de Tablero Eléctrico">
+                Mantención Preventiva de Tablero Eléctrico
+              </option>
             </select>
           </div>
           <div className="col-md-4">
@@ -177,18 +209,35 @@ export const ReportEditor = ({
               onChange={(e) => onChange("endDate", e.target.value)}
             />
           </div>
+          <div className="col-md-4">
+            <label className="form-label">Fecha de Creación del Reporte</label>
+            <input
+              id="report-created-at"
+              type="datetime-local"
+              className="form-control"
+              value={createdAt ?? ""}
+              onChange={(e) => onCreatedAtChange?.(e.target.value)}
+            />
+            <div className="form-text">Por defecto: fecha y hora actual.</div>
+          </div>
         </div>
 
         {/* ── DATOS DEL CLIENTE ────────────────────────────────────────── */}
         <h5 className="mb-3 mt-4">Datos del Cliente</h5>
         <div className="mb-3">
           <input
+            list="client-names"
             type="text"
             className="form-control mb-2"
             placeholder="Nombre Cliente / Empresa"
             value={data.client.name}
             onChange={(e) => onNestedChange("client", "name", e.target.value)}
           />
+          <datalist id="client-names">
+            {clientOptions.map((name) => (
+              <option key={name} value={name} />
+            ))}
+          </datalist>
           <input
             type="text"
             className="form-control mb-2"
@@ -249,82 +298,82 @@ export const ReportEditor = ({
           <>
             {/* ── DIAGNÓSTICO ──────────────────────────────────────────────── */}
             <h5 className="mb-3 mt-4">Diagnóstico</h5>
-        <div className="mb-3">
-          <select
-            className="form-select mb-3"
-            value={data.status}
-            onChange={(e) => onChange("status", e.target.value)}
-          >
-            <option>Sin Resolver</option>
-            <option>Parcialmente Resuelto</option>
-            <option>Resuelto</option>
-          </select>
-          <textarea
-            className="form-control"
-            rows={4}
-            placeholder="Descripción general..."
-            value={data.description}
-            onChange={(e) => onChange("description", e.target.value)}
-          />
-        </div>
+            <div className="mb-3">
+              <select
+                className="form-select mb-3"
+                value={data.status}
+                onChange={(e) => onChange("status", e.target.value)}
+              >
+                <option>Sin Resolver</option>
+                <option>Parcialmente Resuelto</option>
+                <option>Resuelto</option>
+              </select>
+              <textarea
+                className="form-control"
+                rows={4}
+                placeholder="Descripción general..."
+                value={data.description}
+                onChange={(e) => onChange("description", e.target.value)}
+              />
+            </div>
 
-        {/* ── DESARROLLO ───────────────────────────────────────────────── */}
-        <h5 className="mb-3 mt-4">Desarrollo</h5>
-        {data.developments?.map((dev, index) => (
-          <div key={index} className="input-group mb-2">
-            <span className="input-group-text">{index + 1}</span>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Actividad realizada..."
-              value={dev}
-              onChange={(e) => onDevelopmentChange(index, e.target.value)}
-            />
+            {/* ── DESARROLLO ───────────────────────────────────────────────── */}
+            <h5 className="mb-3 mt-4">Desarrollo</h5>
+            {data.developments?.map((dev, index) => (
+              <div key={index} className="input-group mb-2">
+                <span className="input-group-text">{index + 1}</span>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Actividad realizada..."
+                  value={dev}
+                  onChange={(e) => onDevelopmentChange(index, e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="btn btn-outline-danger"
+                  onClick={() => onRemoveDevelopment(index)}
+                >
+                  X
+                </button>
+              </div>
+            ))}
             <button
               type="button"
-              className="btn btn-outline-danger"
-              onClick={() => onRemoveDevelopment(index)}
+              className="btn btn-secondary btn-sm"
+              onClick={onAddDevelopment}
             >
-              X
+              + Item Desarrollo
             </button>
-          </div>
-        ))}
-        <button
-          type="button"
-          className="btn btn-secondary btn-sm"
-          onClick={onAddDevelopment}
-        >
-          + Item Desarrollo
-        </button>
 
-        {/* ── SOLUCIÓN FINAL ───────────────────────────────────────────── */}
-        <h5 className="mb-3 mt-4">Solución Final</h5>
-        {data.solutions.map((sol, index) => (
-          <div key={index} className="input-group mb-2">
-            <span className="input-group-text">{index + 1}</span>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Solución aplicada..."
-              value={sol}
-              onChange={(e) => onSolutionChange(index, e.target.value)}
-            />
+            {/* ── SOLUCIÓN FINAL ───────────────────────────────────────────── */}
+            <h5 className="mb-3 mt-4">Solución Final</h5>
+            {data.solutions.map((sol, index) => (
+              <div key={index} className="input-group mb-2">
+                <span className="input-group-text">{index + 1}</span>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Solución aplicada..."
+                  value={sol}
+                  onChange={(e) => onSolutionChange(index, e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="btn btn-outline-danger"
+                  onClick={() => onRemoveSolution(index)}
+                >
+                  X
+                </button>
+              </div>
+            ))}
             <button
               type="button"
-              className="btn btn-outline-danger"
-              onClick={() => onRemoveSolution(index)}
+              className="btn btn-secondary btn-sm"
+              onClick={onAddSolution}
             >
-              X
+              + Item Solución
             </button>
-          </div>
-        ))}
-        <button
-          type="button"
-          className="btn btn-secondary btn-sm"
-          onClick={onAddSolution}
-        >
-          + Item Solución
-        </button>
           </>
         )}
 
@@ -332,27 +381,118 @@ export const ReportEditor = ({
           <>
             <h5 className="mb-3 mt-4">Bombas y Variadores de Frecuencia</h5>
             <div className="mb-3">
-              {renderCheckSelect("salaBombas", "bombasVariadoresFrecuencia", "reaprieteConexionesFuerza", "Reapriete conexiones eléctricas de fuerza", data.checklistSalaBombas.bombasVariadoresFrecuencia.reaprieteConexionesFuerza)}
-              {renderCheckSelect("salaBombas", "bombasVariadoresFrecuencia", "reaprieteConexionesControl", "Reapriete conexiones eléctricas de control", data.checklistSalaBombas.bombasVariadoresFrecuencia.reaprieteConexionesControl)}
-              {renderCheckSelect("salaBombas", "bombasVariadoresFrecuencia", "limpiezaComponentesElectronicos", "Limpieza componentes electrónicos", data.checklistSalaBombas.bombasVariadoresFrecuencia.limpiezaComponentesElectronicos)}
-              {renderCheckSelect("salaBombas", "bombasVariadoresFrecuencia", "revisionRuidosExtranos", "Revisión ruidos extraños en bombas", data.checklistSalaBombas.bombasVariadoresFrecuencia.revisionRuidosExtranos)}
-              {renderCheckSelect("salaBombas", "bombasVariadoresFrecuencia", "pruebasFuncionamiento", "Pruebas de funcionamiento", data.checklistSalaBombas.bombasVariadoresFrecuencia.pruebasFuncionamiento)}
+              {renderCheckSelect(
+                "salaBombas",
+                "bombasVariadoresFrecuencia",
+                "reaprieteConexionesFuerza",
+                "Reapriete conexiones eléctricas de fuerza",
+                data.checklistSalaBombas.bombasVariadoresFrecuencia
+                  .reaprieteConexionesFuerza,
+              )}
+              {renderCheckSelect(
+                "salaBombas",
+                "bombasVariadoresFrecuencia",
+                "reaprieteConexionesControl",
+                "Reapriete conexiones eléctricas de control",
+                data.checklistSalaBombas.bombasVariadoresFrecuencia
+                  .reaprieteConexionesControl,
+              )}
+              {renderCheckSelect(
+                "salaBombas",
+                "bombasVariadoresFrecuencia",
+                "limpiezaComponentesElectronicos",
+                "Limpieza componentes electrónicos",
+                data.checklistSalaBombas.bombasVariadoresFrecuencia
+                  .limpiezaComponentesElectronicos,
+              )}
+              {renderCheckSelect(
+                "salaBombas",
+                "bombasVariadoresFrecuencia",
+                "revisionRuidosExtranos",
+                "Revisión ruidos extraños en bombas",
+                data.checklistSalaBombas.bombasVariadoresFrecuencia
+                  .revisionRuidosExtranos,
+              )}
+              {renderCheckSelect(
+                "salaBombas",
+                "bombasVariadoresFrecuencia",
+                "pruebasFuncionamiento",
+                "Pruebas de funcionamiento",
+                data.checklistSalaBombas.bombasVariadoresFrecuencia
+                  .pruebasFuncionamiento,
+              )}
             </div>
-            
+
             <h5 className="mb-3 mt-4">Tablero de Alimentación</h5>
             <div className="mb-3">
-              {renderCheckSelect("salaBombas", "tableroAlimentacion", "reaprieteConexionesFuerza", "Reapriete conexiones eléctricas de fuerza", data.checklistSalaBombas.tableroAlimentacion.reaprieteConexionesFuerza)}
-              {renderCheckSelect("salaBombas", "tableroAlimentacion", "reaprieteConexionesControl", "Reapriete conexiones eléctricas de control", data.checklistSalaBombas.tableroAlimentacion.reaprieteConexionesControl)}
-              {renderCheckSelect("salaBombas", "tableroAlimentacion", "limpiezaComponentesElectricos", "Limpieza componentes eléctricos", data.checklistSalaBombas.tableroAlimentacion.limpiezaComponentesElectricos)}
-              {renderCheckSelect("salaBombas", "tableroAlimentacion", "pruebasFuncionamiento", "Pruebas de funcionamiento", data.checklistSalaBombas.tableroAlimentacion.pruebasFuncionamiento)}
+              {renderCheckSelect(
+                "salaBombas",
+                "tableroAlimentacion",
+                "reaprieteConexionesFuerza",
+                "Reapriete conexiones eléctricas de fuerza",
+                data.checklistSalaBombas.tableroAlimentacion
+                  .reaprieteConexionesFuerza,
+              )}
+              {renderCheckSelect(
+                "salaBombas",
+                "tableroAlimentacion",
+                "reaprieteConexionesControl",
+                "Reapriete conexiones eléctricas de control",
+                data.checklistSalaBombas.tableroAlimentacion
+                  .reaprieteConexionesControl,
+              )}
+              {renderCheckSelect(
+                "salaBombas",
+                "tableroAlimentacion",
+                "limpiezaComponentesElectricos",
+                "Limpieza componentes eléctricos",
+                data.checklistSalaBombas.tableroAlimentacion
+                  .limpiezaComponentesElectricos,
+              )}
+              {renderCheckSelect(
+                "salaBombas",
+                "tableroAlimentacion",
+                "pruebasFuncionamiento",
+                "Pruebas de funcionamiento",
+                data.checklistSalaBombas.tableroAlimentacion
+                  .pruebasFuncionamiento,
+              )}
             </div>
 
             <h5 className="mb-3 mt-4">Parámetros de Configuración</h5>
             <div className="mb-3">
-              {renderCheckSelect("salaBombas", "parametrosConfiguracion", "verificacionControlPID", "Verificación control PID", data.checklistSalaBombas.parametrosConfiguracion.verificacionControlPID)}
-              {renderCheckSelect("salaBombas", "parametrosConfiguracion", "verificacionMedidorPresion", "Verificación medidor de presión", data.checklistSalaBombas.parametrosConfiguracion.verificacionMedidorPresion)}
-              {renderCheckSelect("salaBombas", "parametrosConfiguracion", "ajustesParametros", "Ajustes de parámetros", data.checklistSalaBombas.parametrosConfiguracion.ajustesParametros)}
-              {renderCheckSelect("salaBombas", "parametrosConfiguracion", "pruebasFuncionamiento", "Pruebas de funcionamiento", data.checklistSalaBombas.parametrosConfiguracion.pruebasFuncionamiento)}
+              {renderCheckSelect(
+                "salaBombas",
+                "parametrosConfiguracion",
+                "verificacionControlPID",
+                "Verificación control PID",
+                data.checklistSalaBombas.parametrosConfiguracion
+                  .verificacionControlPID,
+              )}
+              {renderCheckSelect(
+                "salaBombas",
+                "parametrosConfiguracion",
+                "verificacionMedidorPresion",
+                "Verificación medidor de presión",
+                data.checklistSalaBombas.parametrosConfiguracion
+                  .verificacionMedidorPresion,
+              )}
+              {renderCheckSelect(
+                "salaBombas",
+                "parametrosConfiguracion",
+                "ajustesParametros",
+                "Ajustes de parámetros",
+                data.checklistSalaBombas.parametrosConfiguracion
+                  .ajustesParametros,
+              )}
+              {renderCheckSelect(
+                "salaBombas",
+                "parametrosConfiguracion",
+                "pruebasFuncionamiento",
+                "Pruebas de funcionamiento",
+                data.checklistSalaBombas.parametrosConfiguracion
+                  .pruebasFuncionamiento,
+              )}
             </div>
           </>
         )}
@@ -361,27 +501,118 @@ export const ReportEditor = ({
           <>
             <h5 className="mb-3 mt-4">Bombas y Partidor Suave</h5>
             <div className="mb-3">
-              {renderCheckSelect("tableroElectrico", "bombasPartidorSuave", "reaprieteConexionesFuerza", "Reapriete conexiones eléctricas de fuerza", data.checklistTableroElectrico.bombasPartidorSuave.reaprieteConexionesFuerza)}
-              {renderCheckSelect("tableroElectrico", "bombasPartidorSuave", "reaprieteConexionesControl", "Reapriete conexiones eléctricas de control", data.checklistTableroElectrico.bombasPartidorSuave.reaprieteConexionesControl)}
-              {renderCheckSelect("tableroElectrico", "bombasPartidorSuave", "limpiezaComponentesElectronicos", "Limpieza componentes electrónicos", data.checklistTableroElectrico.bombasPartidorSuave.limpiezaComponentesElectronicos)}
-              {renderCheckSelect("tableroElectrico", "bombasPartidorSuave", "revisionRuidosExtranos", "Revisión ruidos extraños en bombas", data.checklistTableroElectrico.bombasPartidorSuave.revisionRuidosExtranos)}
-              {renderCheckSelect("tableroElectrico", "bombasPartidorSuave", "pruebasFuncionamiento", "Pruebas de funcionamiento", data.checklistTableroElectrico.bombasPartidorSuave.pruebasFuncionamiento)}
+              {renderCheckSelect(
+                "tableroElectrico",
+                "bombasPartidorSuave",
+                "reaprieteConexionesFuerza",
+                "Reapriete conexiones eléctricas de fuerza",
+                data.checklistTableroElectrico.bombasPartidorSuave
+                  .reaprieteConexionesFuerza,
+              )}
+              {renderCheckSelect(
+                "tableroElectrico",
+                "bombasPartidorSuave",
+                "reaprieteConexionesControl",
+                "Reapriete conexiones eléctricas de control",
+                data.checklistTableroElectrico.bombasPartidorSuave
+                  .reaprieteConexionesControl,
+              )}
+              {renderCheckSelect(
+                "tableroElectrico",
+                "bombasPartidorSuave",
+                "limpiezaComponentesElectronicos",
+                "Limpieza componentes electrónicos",
+                data.checklistTableroElectrico.bombasPartidorSuave
+                  .limpiezaComponentesElectronicos,
+              )}
+              {renderCheckSelect(
+                "tableroElectrico",
+                "bombasPartidorSuave",
+                "revisionRuidosExtranos",
+                "Revisión ruidos extraños en bombas",
+                data.checklistTableroElectrico.bombasPartidorSuave
+                  .revisionRuidosExtranos,
+              )}
+              {renderCheckSelect(
+                "tableroElectrico",
+                "bombasPartidorSuave",
+                "pruebasFuncionamiento",
+                "Pruebas de funcionamiento",
+                data.checklistTableroElectrico.bombasPartidorSuave
+                  .pruebasFuncionamiento,
+              )}
             </div>
-            
+
             <h5 className="mb-3 mt-4">Tablero de Alimentación</h5>
             <div className="mb-3">
-              {renderCheckSelect("tableroElectrico", "tableroAlimentacion", "reaprieteConexionesFuerza", "Reapriete conexiones eléctricas de fuerza", data.checklistTableroElectrico.tableroAlimentacion.reaprieteConexionesFuerza)}
-              {renderCheckSelect("tableroElectrico", "tableroAlimentacion", "reaprieteConexionesControl", "Reapriete conexiones eléctricas de control", data.checklistTableroElectrico.tableroAlimentacion.reaprieteConexionesControl)}
-              {renderCheckSelect("tableroElectrico", "tableroAlimentacion", "limpiezaComponentesElectricos", "Limpieza componentes eléctricos", data.checklistTableroElectrico.tableroAlimentacion.limpiezaComponentesElectricos)}
-              {renderCheckSelect("tableroElectrico", "tableroAlimentacion", "pruebasFuncionamiento", "Pruebas de funcionamiento", data.checklistTableroElectrico.tableroAlimentacion.pruebasFuncionamiento)}
+              {renderCheckSelect(
+                "tableroElectrico",
+                "tableroAlimentacion",
+                "reaprieteConexionesFuerza",
+                "Reapriete conexiones eléctricas de fuerza",
+                data.checklistTableroElectrico.tableroAlimentacion
+                  .reaprieteConexionesFuerza,
+              )}
+              {renderCheckSelect(
+                "tableroElectrico",
+                "tableroAlimentacion",
+                "reaprieteConexionesControl",
+                "Reapriete conexiones eléctricas de control",
+                data.checklistTableroElectrico.tableroAlimentacion
+                  .reaprieteConexionesControl,
+              )}
+              {renderCheckSelect(
+                "tableroElectrico",
+                "tableroAlimentacion",
+                "limpiezaComponentesElectricos",
+                "Limpieza componentes eléctricos",
+                data.checklistTableroElectrico.tableroAlimentacion
+                  .limpiezaComponentesElectricos,
+              )}
+              {renderCheckSelect(
+                "tableroElectrico",
+                "tableroAlimentacion",
+                "pruebasFuncionamiento",
+                "Pruebas de funcionamiento",
+                data.checklistTableroElectrico.tableroAlimentacion
+                  .pruebasFuncionamiento,
+              )}
             </div>
 
             <h5 className="mb-3 mt-4">Parámetros de Configuración</h5>
             <div className="mb-3">
-              {renderCheckSelect("tableroElectrico", "parametrosConfiguracion", "verificacionControlTelemetria", "Verificación control Telemetria", data.checklistTableroElectrico.parametrosConfiguracion.verificacionControlTelemetria)}
-              {renderCheckSelect("tableroElectrico", "parametrosConfiguracion", "verificacionMedidorCaudal", "Verificación medidor de caudal", data.checklistTableroElectrico.parametrosConfiguracion.verificacionMedidorCaudal)}
-              {renderCheckSelect("tableroElectrico", "parametrosConfiguracion", "ajustesParametros", "Ajustes de parámetros", data.checklistTableroElectrico.parametrosConfiguracion.ajustesParametros)}
-              {renderCheckSelect("tableroElectrico", "parametrosConfiguracion", "pruebasFuncionamiento", "Pruebas de funcionamiento", data.checklistTableroElectrico.parametrosConfiguracion.pruebasFuncionamiento)}
+              {renderCheckSelect(
+                "tableroElectrico",
+                "parametrosConfiguracion",
+                "verificacionControlTelemetria",
+                "Verificación control Telemetria",
+                data.checklistTableroElectrico.parametrosConfiguracion
+                  .verificacionControlTelemetria,
+              )}
+              {renderCheckSelect(
+                "tableroElectrico",
+                "parametrosConfiguracion",
+                "verificacionMedidorCaudal",
+                "Verificación medidor de caudal",
+                data.checklistTableroElectrico.parametrosConfiguracion
+                  .verificacionMedidorCaudal,
+              )}
+              {renderCheckSelect(
+                "tableroElectrico",
+                "parametrosConfiguracion",
+                "ajustesParametros",
+                "Ajustes de parámetros",
+                data.checklistTableroElectrico.parametrosConfiguracion
+                  .ajustesParametros,
+              )}
+              {renderCheckSelect(
+                "tableroElectrico",
+                "parametrosConfiguracion",
+                "pruebasFuncionamiento",
+                "Pruebas de funcionamiento",
+                data.checklistTableroElectrico.parametrosConfiguracion
+                  .pruebasFuncionamiento,
+              )}
             </div>
           </>
         )}
@@ -419,48 +650,52 @@ export const ReportEditor = ({
           <>
             {/* ── MATERIALES ───────────────────────────────────────────────── */}
             <h5 className="mb-3 mt-4">Repuestos / Materiales (Opcional)</h5>
-        {data.materials.map((mat, index) => (
-          <div key={index} className="row g-2 mb-2 align-items-center">
-            <div className="col-12 col-md-6">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Descripción"
-                value={mat.description}
-                onChange={(e) =>
-                  onMaterialChange(index, "description", e.target.value)
-                }
-              />
-            </div>
-            <div className="col-5 col-md-2">
-              <input
-                type="number"
-                className="form-control"
-                placeholder="Cant."
-                value={mat.quantity}
-                onChange={(e) =>
-                  onMaterialChange(index, "quantity", Number(e.target.value))
-                }
-              />
-            </div>
-            <div className="col-2 col-md-1 text-end">
-              <button
-                type="button"
-                className="btn btn-outline-danger w-100"
-                onClick={() => onRemoveMaterial(index)}
-              >
-                X
-              </button>
-            </div>
-          </div>
-        ))}
-        <button
-          type="button"
-          className="btn btn-secondary btn-sm"
-          onClick={onAddMaterial}
-        >
-          + Agregar Material
-        </button>
+            {data.materials.map((mat, index) => (
+              <div key={index} className="row g-2 mb-2 align-items-center">
+                <div className="col-12 col-md-6">
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Descripción"
+                    value={mat.description}
+                    onChange={(e) =>
+                      onMaterialChange(index, "description", e.target.value)
+                    }
+                  />
+                </div>
+                <div className="col-5 col-md-2">
+                  <input
+                    type="number"
+                    className="form-control"
+                    placeholder="Cant."
+                    value={mat.quantity}
+                    onChange={(e) =>
+                      onMaterialChange(
+                        index,
+                        "quantity",
+                        Number(e.target.value),
+                      )
+                    }
+                  />
+                </div>
+                <div className="col-2 col-md-1 text-end">
+                  <button
+                    type="button"
+                    className="btn btn-outline-danger w-100"
+                    onClick={() => onRemoveMaterial(index)}
+                  >
+                    X
+                  </button>
+                </div>
+              </div>
+            ))}
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={onAddMaterial}
+            >
+              + Agregar Material
+            </button>
           </>
         )}
 
@@ -580,25 +815,31 @@ export const ReportEditor = ({
         <h5 className="mb-3 mt-4">Firmas</h5>
         <div className="row g-3">
           <div className="col-md-6">
-            <label className="form-label">Técnico</label>
+            <label className="form-label">
+              {isStandard ? "Técnico Especialista" : "Técnico Especialista"}
+            </label>
             <input
               type="text"
               className="form-control"
-              placeholder="Nombre Técnico"
+              placeholder={
+                isStandard ? "Técnico Especialista" : "Técnico Especialista"
+              }
               value={data.techName}
               onChange={(e) => onChange("techName", e.target.value)}
             />
           </div>
-          <div className="col-md-6">
-            <label className="form-label">Cliente</label>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Nombre quien recibe"
-              value={data.clientSigner}
-              onChange={(e) => onChange("clientSigner", e.target.value)}
-            />
-          </div>
+          {isStandard && (
+            <div className="col-md-6">
+              <label className="form-label">Cliente</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Nombre quien recibe"
+                value={data.clientSigner}
+                onChange={(e) => onChange("clientSigner", e.target.value)}
+              />
+            </div>
+          )}
         </div>
 
         {/* ── SUBMIT ───────────────────────────────────────────────────── */}

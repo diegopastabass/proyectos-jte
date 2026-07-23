@@ -13,6 +13,8 @@ interface ElbowProps {
 
   horometro_total: number;
   horometro_diario: number;
+  totalizador_diario: number;
+  totalizador_total: number;
 }
 
 const Elbow: React.FC<ElbowProps> = ({
@@ -24,6 +26,8 @@ const Elbow: React.FC<ElbowProps> = ({
   style,
   horometro_diario,
   horometro_total,
+  totalizador_diario,
+  totalizador_total,
 }) => {
   const elbowStyle: CSSProperties = {
     position: "absolute",
@@ -66,6 +70,18 @@ const Elbow: React.FC<ElbowProps> = ({
             <h6>
               {horHorasT} h {horMinutosT} m
             </h6>
+          </strong>
+        </div>
+        <div className="mb-2">
+          <span className="text-muted small">Totalizador Por Día:</span>{" "}
+          <strong>
+            <h6>{totalizador_diario / 10} m³</h6>
+          </strong>
+        </div>
+        <div className="mb-2">
+          <span className="text-muted small">Totalizador:</span>{" "}
+          <strong>
+            <h6>{totalizador_total / 10} m³</h6>
           </strong>
         </div>
       </div>

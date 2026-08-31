@@ -18,7 +18,7 @@ ChartJS.register(
   LineElement,
   Tooltip,
   Legend,
-  Title
+  Title,
 );
 
 interface DropdownCardProps {
@@ -48,13 +48,12 @@ function DropdownCard({
     new Date(d.time).toLocaleTimeString("es-CL", {
       hour: "2-digit",
       minute: "2-digit",
-    })
+    }),
   );
   let divisor = 1;
   if (title == "Caudal") {
-    divisor = 1000;
+    divisor = 1;
   }
-
 
   // Línea horizontal de alarma SOLO si viene el valor
   const alarmaDataset =
@@ -74,7 +73,7 @@ function DropdownCard({
     datasets: [
       {
         label: chartLabel,
-        data: data.map((d) => (d.value / divisor)),
+        data: data.map((d) => d.value / divisor),
         backgroundColor: "rgba(13, 110, 253, 0.6)",
         borderColor: "rgba(13, 110, 253, 1)",
         borderWidth: 2,

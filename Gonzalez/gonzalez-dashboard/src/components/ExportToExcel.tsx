@@ -95,7 +95,7 @@ function Export() {
             return {
               Fecha: fecha,
               Hora: hora,
-              "Valor (m³/h)": (d.value / 1000).toFixed(2),
+              "Valor (L/s)": d.value.toFixed(2),
             };
           case "horometro": {
             const totalMin = d.value;
@@ -103,7 +103,7 @@ function Export() {
             const minutos = totalMin % 60;
 
             const hhmm = `${String(horas).padStart(2, "0")}:${String(
-              minutos
+              minutos,
             ).padStart(2, "0")}`;
 
             return {
@@ -123,7 +123,7 @@ function Export() {
         wch:
           Math.max(
             key.length,
-            ...formattedData.map((row) => row[key]?.toString().length ?? 0)
+            ...formattedData.map((row) => row[key]?.toString().length ?? 0),
           ) + 2,
       }));
       ws["!cols"] = colWidths;

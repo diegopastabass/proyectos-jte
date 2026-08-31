@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Raw } from 'typeorm';
 import { Telemetria } from './models/metrics.entity';
@@ -12,6 +12,8 @@ interface DailyQueryResult {
 
 @Injectable()
 export class SsrIdahueService {
+  private readonly logger = new Logger(SsrIdahueService.name);
+
   constructor(
     @InjectRepository(Telemetria)
     private repo: Repository<Telemetria>,
@@ -224,73 +226,72 @@ export class SsrIdahueService {
     }));
   }
 
-  // Nivel
   async getNivelPlanta1(dto: DateRangeDto): Promise<Metric[]> {
-    const range = this.normalizeDateRange(dto);
-    if (!range) {
+    try {
+      const range = this.normalizeDateRange(dto);
+      if (range) {
+        const results = await this.repo.find({
+          where: {
+            mt_name: 'PLANTA1_IDAHUE--slave.nivel',
+            mt_time_2: Raw((a) => `${a} >= :start AND ${a} < :end`, {
+              start: range.start,
+              end: range.end,
+            }),
+          },
+          order: { mt_time_2: 'ASC' },
+        });
+        return results.map((r) => ({
+          time: r.mt_time_2.toISOString(),
+          value: Number(r.mt_value),
+        }));
+      }
       const results = await this.repo.find({
         where: { mt_name: 'PLANTA1_IDAHUE--slave.nivel' },
         order: { mt_time_2: 'DESC' },
-        take: 100,
+        take: dto.limit ? Number(dto.limit) : 100,
       });
-
-      return results.reverse().map((row) => ({
-        time: row.mt_time_2.toISOString(),
-        value: Number(row.mt_value),
+      return results.reverse().map((r) => ({
+        time: r.mt_time_2.toISOString(),
+        value: Number(r.mt_value),
       }));
+    } catch (error) {
+      this.logger.error('Error en getNivel', error);
+      throw error;
     }
-
-    const { start, end } = range;
-
-    const results = await this.repo.find({
-      where: {
-        mt_name: 'PLANTA1_IDAHUE--slave.nivel',
-        mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
-          start,
-          end,
-        }),
-      },
-      order: { mt_time_2: 'ASC' },
-    });
-
-    return results.map((row) => ({
-      time: row.mt_time_2.toISOString(),
-      value: Number(row.mt_value),
-    }));
   }
 
   // Nivel 2
   async getNivelPlanta2(dto: DateRangeDto): Promise<Metric[]> {
-    const range = this.normalizeDateRange(dto);
-    if (!range) {
+    try {
+      const range = this.normalizeDateRange(dto);
+      if (range) {
+        const results = await this.repo.find({
+          where: {
+            mt_name: 'PLANTA2_IDAHUE--slave.nivel',
+            mt_time_2: Raw((a) => `${a} >= :start AND ${a} < :end`, {
+              start: range.start,
+              end: range.end,
+            }),
+          },
+          order: { mt_time_2: 'ASC' },
+        });
+        return results.map((r) => ({
+          time: r.mt_time_2.toISOString(),
+          value: Number(r.mt_value),
+        }));
+      }
       const results = await this.repo.find({
         where: { mt_name: 'PLANTA2_IDAHUE--slave.nivel' },
         order: { mt_time_2: 'DESC' },
-        take: 100,
+        take: dto.limit ? Number(dto.limit) : 100,
       });
-
-      return results.reverse().map((row) => ({
-        time: row.mt_time_2.toISOString(),
-        value: Number(row.mt_value),
+      return results.reverse().map((r) => ({
+        time: r.mt_time_2.toISOString(),
+        value: Number(r.mt_value),
       }));
+    } catch (error) {
+      this.logger.error('Error en getNivel', error);
+      throw error;
     }
-
-    const { start, end } = range;
-
-    const results = await this.repo.find({
-      where: {
-        mt_name: 'PLANTA2_IDAHUE--slave.nivel',
-        mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
-          start,
-          end,
-        }),
-      },
-      order: { mt_time_2: 'ASC' },
-    });
-
-    return results.map((row) => ({
-      time: row.mt_time_2.toISOString(),
-      value: Number(row.mt_value),
-    }));
   }
 }

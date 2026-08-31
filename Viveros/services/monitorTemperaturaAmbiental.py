@@ -42,7 +42,7 @@ DB_CONFIG = {
 
 API_URL = os.getenv("API_URL")
 TOKEN = os.getenv("API_TOKEN")
-TO = '+56996181706'
+TO = os.getenv("API_TO")
 
 # ================== LOGGING ==================
 LOG_PATH = os.path.join(BASE_DIR, "logs")
@@ -128,8 +128,8 @@ def monitorear_temperatura(sensor_id=7):
     try:
         temp_umbral = float(env_vars.get("TEMP_AMB", "5"))
     except ValueError:
-        logger.warning("Valor inválido en env.txt; usando 5°C como valor por defecto.")
-        temp_umbral = 5.0
+        logger.warning("Valor inválido en env.txt; usando 23°C como valor por defecto.")
+        temp_umbral = 23.0
 
     datos = obtener_estadisticas_ultima_hora(sensor_id)
     hora_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

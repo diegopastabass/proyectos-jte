@@ -27,6 +27,13 @@ interface CardBodyProps {
   bomba?: string;
   falla?: string;
   asimetria?: string;
+  corriente1?: string;
+  corriente2?: string;
+  corriente3?: string;
+  voltaje1?: string;
+  voltaje2?: string;
+  voltaje3?: string;
+  title?: string;
 }
 
 // Estilos Base
@@ -44,9 +51,9 @@ const indicadorBase: React.CSSProperties = {
 // Helper de Estilos
 const getBadgeStyle = (
   valor: string | undefined,
-  tipo: "automatico" | "bomba" | "falla" | "info",
+  tipo: "automatico" | "bomba" | "falla" | "info" | "corriente" | "voltaje",
 ): React.CSSProperties => {
-  if (tipo === "info") {
+  if (tipo === "info" || tipo === "corriente" || tipo === "voltaje") {
     return { ...indicadorBase, backgroundColor: "#17a2b8" }; // Color informativo (ej. azul)
   }
 
@@ -65,9 +72,11 @@ const getBadgeStyle = (
 // Helper de Textos
 const getLabel = (
   valor: string | undefined,
-  tipo: "automatico" | "bomba" | "falla" | "info",
+  tipo: "automatico" | "bomba" | "falla" | "info" | "corriente" | "voltaje",
 ): string => {
   if (tipo === "info") return valor ? `${valor} bar` : "-";
+  if (tipo === "corriente") return valor ? `${valor} A` : "-";
+  if (tipo === "voltaje") return valor ? `${valor} V` : "-";
 
   const activo = valor === "1";
   switch (tipo) {
@@ -90,7 +99,7 @@ const StateRow = ({
 }: {
   label: string;
   value?: string;
-  type: "automatico" | "bomba" | "falla" | "info";
+  type: "automatico" | "bomba" | "falla" | "info" | "corriente" | "voltaje";
 }) => {
   if (value === undefined) return null;
   return (
@@ -102,16 +111,34 @@ const StateRow = ({
 };
 
 export function StateBody(props: CardBodyProps) {
-  const { automatico, bomba, falla, asimetria } = props;
+  const {
+    automatico,
+    bomba,
+    falla,
+    asimetria,
+    corriente1,
+    corriente2,
+    corriente3,
+    voltaje1,
+    voltaje2,
+    voltaje3,
+    title = "Estado Tablero",
+  } = props;
 
   return (
     <>
-      <h6 className="card-title mb-3" style={{ fontSize: "1rem", fontWeight: "bold" }}>Estado Tablero</h6>
+      <h6 className="card-title mb-3" style={{ fontSize: "1rem", fontWeight: "bold" }}>{title}</h6>
 
       <StateRow label="Modo" value={automatico} type="automatico" />
       <StateRow label="Bomba" value={bomba} type="bomba" />
       <StateRow label="Falla Asimetría" value={asimetria} type="falla" />
       <StateRow label="Falla Térmica" value={falla} type="falla" />
+      <StateRow label="Corriente L1" value={corriente1} type="corriente" />
+      <StateRow label="Corriente L2" value={corriente2} type="corriente" />
+      <StateRow label="Corriente L3" value={corriente3} type="corriente" />
+      <StateRow label="Voltaje L1" value={voltaje1} type="voltaje" />
+      <StateRow label="Voltaje L2" value={voltaje2} type="voltaje" />
+      <StateRow label="Voltaje L3" value={voltaje3} type="voltaje" />
     </>
   );
 }

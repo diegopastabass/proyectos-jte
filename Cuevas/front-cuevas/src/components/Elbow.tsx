@@ -11,6 +11,7 @@ interface ElbowProps {
 
   horometro_total: number;
   horometro_diario: number;
+  freatico: number;
 }
 
 const Elbow: React.FC<ElbowProps> = ({
@@ -22,6 +23,7 @@ const Elbow: React.FC<ElbowProps> = ({
   style,
   horometro_diario,
   horometro_total,
+  freatico,
 }) => {
   const elbowStyle: CSSProperties = {
     position: "absolute",
@@ -64,6 +66,12 @@ const Elbow: React.FC<ElbowProps> = ({
             <h6>
               {horHorasT} h {horMinutosT} m
             </h6>
+          </strong>
+        </div>
+        <div className="mb-2">
+          <span className="text-muted small">Freatico:</span>{" "}
+          <strong>
+            <h6>{freatico.toFixed(2)} m</h6>
           </strong>
         </div>
       </div>

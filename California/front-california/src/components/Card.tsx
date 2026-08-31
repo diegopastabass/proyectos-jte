@@ -14,10 +14,10 @@ function Card(props: CardProps) {
         width: "100%",
         maxWidth: "1500px",
         minHeight: "50px",
-        maxHeight: "430px",
+        height: "100%",
       }}
     >
-      <div className="card-body">{children}</div>
+      <div className="card-body" style={{ display: "flex", flexDirection: "column" }}>{children}</div>
     </div>
   );
 }

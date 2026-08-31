@@ -1,6 +1,5 @@
 import React, { type CSSProperties } from "react";
 import Tank from "./Tank";
-import Pipe from "./Pipe";
 import Pump from "./Pump";
 import Elbow from "./Elbow";
 import States from "./States";
@@ -8,30 +7,26 @@ import tankImage from "../assets/newTank.png";
 import pipeImage from "../assets/newPipe.png";
 import elbowImage from "../assets/newElbow.png";
 import pumpImage from "../assets/newPump.png";
-import tank2Image from "../assets/newTank2.png";
+import lilTank from "../assets/lilTank.png";
 
 interface Snapshot {
-  snapshot: DatosSnapshot;
-  tiempo_vaciado_hormigon: number;
-  tiempo_vaciado_hormigon_formatted: string;
-  tiempo_vaciado_metalico: number;
-  tiempo_vaciado_metalico_formatted: string;
+  snapshot: Datos;
+  tiempo_vaciado_1: number;
+  tiempo_vaciado_1_formatted: string;
+  tiempo_vaciado_2: number;
+  tiempo_vaciado_2_formatted: string;
 }
 
-interface DatosSnapshot {
-  automatico: Metric;
-  bomba: Metric;
-  caudal: Metric;
-  estanque_hormigon: Metric;
-  estanque_metalico: Metric;
-  falla: Metric;
-  freatico_pozo: Metric;
-  freatico_sentina: Metric;
-  horometro: Metric;
-  totalizador: Metric;
-  presion: Metric;
-  v1: Metric;
-  i1: Metric;
+interface Datos {
+  NIVEL_CERRO?: Metric;
+  NIVEL_METALICO?: Metric;
+  PRESION?: Metric;
+  TELEMETRIA?: Metric;
+  MANUAL?: Metric;
+  TOTALIZADOR?: Metric;
+  FREATICO?: Metric;
+  BOMBA?: Metric;
+  CAUDAL?: Metric;
 }
 
 interface Metric {
@@ -41,18 +36,18 @@ interface Metric {
 
 interface ScadaDiagramProps {
   data: Snapshot;
-  hor: string;
-  tot: string;
+  hor: number; //Último valor value de horometro
+  tot: number; //Último valor value de totalizador
 }
 
 const SPRITE_SIZE = 300;
 
 const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
-  const hasWaterFlow = data.snapshot.bomba.value === 1;
+  const hasWaterFlow = (data.snapshot.BOMBA?.value ?? 0) === 1;
 
   const imageAssets = {
     newTank: tankImage,
-    newTank2: tank2Image,
+    newTank2: lilTank,
     newPipe: pipeImage,
     newElbow: elbowImage,
     newPump: pumpImage,
@@ -71,15 +66,9 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
         <States
           style={{ maxWidth: "230px", maxHeight: "200px" }}
           title="Estado Tablero"
-          automatico={"1"}
-          falla={data.snapshot.falla.value.toString()}
-          bomba={data.snapshot.bomba.value.toString()}
-        />
-        <States
-          style={{ maxWidth: "230px", maxHeight: "200px" }}
-          title="Estado Table Eléctrico"
-          voltaje1={(data.snapshot.v1.value / 10).toFixed(2)}
-          corriente1={(data.snapshot.i1.value / 100).toFixed(2)}
+          automatico={(data.snapshot.TELEMETRIA?.value ?? 0).toString()}
+          bomba={(data.snapshot.BOMBA?.value ?? 0).toString()}
+          manual={(data.snapshot.MANUAL?.value ?? 0).toString()}
         />
         {/* 1. Bomba - Posición (0, 300) */}
         <Pump
@@ -88,36 +77,21 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           sentido={0}
           image={imageAssets.newPump}
           isActive={hasWaterFlow}
-          style={{ top: 300, left: 0 }}
+          style={{ top: 300, left: 200 }}
         />
 
         {/* 2. Codo - Posición (0, 0) */}
         <Elbow
           spriteWidth={SPRITE_SIZE}
           spriteHeight={SPRITE_SIZE}
-          a={0}
-          b={0}
           image={imageAssets.newElbow}
           hasWaterFlow={hasWaterFlow}
-          style={{ top: 0, left: 0 }}
-          freatico_pozo={data.snapshot.freatico_pozo.value}
-          freatico_sentina={data.snapshot.freatico_sentina.value}
-          horometro_diario={Number(hor)}
-          horometro_total={data.snapshot.horometro.value}
-        />
-
-        {/* 3. Tubería - Posición (300, 0) */}
-        <Pipe
-          spriteWidth={SPRITE_SIZE}
-          spriteHeight={SPRITE_SIZE}
-          sentido={1}
-          image={imageAssets.newPipe}
-          hasWaterFlow={hasWaterFlow}
-          style={{ top: 0, left: 300 }}
-          caudal={data.snapshot.caudal.value}
-          totalizador_diario={Number(tot)}
-          totalizador_total={data.snapshot.totalizador.value}
-          presion={data.snapshot.presion ? data.snapshot.presion.value : 0}
+          style={{ top: 0, left: 200 }}
+          freatico={data.snapshot.FREATICO?.value ?? 0}
+          horometro={hor}
+          totalizador={tot}
+          caudal={data.snapshot.CAUDAL?.value ?? 0}
+          presion={data.snapshot.PRESION?.value ?? 0}
         />
 
         {/* 4. Tanque Principal - Posición (600, 0). Max Volume: 7 */}
@@ -127,13 +101,14 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           positionX={600}
           positionY={0}
           image={imageAssets.newTank}
-          volume={data.snapshot.estanque_hormigon.value}
-          maxVolume={3.2}
-          style={{ top: 0, left: 600 }}
-          name="Estanque Hormigón"
-          labelX={630}
-          labelY={-110}
-          tiempoVaciado={data.tiempo_vaciado_hormigon_formatted}
+          level={data.snapshot.NIVEL_CERRO?.value ?? 0}
+          maxLevel={100}
+          maxVolume={100}
+          style={{ top: 0, left: 500 }}
+          name="Estanque Cerro 100 m³"
+          labelX={520}
+          labelY={100}
+          tiempoVaciado={data.tiempo_vaciado_1_formatted}
         />
 
         {/* 5. Tanque Secundario - Posición (600, 0). Max Volume: 7 */}
@@ -143,13 +118,14 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           positionX={600}
           positionY={0}
           image={imageAssets.newTank2}
-          volume={data.snapshot.estanque_metalico.value}
-          maxVolume={3.2}
-          style={{ top: 0, left: 900 }}
-          name="Estanque Metálico"
-          labelX={930}
-          labelY={-320}
-          tiempoVaciado={data.tiempo_vaciado_metalico_formatted}
+          level={data.snapshot.NIVEL_METALICO?.value ?? 0}
+          maxLevel={100}
+          maxVolume={40}
+          style={{ top: 44, left: 800 }}
+          name="Estanque Metálico 40 m³"
+          labelX={830}
+          labelY={-115}
+          tiempoVaciado={data.tiempo_vaciado_2_formatted}
         />
       </div>
     </div>

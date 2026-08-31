@@ -82,7 +82,7 @@ const Pipe: React.FC<PipeProps> = ({
         <div className="mb-2">
           <span className="text-muted small">Caudal de Impulsión:</span>
           <strong>
-            <h6>{caudal ? caudal?.toFixed(2) : 0} m³/h</h6>
+            <h6>{caudal ? caudal?.toFixed(2) : 0} L/s</h6>
           </strong>
         </div>
         <div className="mb-2">

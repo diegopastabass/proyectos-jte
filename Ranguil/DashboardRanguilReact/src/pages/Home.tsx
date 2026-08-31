@@ -14,10 +14,7 @@ import ScadaDiagram from "../components/ScadaDiagram";
 import ExportModal from "../components/ExportModal";
 import Error from "./Error";
 import logoJte from "../assets/logoJte.png";
-import {
-  fetchWithCache,
-  fetchWithCacheMulti,
-} from "../components/fetchWithcache";
+import { fetchWithCache } from "../components/fetchWithcache";
 
 interface Snapshot {
   snapshot: Datos;
@@ -134,7 +131,7 @@ function App() {
         setNivelData(await nivelRes.json());
         setNivel2Data(await nivel2Res.json());
         setCaudalData(await caudalRes.json());
-        setKwhData(await fetchWithCacheMulti("kwh", end));
+        setKwhData(await fetchWithCache("kwh", end));
         setVoltajeData(await voltajeRes.json());
         setCorrienteData(await corrienteRes.json());
         setPresionData(await presionRes.json());
@@ -195,10 +192,11 @@ function App() {
               )} m³`,
             ]}
             text3={["Tiempo Vaciado", data.tiempo_vaciado_est_1_formatted]}
+            text4={["☼", `${(data.snapshot.solar.value / 1000).toFixed(2)} V`]}
           />
           <TankLevelCircular
             nivelActual={data.snapshot.estanque.value / 100}
-            nivelMaximo={3.5}
+            nivelMaximo={3.2}
           />
           <ToggleCardButton
             isOpen={isOpenEstanque}
@@ -230,7 +228,7 @@ function App() {
           />
           <TankLevelCircular
             nivelActual={data.snapshot.estanque_2.value}
-            nivelMaximo={3.5}
+            nivelMaximo={3.2}
           />
           <ToggleCardButton
             isOpen={isOpenEstanque2}

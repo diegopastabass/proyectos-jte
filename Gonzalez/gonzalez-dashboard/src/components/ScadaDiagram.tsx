@@ -107,8 +107,8 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           image={imageAssets.newPipe}
           hasWaterFlow={hasWaterFlow}
           style={{ top: 0, left: 250 }}
-          caudal={data.snapshot.caudal.value / 1000}
-          cloro={data.snapshot.cloro.value}
+          caudal={data.snapshot.caudal.value}
+          cloro={data.snapshot.cloro.value / 100}
           ph={data.snapshot.ph.value / 100}
           totalizador_diario={Number(tot)}
           totalizador_total={data.snapshot.totalizador.value}
@@ -140,7 +140,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           image={imageAssets.newTank2}
           nivel={data.snapshot.metalico2.value}
           volume={data.snapshot.metalico2.value * 33.425565}
-          maxLevel={3}
+          maxLevel={2.2}
           style={{ top: 0, left: 850 }}
           name="Estanque Nuevo 100 m³"
           labelX={850}

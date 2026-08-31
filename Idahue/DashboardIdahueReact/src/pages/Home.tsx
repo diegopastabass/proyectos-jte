@@ -92,8 +92,8 @@ function App() {
         const [snapshotRes, nivelP1Res, nivelP2Res] = await Promise.all([
           fetch("https://app.jteanalytics.cl/idahue/snapshot"),
 
-          fetch(`https://app.jteanalytics.cl/idahue/nivel_planta1`),
-          fetch(`https://app.jteanalytics.cl/idahue/nivel_planta2`),
+          fetch(`https://app.jteanalytics.cl/idahue/nivel_planta1?limit=500`),
+          fetch(`https://app.jteanalytics.cl/idahue/nivel_planta2?limit=500`),
         ]);
 
         const snapshotData: Snapshot = await snapshotRes.json();

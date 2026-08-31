@@ -3,85 +3,83 @@ import React, { type CSSProperties } from "react";
 interface ElbowProps {
   spriteWidth: number;
   spriteHeight: number;
-  a: number;
-  b: number;
   image: string;
   hasWaterFlow: boolean;
   style?: CSSProperties;
-  freatico_pozo?: number;
-  freatico_sentina?: number;
-  horometro_total: number;
-  horometro_diario: number;
+  freatico?: number;
+  presion?: number;
+
+  horometro?: number;
+
+  totalizador?: number;
+  caudal?: number;
+  labelX?: number | string;
+  labelY?: number | string;
 }
 
 const Elbow: React.FC<ElbowProps> = ({
-  spriteWidth,
-  spriteHeight,
-  a,
-  b,
   image,
   style,
-  freatico_pozo,
-  freatico_sentina,
-  horometro_diario,
-  horometro_total,
+  freatico,
+  presion,
+  horometro,
+  totalizador,
+  caudal,
+  labelX = 150,
+  labelY = 250,
 }) => {
   const elbowStyle: CSSProperties = {
     position: "absolute",
     width: 300,
     height: 300,
-    objectFit: "none",
-    objectPosition: `-${a * spriteWidth}px -${b * spriteHeight}px`,
+    zIndex: 5,
     ...style,
   };
 
-  const horHoras = Math.floor(horometro_diario / 60);
-  const horMinutos = horometro_diario % 60;
-
-  const horHorasT = Math.floor(horometro_total / 60);
-  const horMinutosT = horometro_total % 60;
+  const horHoras = Math.floor((horometro || 0) / 60);
+  const horMinutos = Math.floor((horometro || 0) % 60);
 
   return (
     <div className="elbow-container">
       <div
-        className="text-center alert alert-light "
+        className="alert alert-light p-3 shadow-sm"
         style={{
-          maxWidth: "300px",
+          width: "max-content",
           position: "absolute",
-          top: 320,
-          left: 310,
-          zIndex: 10,
+          top: labelY,
+          left: labelX,
+          zIndex: 310,
+          display: "flex",
+          gap: "1.5rem",
         }}
       >
-        <div className="mb-2">
-          <span className="text-muted small">Freático Pozo:</span>{" "}
-          <strong>
-            <h6>{(freatico_pozo ? freatico_pozo / 100 : 0).toFixed(2)} m</h6>
-          </strong>
-        </div>
-        <div className="mb-2">
-          <span className="text-muted small">Freático Sentina:</span>{" "}
-          <strong>
-            <h6>
-              {(freatico_sentina ? freatico_sentina / 100 : 0).toFixed(2)} m
-            </h6>
-          </strong>
-        </div>
-        <div className="mb-2">
-          <span className="text-muted small">Horómetro Por Día:</span>{" "}
-          <strong>
-            <h6>
+        {/* Sección Pozo */}
+        <div className="d-flex flex-column text-start">
+          <h6 className="text-primary border-bottom pb-1">
+            <strong>Bomba</strong>
+          </h6>
+          <div className="small mb-1">
+            <span className="text-muted">Freático:</span>{" "}
+            <strong>{(freatico ? freatico / 10 : 0).toFixed(2)} m</strong>
+          </div>
+          <div className="small mb-1">
+            <span className="text-muted">Caudal:</span>{" "}
+            <strong>{(caudal || 0).toFixed(2)} l/s</strong>
+          </div>
+          <div className="small mb-1">
+            <span className="text-muted">Horómetro:</span>{" "}
+            <strong>
               {horHoras} h {horMinutos} m
-            </h6>
-          </strong>
-        </div>
-        <div className="mb-2">
-          <span className="text-muted small">Horómetro:</span>{" "}
-          <strong>
-            <h6>
-              {horHorasT} h {horMinutosT} m
-            </h6>
-          </strong>
+            </strong>
+          </div>
+          <div className="small mb-1">
+            <span className="text-muted">Totalizador:</span>{" "}
+            <strong>{((totalizador || 0) / 10).toFixed(2)} m³</strong>
+          </div>
+          <div className="small">
+            <span className="text-muted">Presión:</span>{" "}
+            <strong>{(presion || 0).toFixed(2)} psi</strong>
+          </div>
         </div>
       </div>
       <img

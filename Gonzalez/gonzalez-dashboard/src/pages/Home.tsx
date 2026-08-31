@@ -163,7 +163,7 @@ function App() {
           chartLabel="Nivel del Estanque (m)"
           data={nivelChartData}
           nivelMax={3}
-          nivelAlarma={0.5}
+          nivelAlarma={1}
         />
       </div>
 
@@ -181,7 +181,7 @@ function App() {
           />
           <TankLevelCircular
             nivelActual={data.snapshot.metalico2.value}
-            nivelMaximo={3}
+            nivelMaximo={2.2}
           />
           <ToggleCardButton
             isOpen={isOpenEstanque2}
@@ -195,7 +195,7 @@ function App() {
           chartLabel="Nivel del Estanque (m)"
           data={nivel2ChartData}
           nivelMax={3}
-          nivelAlarma={0.5}
+          nivelAlarma={1}
         />
       </div>
 
@@ -206,7 +206,7 @@ function App() {
             title="Bomba"
             text1={[
               "Caudal Impulsión",
-              `${(data.snapshot.caudal.value / 1000).toFixed(2)} m³/h`,
+              `${data.snapshot.caudal.value.toFixed(2)} L/s`,
             ]}
             text2={[
               "Nivel Freático",
@@ -215,11 +215,11 @@ function App() {
             text4={["Horómetro por Día", minutesToHHMM(ultimoHorometro)]}
             text5={[
               "Totalizador por Día",
-              `${(ultimoTotalizador / 10).toFixed(2)} m³`,
+              `${ultimoTotalizador.toFixed(2)} m³`,
             ]}
             text6={[
               "Totalizador",
-              `${(data.snapshot.totalizador.value / 10).toFixed(2)} m³`,
+              `${data.snapshot.totalizador.value.toFixed(2)} m³`,
             ]}
             text7={["Ph", (data.snapshot.ph.value / 100).toFixed(1)]}
             text8={[
@@ -235,9 +235,9 @@ function App() {
         <DropdownCard
           isOpen={isOpenBomba}
           title="Caudal"
-          chartLabel="Caudal de Impulsión (m³/h)"
+          chartLabel="Caudal de Impulsión (L/s)"
           data={caudalChartData}
-          nivelMax={80}
+          nivelMax={20}
         />
         <DropdownCardv2
           isOpen={isOpenBomba}
@@ -287,7 +287,7 @@ function App() {
           <ScadaDiagram
             data={data}
             hor={ultimoHorometro.toFixed(2)}
-            tot={(ultimoTotalizador / 10).toFixed(2)}
+            tot={ultimoTotalizador.toFixed(2)}
           />
         </div>
       </div>
@@ -320,7 +320,7 @@ function App() {
           chartLabel="Nivel del Estanque (m)"
           data={nivelChartData}
           nivelMax={3}
-          nivelAlarma={0.5}
+          nivelAlarma={1}
         />
       </div>
 
@@ -332,7 +332,7 @@ function App() {
           chartLabel="Nivel del Estanque (m)"
           data={nivel2ChartData}
           nivelMax={3}
-          nivelAlarma={0.5}
+          nivelAlarma={1}
         />
       </div>
 
@@ -341,9 +341,9 @@ function App() {
         <DropdownCard
           isOpen={true}
           title="Caudal"
-          chartLabel="Caudal de Impulsión (m³/h)"
+          chartLabel="Caudal de Impulsión (L/s)"
           data={caudalChartData}
-          nivelMax={80}
+          nivelMax={20}
         />
       </div>
     </div>

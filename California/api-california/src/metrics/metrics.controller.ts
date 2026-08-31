@@ -26,6 +26,11 @@ export class SsrCaliforniaController {
     return this.service.getNivel(dto);
   }
 
+  @Get('caudal')
+  getCaudal(@Query() dto: DateRangeDto) {
+    return this.service.getCaudal(dto);
+  }
+
   @Get('cerro')
   getNivel2(@Query() dto: DateRangeDto) {
     return this.service.getNivel2(dto);

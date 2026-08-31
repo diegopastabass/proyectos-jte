@@ -11,7 +11,7 @@ interface TankProps {
   style?: CSSProperties;
   name?: string;
   labelOffsetX?: number;
-  tiempoVaciado?: string;
+  tiempoVaciado: string;
 }
 
 const MAX_LEVEL_FRAMES = 20;
@@ -72,12 +72,12 @@ const Tank: React.FC<TankProps> = ({
         <h5>{name}</h5>
         <h6>{volume.toFixed(2)} m</h6>
         <p>{Math.round(percentage * 100)}%</p>
-        {tiempoVaciado && (
+        {
           <div className="alert alert-primary" style={{ padding: "5px" }}>
             <h6>Tiempo de Vaciado Estanque</h6>
             <p>Ø {tiempoVaciado}</p>
           </div>
-        )}
+        }
       </div>
       <img
         src={image}

@@ -43,7 +43,7 @@ DB_CONFIG = {
 
 API_URL = os.getenv("API_URL")
 TOKEN = os.getenv("API_TOKEN")
-TO = os.getenv("+56996181706")
+TO = os.getenv("API_TO")
 
 # Verificación de variables críticas
 for key, value in DB_CONFIG.items():

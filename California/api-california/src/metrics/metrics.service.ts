@@ -38,11 +38,21 @@ export class SsrCaliforniaService {
         ON t.mt_name = latest.mt_name AND t.mt_time_2 = latest.last_time
       `);
 
-      const prefix = 'SALA_BOMBA_';
+      const prefixes = ['SALA_BOMBA_', 'SSR_CALIFORNIA--slave.'];
+      const normalizeMetricName = (name: string): string => {
+        let normalized = name;
+        for (const prefix of prefixes) {
+          normalized = normalized.replace(prefix, '');
+        }
+        return normalized.toUpperCase();
+      };
+
       const snapshot: MetricSnapshot = results.reduce(
         (acc: MetricSnapshot, row: any) => {
-          acc[row.mt_name.replace(prefix, '')] = {
-            value: Number(row.mt_value),
+          const name = normalizeMetricName(row.mt_name);
+          const rawValue = Number(row.mt_value);
+          acc[name] = {
+            value: name === 'CAUDAL' ? rawValue / 100 : rawValue,
             time: new Date(row.mt_time_2).toISOString(),
           };
           return acc;
@@ -81,13 +91,18 @@ export class SsrCaliforniaService {
         };
       };
 
-      const estanque = await calcularTiempoVaciado(
-        'SSR_CALIFORNIA--slave.estanque',
+      const estanque1 = await calcularTiempoVaciado('SALA_BOMBA_NIVEL_CERRO');
+
+      const estanque2 = await calcularTiempoVaciado(
+        'SALA_BOMBA_NIVEL_METALICO',
       );
+
       return {
         snapshot,
-        tiempo_vaciado: estanque.tiempo,
-        tiempo_vaciado_formatted: estanque.formatted,
+        tiempo_vaciado_1: estanque1.tiempo,
+        tiempo_vaciado_2: estanque2.tiempo,
+        tiempo_vaciado_1_formatted: estanque1.formatted,
+        tiempo_vaciado_2_formatted: estanque2.formatted,
       };
     } catch (error) {
       this.logger.error('Error en getSnapshot', error);
@@ -352,6 +367,40 @@ export class SsrCaliforniaService {
       }));
     } catch (error) {
       this.logger.error('Error en getNivel', error);
+      throw error;
+    }
+  }
+
+  async getCaudal(dto: DateRangeDto): Promise<Metric[]> {
+    try {
+      const range = this.normalizeDateRange(dto);
+      if (range) {
+        const results = await this.repo.find({
+          where: {
+            mt_name: 'SSR_CALIFORNIA--slave.caudal',
+            mt_time_2: Raw((a) => `${a} >= :start AND ${a} < :end`, {
+              start: range.start,
+              end: range.end,
+            }),
+          },
+          order: { mt_time_2: 'ASC' },
+        });
+        return results.map((r) => ({
+          time: r.mt_time_2.toISOString(),
+          value: Number(r.mt_value) / 100,
+        }));
+      }
+      const results = await this.repo.find({
+        where: { mt_name: 'SSR_CALIFORNIA--slave.caudal' },
+        order: { mt_time_2: 'DESC' },
+        take: dto.limit ? Number(dto.limit) : 100,
+      });
+      return results.reverse().map((r) => ({
+        time: r.mt_time_2.toISOString(),
+        value: Number(r.mt_value) / 100,
+      }));
+    } catch (error) {
+      this.logger.error('Error en getCaudal', error);
       throw error;
     }
   }

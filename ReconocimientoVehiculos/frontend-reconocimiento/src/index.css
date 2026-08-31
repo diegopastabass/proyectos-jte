@@ -1,0 +1,229 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+body {
+  margin: 0;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(135deg, #e8f0fe 0%, #f1f5fb 50%, #e3ecfa 100%);
+  background-attachment: fixed;
+  color: #1e293b;
+  min-height: 100vh;
+}
+
+/* Card Panel */
+.glass-panel {
+  background: #ffffff;
+  border: 1px solid rgba(99, 120, 190, 0.15);
+  box-shadow: 0 4px 24px 0 rgba(59, 82, 156, 0.1);
+  border-radius: 1rem;
+}
+
+/* Form Controls */
+.form-control {
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #1e293b;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus {
+  background-color: #fff;
+  border-color: #3b82f6;
+  color: #1e293b;
+  box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.18);
+}
+
+.form-control::placeholder {
+  color: #94a3b8;
+}
+
+.form-label {
+  color: #475569;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+/* Buttons */
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border: none;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+  color: #fff;
+}
+
+.btn-outline-secondary {
+  border-color: #cbd5e1;
+  color: #475569;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-outline-secondary:hover {
+  background-color: #f1f5f9;
+  border-color: #94a3b8;
+  color: #1e293b;
+  transform: translateY(-1px);
+}
+
+/* Input group icons */
+.input-group-text {
+  background-color: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.input-group-text:hover {
+  background-color: #e2e8f0;
+  color: #1e293b;
+}
+
+/* Modal */
+.modal-content {
+  background: #ffffff;
+  border: 1px solid rgba(99, 120, 190, 0.15);
+  color: #1e293b;
+  border-radius: 1rem;
+  box-shadow: 0 16px 48px rgba(30, 41, 59, 0.2);
+}
+
+.modal-header {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.modal-footer {
+  border-top: 1px solid #e2e8f0;
+}
+
+.btn-close {
+  filter: none;
+}
+
+/* Webcam Overlay */
+.webcam-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  box-shadow: 0 4px 24px rgba(30, 41, 59, 0.2);
+  border: 2px solid #e2e8f0;
+}
+
+.plate-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60%;
+  height: 25%;
+  border: 3px dashed rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+.plate-overlay-text {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 4px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+}
+
+/* ===== Vehicle Admin Panel ===== */
+
+/* Swipeable list item wrapper */
+.vehicle-list-item-wrapper {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+}
+
+/* Main card (slides on swipe) */
+.vehicle-list-item {
+  position: relative;
+  z-index: 2;
+  cursor: grab;
+  user-select: none;
+  touch-action: pan-y;
+}
+
+/* Actions behind the card */
+.swipe-action {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  z-index: 1;
+}
+
+.swipe-action-delete {
+  left: 0;
+  justify-content: flex-start;
+}
+
+.swipe-action-edit {
+  right: 0;
+  justify-content: flex-end;
+}
+
+.swipe-action button {
+  border-radius: 0;
+  min-width: 100px;
+  height: 100%;
+  border: none;
+}
+
+/* Plate badge */
+.vehicle-plate-badge {
+  background: #f8fafc;
+  border: 2px solid #1e293b;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #1e293b;
+}
+
+/* Desktop hover actions (hidden by default, shown on hover) */
+.vehicle-desktop-actions {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.vehicle-list-item:hover .vehicle-desktop-actions {
+  opacity: 1;
+}
+
+/* Form select styling */
+.form-select {
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #1e293b;
+  transition: all 0.3s ease;
+}
+
+.form-select:focus {
+  background-color: #fff;
+  border-color: #3b82f6;
+  color: #1e293b;
+  box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.18);
+}

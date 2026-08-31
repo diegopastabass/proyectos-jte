@@ -24,12 +24,19 @@ interface Snapshot {
   caudal: Metric; //
   horometro: Metric; //
   totalizador: Metric; //
+  freatico: Metric; //
+  L1: Metric;
+  L2: Metric;
+  L3: Metric;
+  I1: Metric;
+  I2: Metric;
+  I3: Metric;
 }
 
 interface Datos {
   snapshot: Snapshot;
-  tiempo_vaciado: number;
-  tiempo_vaciado_formatted: string;
+  tiempo_vaciado_est_1: number;
+  tiempo_vaciado_est_1_formatted: string;
 }
 
 interface ScadaDiagramProps {
@@ -71,14 +78,27 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({
   return (
     <div>
       <div style={containerStyle}>
-        <State style={{ maxWidth: "250px", maxHeight: "200px" }}>
-          <StateBody
-            automatico={data.snapshot.automatico.value.toString()}
-            falla={data.snapshot.falla.value.toString()}
-            bomba={data.snapshot.bomba.value.toString()}
-            asimetria={data.snapshot.asimetria.value.toString()}
-          ></StateBody>
-        </State>
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", zIndex: 10, position: "relative" }}>
+          <State style={{ maxWidth: "250px" }}>
+            <StateBody
+              automatico={data.snapshot.automatico.value.toString()}
+              falla={data.snapshot.falla.value.toString()}
+              bomba={data.snapshot.bomba.value.toString()}
+              asimetria={data.snapshot.asimetria.value.toString()}
+            ></StateBody>
+          </State>
+          <State style={{ maxWidth: "250px" }}>
+            <StateBody
+              title="Tablero Eléctrico"
+              corriente1={(data.snapshot.I1.value / 100).toString()}
+              corriente2={(data.snapshot.I2.value / 100).toString()}
+              corriente3={(data.snapshot.I3.value / 100).toString()}
+              voltaje1={(data.snapshot.L1.value / 10).toString()}
+              voltaje2={(data.snapshot.L2.value / 10).toString()}
+              voltaje3={(data.snapshot.L3.value / 10).toString()}
+            ></StateBody>
+          </State>
+        </div>
         {/* 1. Bomba - Posición (0, 300) */}
         <Pump
           spriteWidth={SPRITE_SIZE}
@@ -100,6 +120,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({
           style={{ top: 0, left: -30 }}
           horometro_diario={latestHorometro}
           horometro_total={data.snapshot.totalizador.value}
+          freatico={data.snapshot.freatico.value / 100}
         />
 
         {/* 3. Tubería - Posición (300, 0) */}
@@ -125,9 +146,9 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({
           volume={data.snapshot.estanque.value}
           maxVolume={4}
           style={{ top: 0, left: 570 }}
-          name="Estanque 50m³"
+          name="Estanque 75m³"
           labelOffsetX={35}
-          tiempoVaciado={data.tiempo_vaciado_formatted}
+          tiempoVaciado={data.tiempo_vaciado_est_1_formatted.toString()}
         />
       </div>
     </div>

@@ -24,8 +24,8 @@ export class SsrCuevasService {
     if (!dto.start || !dto.end) return null;
 
     const startDate = new Date(`${dto.start}T00:00:00Z`);
-    const nextDay = new Date(dto.end);
-    nextDay.setDate(nextDay.getDate() + 1);
+    const nextDay = new Date(`${dto.end}T00:00:00Z`);
+    nextDay.setUTCDate(nextDay.getUTCDate() + 1);
     const endDate = new Date(`${nextDay.toISOString().slice(0, 10)}T00:00:00Z`);
 
     return { start: startDate, end: endDate };
@@ -33,11 +33,14 @@ export class SsrCuevasService {
 
   // Snapshot
   async getSnapshot(): Promise<{
-    snapshot: Record<string, { value: number; time: string }>;
-    tiempo_vaciado: number;
-    tiempo_vaciado_formatted: string;
+    snapshot: MetricSnapshot;
+    tiempo_vaciado_est_1: number;
+    tiempo_vaciado_est_1_formatted: string;
+    tiempo_vaciado_est_2: number;
+    tiempo_vaciado_est_2_formatted: string;
   }> {
-    const results = await this.repo.query(`
+    try {
+      const results = await this.repo.query(`
     SELECT t.mt_name, t.mt_value, t.mt_time_2
     FROM ssr_cuevas t
     INNER JOIN (
@@ -48,69 +51,81 @@ export class SsrCuevasService {
     ON t.mt_name = latest.mt_name AND t.mt_time_2 = latest.last_time
   `);
 
-    const PREFIX_POZO = 'SSR_CUEVAS--slave.';
+      const PREFIX_POZO = 'SSR_CUEVAS--slave.';
 
-    const snapshot = results.reduce((acc: any, row: any) => {
-      const name = row.mt_name as string;
-      const cleanKey = name.replace(PREFIX_POZO, '');
+      const snapshot: MetricSnapshot = results.reduce(
+        (acc: MetricSnapshot, row: any) => {
+          const key = row.mt_name.replace(PREFIX_POZO, '');
+          acc[key] = {
+            value: Number(row.mt_value),
+            time: new Date(row.mt_time_2).toISOString(),
+          };
+          return acc;
+        },
+        {},
+      );
 
-      acc[cleanKey] = {
-        value: Number(row.mt_value),
-        time: new Date(row.mt_time_2).toISOString(),
+      // Funciones internas de cálculo
+      const calcularTiempoVaciado = async (nombreEstanque: string) => {
+        const mediciones = await this.repo.find({
+          where: { mt_name: nombreEstanque },
+          order: { mt_time_2: 'DESC' },
+          take: 2,
+        });
+
+        if (mediciones.length < 2) {
+          return { tiempo: 0, formatted: 'Llenando...' };
+        }
+
+        const [actual, anterior] = mediciones;
+        const nivel_actual = Number(actual.mt_value);
+        const nivel_anterior = Number(anterior.mt_value);
+
+        const t_actual = actual.mt_time_2.getTime() / 1000;
+        const t_anterior = anterior.mt_time_2.getTime() / 1000;
+
+        if (!(nivel_actual < nivel_anterior && t_actual > t_anterior)) {
+          return { tiempo: 0, formatted: 'Llenando...' };
+        }
+
+        const tasa_vaciado =
+          (nivel_anterior - nivel_actual) / (t_actual - t_anterior);
+        const tiempo = Math.round(nivel_actual / tasa_vaciado);
+
+        const h = Math.floor(tiempo / 3600);
+        const m = Math.floor((tiempo % 3600) / 60);
+        const s = tiempo % 60;
+
+        const formatted = `${h.toString().padStart(2, '0')} h ${m
+          .toString()
+          .padStart(2, '0')} m ${s.toString().padStart(2, '0')} s`;
+
+        return { tiempo, formatted };
       };
 
-      return acc;
-    }, {});
+      const est_1 = await calcularTiempoVaciado('SSR_CUEVAS--slave.estanque');
+      const est_2 = await calcularTiempoVaciado('SSR_CUEVAS--slave.estanque_2');
 
-    // Funciones internas de cálculo
-    const calcularTiempoVaciado = async (nombreEstanque: string) => {
-      const mediciones = await this.repo.find({
-        where: { mt_name: nombreEstanque },
-        order: { mt_time_2: 'DESC' },
-        take: 2,
-      });
-
-      if (mediciones.length < 2) {
-        return { tiempo: 0, formatted: 'Llenando...' };
-      }
-
-      const [actual, anterior] = mediciones;
-      const nivel_actual = Number(actual.mt_value);
-      const nivel_anterior = Number(anterior.mt_value);
-
-      const t_actual = actual.mt_time_2.getTime() / 1000;
-      const t_anterior = anterior.mt_time_2.getTime() / 1000;
-
-      if (!(nivel_actual < nivel_anterior && t_actual > t_anterior)) {
-        return { tiempo: 0, formatted: 'Llenando...' };
-      }
-
-      const tasa_vaciado =
-        (nivel_anterior - nivel_actual) / (t_actual - t_anterior);
-      const tiempo = Math.round(nivel_actual / tasa_vaciado);
-
-      const h = Math.floor(tiempo / 3600);
-      const m = Math.floor((tiempo % 3600) / 60);
-      const s = tiempo % 60;
-
-      const formatted = `${h.toString().padStart(2, '0')} h ${m
-        .toString()
-        .padStart(2, '0')} m ${s.toString().padStart(2, '0')} s`;
-
-      return { tiempo, formatted };
-    };
-
-    const estanquePozo = await calcularTiempoVaciado(
-      'SSR_CUEVAS--slave.estanque',
-    );
-
-    return {
-      snapshot,
-      tiempo_vaciado: estanquePozo.tiempo,
-      tiempo_vaciado_formatted: estanquePozo.formatted,
-    };
+      return {
+        snapshot,
+        tiempo_vaciado_est_1: est_1.tiempo,
+        tiempo_vaciado_est_1_formatted: est_1.formatted,
+        tiempo_vaciado_est_2: est_2.tiempo,
+        tiempo_vaciado_est_2_formatted: est_2.formatted,
+      };
+    } catch (error) {
+      console.error('Error al obtener datos:' + error);
+      return {
+        snapshot: {},
+        tiempo_vaciado_est_1: 0,
+        tiempo_vaciado_est_1_formatted: 'Error al calcular tiempo de vaciado',
+        tiempo_vaciado_est_2: 0,
+        tiempo_vaciado_est_2_formatted: 'Error al calcular tiempo de vaciado',
+      };
+    }
   }
 
+  // Daily Metrics
   private async calculateAndCacheDaily(
     metricName: string,
     start: string,
@@ -121,6 +136,7 @@ export class SsrCuevasService {
         `SELECT mt_day, mt_value FROM ssr_cuevas_daily_metrics WHERE mt_name = $1 AND mt_day BETWEEN $2 AND $3`,
         [metricName, start, end],
       );
+
       const metricsMap = new Map<string, number>();
       cached.forEach((row: any) => {
         const dateStr =
@@ -137,26 +153,30 @@ export class SsrCuevasService {
 
       while (currentDate <= endDate) {
         const dateStr = currentDate.toISOString().split('T')[0];
-        if (!metricsMap.has(dateStr) || dateStr === todayStr)
+        if (!metricsMap.has(dateStr) || dateStr === todayStr) {
           missingDates.push(dateStr);
-        currentDate.setDate(currentDate.getDate() + 1);
+        }
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
       }
 
       if (missingDates.length > 0) {
         const calculated = await this.repo.query(
           `
           WITH bounds AS (
-            SELECT mt_time_2::DATE AS day, MIN(mt_time_2) AS first_ts, MAX(mt_time_2) AS last_ts
+            SELECT (mt_time_2 AT TIME ZONE 'UTC')::DATE AS day, MIN(mt_time_2) AS first_ts, MAX(mt_time_2) AS last_ts
             FROM ssr_cuevas
-            WHERE mt_name = $1 AND mt_time_2::DATE = ANY($2::DATE[])
-            GROUP BY mt_time_2::DATE
+            WHERE mt_name = $1 AND (mt_time_2 AT TIME ZONE 'UTC')::DATE = ANY($2::DATE[])
+            GROUP BY (mt_time_2 AT TIME ZONE 'UTC')::DATE
           )
-          SELECT b.day, (MAX(CAST(s_last.mt_value AS NUMERIC(30,6))) - MIN(CAST(s_first.mt_value AS NUMERIC(30,6)))) AS daily_value
+          SELECT b.day,
+            (MAX(CAST(s_last.mt_value AS NUMERIC(30,6))) - MIN(CAST(s_first.mt_value AS NUMERIC(30,6)))) AS daily_value
           FROM bounds b
-          LEFT JOIN ssr_cuevas s_first ON s_first.mt_name = $1 AND s_first.mt_time_2 = b.first_ts
-          LEFT JOIN ssr_cuevas s_last ON s_last.mt_name = $1 AND s_last.mt_time_2 = b.last_ts
+          LEFT JOIN ssr_cuevas s_first
+            ON s_first.mt_name = $1 AND s_first.mt_time_2 = b.first_ts
+          LEFT JOIN ssr_cuevas s_last
+            ON s_last.mt_name = $1 AND s_last.mt_time_2 = b.last_ts
           GROUP BY b.day
-        `,
+          `,
           [metricName, missingDates],
         );
 
@@ -166,22 +186,29 @@ export class SsrCuevasService {
               ? row.day
               : row.day.toISOString().split('T')[0];
           const val = Number(row.daily_value || 0);
+
           await this.repo.query(
-            `INSERT INTO ssr_cuevas_daily_metrics (mt_name, mt_day, mt_value) VALUES ($1, $2, $3) ON CONFLICT (mt_name, mt_day) DO UPDATE SET mt_value = EXCLUDED.mt_value`,
+            `INSERT INTO ssr_cuevas_daily_metrics (mt_name, mt_day, mt_value) 
+             VALUES ($1, $2, $3) 
+             ON CONFLICT (mt_name, mt_day) DO UPDATE SET mt_value = EXCLUDED.mt_value`,
             [metricName, dateStr, val],
           );
+
           metricsMap.set(dateStr, val);
         }
       }
 
       const results: Metric[] = [];
       currentDate = new Date(`${start}T00:00:00Z`);
+
       while (currentDate <= endDate) {
         const dateStr = currentDate.toISOString().split('T')[0];
-        if (metricsMap.has(dateStr))
+        if (metricsMap.has(dateStr)) {
           results.push({ time: dateStr, value: metricsMap.get(dateStr)! });
-        currentDate.setDate(currentDate.getDate() + 1);
+        }
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
       }
+
       return results;
     } catch (error) {
       this.logger.error(
@@ -192,66 +219,148 @@ export class SsrCuevasService {
     }
   }
 
-  async getHorometro(dto: DateRangeDto): Promise<Metric[]> {
-    this.logger.debug(`getHorometro recibido: ${JSON.stringify(dto)}`);
-    try {
-      if (!dto?.start || !dto?.end) throw new Error('Rango de fechas inválido');
-      return await this.calculateAndCacheDaily(
-        'SSR_CUEVAS--slave.horometro',
-        dto.start,
-        dto.end,
-      );
-    } catch (error) {
-      this.logger.error('Error en getHorometro', error);
-      throw error;
-    }
-  }
-
+  // Totalizador
   async getTotalizador(dto: DateRangeDto): Promise<Metric[]> {
-    this.logger.debug(`getTotalizador recibido: ${JSON.stringify(dto)}`);
-    try {
-      if (!dto?.start || !dto?.end) throw new Error('Rango de fechas inválido');
-      return await this.calculateAndCacheDaily(
-        'SSR_CUEVAS--slave.totalizador',
-        dto.start,
-        dto.end,
-      );
-    } catch (error) {
-      this.logger.error('Error en getTotalizador', error);
-      throw error;
-    }
+    if (!dto || !dto.start || !dto.end)
+      throw new Error('Se requiere rango de fechas válido.');
+    return this.calculateAndCacheDaily(
+      'SSR_CUEVAS--slave.totalizador',
+      dto.start,
+      dto.end,
+    );
   }
 
-  // Nivel
+  // Horometro
+  async getHorometro(dto: DateRangeDto): Promise<Metric[]> {
+    if (!dto || !dto.start || !dto.end)
+      throw new Error('Se requiere rango de fechas válido.');
+    return this.calculateAndCacheDaily(
+      'SSR_CUEVAS--slave.horometro',
+      dto.start,
+      dto.end,
+    );
+  }
+
+  // Kwh
+  async getKwh(dto: DateRangeDto): Promise<Metric[]> {
+    if (!dto || !dto.start || !dto.end)
+      throw new Error('Se requiere rango de fechas válido.');
+    return this.calculateAndCacheDaily(
+      'SSR_CUEVAS--slave.kwh',
+      dto.start,
+      dto.end,
+    );
+  }
+
+  // Nivel (estanque 1)
   async getNivel(dto: DateRangeDto): Promise<Metric[]> {
     const range = this.normalizeDateRange(dto);
-    if (!range) {
+
+    if (range) {
+      const { start, end } = range;
       const results = await this.repo.find({
-        where: { mt_name: 'SSR_CUEVAS--slave.estanque' },
-        order: { mt_time_2: 'DESC' },
-        take: 100,
+        where: {
+          mt_name: 'SSR_CUEVAS--slave.estanque',
+          mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
+            start,
+            end,
+          }),
+        },
+        order: { mt_time_2: 'ASC' },
       });
 
-      return results.reverse().map((row) => ({
+      return results.map((row) => ({
         time: row.mt_time_2.toISOString(),
         value: Number(row.mt_value),
       }));
     }
 
-    const { start, end } = range;
+    const takeLimit =
+      dto.limit && !isNaN(Number(dto.limit)) ? Number(dto.limit) : 100;
 
     const results = await this.repo.find({
-      where: {
-        mt_name: 'SSR_CUEVAS--slave.estanque',
-        mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
-          start,
-          end,
-        }),
-      },
-      order: { mt_time_2: 'ASC' },
+      where: { mt_name: 'SSR_CUEVAS--slave.estanque' },
+      order: { mt_time_2: 'DESC' },
+      take: takeLimit,
     });
 
-    return results.map((row) => ({
+    return results.reverse().map((row) => ({
+      time: row.mt_time_2.toISOString(),
+      value: Number(row.mt_value),
+    }));
+  }
+
+  // Nivel 2 (estanque_2)
+  async getNivel2(dto: DateRangeDto): Promise<Metric[]> {
+    const range = this.normalizeDateRange(dto);
+
+    if (range) {
+      const { start, end } = range;
+      const results = await this.repo.find({
+        where: {
+          mt_name: 'SSR_CUEVAS--slave.estanque_2',
+          mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
+            start,
+            end,
+          }),
+        },
+        order: { mt_time_2: 'ASC' },
+      });
+
+      return results.map((row) => ({
+        time: row.mt_time_2.toISOString(),
+        value: Number(row.mt_value),
+      }));
+    }
+
+    const takeLimit =
+      dto.limit && !isNaN(Number(dto.limit)) ? Number(dto.limit) : 100;
+
+    const results = await this.repo.find({
+      where: { mt_name: 'SSR_CUEVAS--slave.estanque_2' },
+      order: { mt_time_2: 'DESC' },
+      take: takeLimit,
+    });
+
+    return results.reverse().map((row) => ({
+      time: row.mt_time_2.toISOString(),
+      value: Number(row.mt_value),
+    }));
+  }
+
+  // Freático
+  async getFreatico(dto: DateRangeDto): Promise<Metric[]> {
+    const range = this.normalizeDateRange(dto);
+
+    if (range) {
+      const { start, end } = range;
+      const results = await this.repo.find({
+        where: {
+          mt_name: 'SSR_CUEVAS--slave.freatico',
+          mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
+            start,
+            end,
+          }),
+        },
+        order: { mt_time_2: 'ASC' },
+      });
+
+      return results.map((row) => ({
+        time: row.mt_time_2.toISOString(),
+        value: Number(row.mt_value),
+      }));
+    }
+
+    const takeLimit =
+      dto.limit && !isNaN(Number(dto.limit)) ? Number(dto.limit) : 100;
+
+    const results = await this.repo.find({
+      where: { mt_name: 'SSR_CUEVAS--slave.freatico' },
+      order: { mt_time_2: 'DESC' },
+      take: takeLimit,
+    });
+
+    return results.reverse().map((row) => ({
       time: row.mt_time_2.toISOString(),
       value: Number(row.mt_value),
     }));
@@ -260,35 +369,142 @@ export class SsrCuevasService {
   // Caudal
   async getCaudal(dto: DateRangeDto): Promise<Metric[]> {
     const range = this.normalizeDateRange(dto);
-    if (!range) {
+
+    if (range) {
+      const { start, end } = range;
       const results = await this.repo.find({
-        where: { mt_name: 'SSR_CUEVAS--slave.caudal' },
-        order: { mt_time_2: 'DESC' },
-        take: 100,
+        where: {
+          mt_name: 'SSR_CUEVAS--slave.caudal',
+          mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
+            start,
+            end,
+          }),
+        },
+        order: { mt_time_2: 'ASC' },
       });
 
-      return results.reverse().map((row) => ({
+      return results.map((row) => ({
         time: row.mt_time_2.toISOString(),
         value: Number(row.mt_value),
       }));
     }
 
-    const { start, end } = range;
+    const takeLimit =
+      dto.limit && !isNaN(Number(dto.limit)) ? Number(dto.limit) : 100;
 
     const results = await this.repo.find({
-      where: {
-        mt_name: 'SSR_CUEVAS--slave.caudal',
-        mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
-          start,
-          end,
-        }),
-      },
-      order: { mt_time_2: 'ASC' },
+      where: { mt_name: 'SSR_CUEVAS--slave.caudal' },
+      order: { mt_time_2: 'DESC' },
+      take: takeLimit,
     });
 
-    return results.map((row) => ({
+    return results.reverse().map((row) => ({
       time: row.mt_time_2.toISOString(),
       value: Number(row.mt_value),
     }));
+  }
+
+  // Corriente (I1, I2, I3)
+  async getCorriente(
+    dto: DateRangeDto,
+  ): Promise<{ I1: Metric[]; I2: Metric[]; I3: Metric[] }> {
+    const range = this.normalizeDateRange(dto);
+
+    const fetchVariable = async (variable: string) => {
+      const mtName = `SSR_CUEVAS--slave.${variable}`;
+      if (!range) {
+        const start = new Date(Date.now() - 6 * 60 * 60 * 1000);
+        const results = await this.repo.find({
+          where: {
+            mt_name: mtName,
+            mt_time_2: Raw((alias) => `${alias} >= :start`, { start }),
+          },
+          order: { mt_time_2: 'ASC' },
+        });
+
+        return results.map((row) => ({
+          time: row.mt_time_2.toISOString(),
+          value: Number(row.mt_value),
+        }));
+      }
+
+      const { start, end } = range;
+
+      const results = await this.repo.find({
+        where: {
+          mt_name: mtName,
+          mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
+            start,
+            end,
+          }),
+        },
+        order: { mt_time_2: 'ASC' },
+      });
+
+      return results.map((row) => ({
+        time: row.mt_time_2.toISOString(),
+        value: Number(row.mt_value),
+      }));
+    };
+
+    const [I1, I2, I3] = await Promise.all([
+      fetchVariable('I1'),
+      fetchVariable('I2'),
+      fetchVariable('I3'),
+    ]);
+
+    return { I1, I2, I3 };
+  }
+
+  // Voltaje (L1, L2, L3)
+  async getVoltaje(
+    dto: DateRangeDto,
+  ): Promise<{ L1: Metric[]; L2: Metric[]; L3: Metric[] }> {
+    const range = this.normalizeDateRange(dto);
+
+    const fetchVariable = async (variable: string) => {
+      const mtName = `SSR_CUEVAS--slave.${variable}`;
+      if (!range) {
+        const start = new Date(Date.now() - 6 * 60 * 60 * 1000);
+        const results = await this.repo.find({
+          where: {
+            mt_name: mtName,
+            mt_time_2: Raw((alias) => `${alias} >= :start`, { start }),
+          },
+          order: { mt_time_2: 'ASC' },
+        });
+
+        return results.map((row) => ({
+          time: row.mt_time_2.toISOString(),
+          value: Number(row.mt_value),
+        }));
+      }
+
+      const { start, end } = range;
+
+      const results = await this.repo.find({
+        where: {
+          mt_name: mtName,
+          mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
+            start,
+            end,
+          }),
+        },
+        order: { mt_time_2: 'ASC' },
+      });
+
+      return results.map((row) => ({
+        time: row.mt_time_2.toISOString(),
+        value: Number(row.mt_value),
+      }));
+    };
+
+    const [L1, L2, L3] = await Promise.all([
+      fetchVariable('L1'),
+      fetchVariable('L2'),
+      fetchVariable('L3'),
+    ]);
+
+    return { L1, L2, L3 };
   }
 }

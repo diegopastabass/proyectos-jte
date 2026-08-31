@@ -14,6 +14,7 @@ interface StatesProps {
   falla_p1?: string;
   // Planta 2
   automatico?: string;
+  manual?: string;
   bomba?: string;
   falla?: string;
   falla_asimetria?: string;
@@ -50,7 +51,8 @@ const getBadgeStyle = (
     | "info"
     | "corriente"
     | "voltaje"
-    | "kwh",
+    | "kwh"
+    | "manual",
 ): React.CSSProperties => {
   if (tipo === "info" || tipo === "corriente" || tipo === "voltaje") {
     return { ...indicadorBase, backgroundColor: "#17a2b8" }; // Color informativo (ej. azul)
@@ -78,7 +80,8 @@ const getLabel = (
     | "info"
     | "corriente"
     | "voltaje"
-    | "kwh",
+    | "kwh"
+    | "manual",
 ): string => {
   if (tipo === "info") return valor ? `${valor} bar` : "-";
   if (tipo === "corriente") return valor ? `${valor} A` : "-";
@@ -93,6 +96,8 @@ const getLabel = (
       return activo ? "Encendida" : "Apagada";
     case "falla":
       return activo ? "Con falla" : "Sin falla";
+    case "manual":
+      return activo ? "Manual" : "Apagado";
     default:
       return "-";
   }
@@ -113,7 +118,8 @@ const StateRow = ({
     | "info"
     | "corriente"
     | "voltaje"
-    | "kwh";
+    | "kwh"
+    | "manual";
 }) => {
   if (value === undefined) return null;
   return (
@@ -171,6 +177,7 @@ export default function States(props: StatesProps) {
           type="falla"
         />
         <StateRow label="Falla Térmica" value={props.falla_p1} type="falla" />
+        <StateRow label="Manual" value={props.manual} type="manual" />
 
         {/* Tablero Eléctrico */}
         <StateRow

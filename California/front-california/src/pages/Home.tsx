@@ -6,31 +6,60 @@ import States from "../components/States";
 import "../index.css";
 import Loading from "./Loading";
 import ToggleCardButton from "../components/ToggelCardButton";
-import DropdownCard from "../components/DropdownCard";
-import DropdownCardv2 from "../components/DropDownCardv2";
-import DropdownCardv3 from "../components/DropDownCardv3";
+import GraphCard from "../components/GraphCard";
 import ScadaDiagram from "../components/ScadaDiagram";
 import ExportModal from "../components/ExportModal";
 import Error from "./Error";
 import logoJte from "../assets/logoJte.png";
-import DropdownCardv4 from "../components/DropdownCardv4";
+
 import { fetchWithCache } from "../components/fetchWithcache";
 
 interface Snapshot {
   snapshot: Datos;
-  tiempo_vaciado_hormigon: number;
-  tiempo_vaciado_hormigon_formatted: string;
-  tiempo_vaciado_metalico: number;
-  tiempo_vaciado_metalico_formatted: string;
+  tiempo_vaciado_1: number;
+  tiempo_vaciado_1_formatted: string;
+  tiempo_vaciado_2: number;
+  tiempo_vaciado_2_formatted: string;
 }
 
 interface Datos {
-  SALA_BOM;
+  NIVEL_CERRO?: Metric;
+  NIVEL_METALICO?: Metric;
+  PRESION?: Metric;
+  TELEMETRIA?: Metric;
+  MANUAL?: Metric;
+  TOTALIZADOR?: Metric;
+  FREATICO?: Metric;
+  BOMBA?: Metric;
+  CAUDAL?: Metric;
 }
 
 interface Metric {
   value: number;
   time: string;
+}
+
+const emptyMetric = (): Metric => ({ value: 0, time: "" });
+
+function normalizeSnapshot(raw: any): Snapshot {
+  const snap = raw?.snapshot ?? {};
+  return {
+    tiempo_vaciado_1: raw?.tiempo_vaciado_1 ?? 0,
+    tiempo_vaciado_1_formatted: raw?.tiempo_vaciado_1_formatted ?? "--",
+    tiempo_vaciado_2: raw?.tiempo_vaciado_2 ?? 0,
+    tiempo_vaciado_2_formatted: raw?.tiempo_vaciado_2_formatted ?? "--",
+    snapshot: {
+      NIVEL_CERRO: snap.NIVEL_CERRO ?? emptyMetric(),
+      NIVEL_METALICO: snap.NIVEL_METALICO ?? emptyMetric(),
+      PRESION: snap.PRESION ?? emptyMetric(),
+      TELEMETRIA: snap.TELEMETRIA ?? emptyMetric(),
+      MANUAL: snap.MANUAL ?? emptyMetric(),
+      TOTALIZADOR: snap.TOTALIZADOR ?? emptyMetric(),
+      FREATICO: snap.FREATICO ?? emptyMetric(),
+      BOMBA: snap.BOMBA ?? emptyMetric(),
+      CAUDAL: snap.CAUDAL ?? emptyMetric(),
+    },
+  };
 }
 
 function App() {
@@ -68,30 +97,49 @@ function App() {
 
     // Fetch Data
     const fetchData = async () => {
+      // Fetch snapshot (requerido para renderizar)
       try {
-        const [snapshotRes, nivelRes, nivel2Res, caudalRes] = await Promise.all(
-          [
-            fetch("https://app.jteanalytics.cl/california/snapshot"),
-            fetch(`https://app.jteanalytics.cl/california/nivel`),
-            fetch(`https://app.jteanalytics.cl/california/nivel2`),
-            fetch(`https://app.jteanalytics.cl/california/caudal`),
-          ],
+        const snapshotRes = await fetch(
+          "https://app.jteanalytics.cl/california/snapshot",
         );
-
-        const snapshotData: Snapshot = await snapshotRes.json();
-        setData(snapshotData);
-
-        setTotalizadorData(await fetchWithCache("totalizador", end));
-        setHorometroData(await fetchWithCache("horometro", end));
-
-        setNivelData(await nivelRes.json());
-        setNivel2Data(await nivel2Res.json());
-        setCaudalData(await caudalRes.json());
+        if (snapshotRes.ok) {
+          const raw = await snapshotRes.json();
+          setData(normalizeSnapshot(raw));
+        }
       } catch (error) {
-        console.error(error);
+        console.error("Error al obtener snapshot:", error);
       } finally {
         setLoading(false);
       }
+
+      // Fetch series de forma independiente (un fallo no bloquea los demás)
+      const safeFetch = async (url: string): Promise<Metric[]> => {
+        try {
+          const res = await fetch(url);
+          if (!res.ok) return [];
+          const json = await res.json();
+          return Array.isArray(json) ? json : [];
+        } catch {
+          return [];
+        }
+      };
+
+      const [metalicoData, cerroData, caudalData, totData, horData] =
+        await Promise.all([
+          safeFetch(
+            "https://app.jteanalytics.cl/california/metalico?limit=300",
+          ),
+          safeFetch("https://app.jteanalytics.cl/california/cerro?limit=300"),
+          safeFetch("https://app.jteanalytics.cl/california/caudal?limit=300"),
+          fetchWithCache("totalizador", end).catch(() => [] as Metric[]),
+          fetchWithCache("horometro", end).catch(() => [] as Metric[]),
+        ]);
+
+      setNivelData(metalicoData);
+      setNivel2Data(cerroData);
+      setCaudalData(caudalData);
+      setTotalizadorData(totData);
+      setHorometroData(horData);
     };
 
     fetchData();
@@ -132,73 +180,74 @@ function App() {
       <div className="col-12 col-lg-4 mb-1">
         <Card>
           <CardBody
-            title="Estanque Hormigón"
+            title="Estanque Cerro 100 m³"
             text1={[
               "Nivel",
-              `${data.snapshot.estanque_hormigon.value.toFixed(2)} m`,
+              `${(data.snapshot.NIVEL_CERRO?.value ?? 0).toFixed(2)} %`,
             ]}
             text2={[
               "Volumen Actual",
-              `${((60 / 7) * data.snapshot.estanque_hormigon.value).toFixed(
-                2,
-              )} m³`,
+              `${(data.snapshot.NIVEL_CERRO?.value ?? 0).toFixed(2)} m³`,
             ]}
-            text3={["Tiempo Vaciado", data.tiempo_vaciado_hormigon_formatted]}
+            text3={["Tiempo Vaciado", data.tiempo_vaciado_1_formatted]}
           />
           <TankLevelCircular
-            nivelActual={data.snapshot.estanque_hormigon.value}
-            nivelMaximo={3.5}
+            nivelActual={data.snapshot.NIVEL_CERRO?.value ?? 0}
+            nivelMaximo={100}
           />
           <ToggleCardButton
             isOpen={isOpenEstanque}
             onToggle={() => setIsOpenEstanque(!isOpenEstanque)}
           />
         </Card>
-        <DropdownCard
-          className="mb-4 d-below-1500-none d-1500-block"
+        <GraphCard
           isOpen={isOpenEstanque}
-          title="Estanque Hormigón"
-          chartLabel="Nivel del Estanque (m)"
-          data={nivelChartData}
-          nivelMax={3.5}
-          nivelAlarma={1}
+          title="Estanque Cerro 100 m³"
+          chartLabel="Nivel del Estanque (%)"
+          initialData={nivelChartData}
+          type="nivel"
+          nivelMax={100}
+          nivelAlarma={50}
+          fetchEndpoint="https://app.jteanalytics.cl/california/cerro"
         />
       </div>
       {/* Estanque 2 */}
       <div className="col-12 col-lg-4 mb-1">
         <Card>
           <CardBody
-            title="Estanque Metalico"
+            title="Estanque Metalico 40 m³"
             text1={[
               "Nivel",
-              `${data.snapshot.estanque_metalico.value.toFixed(2)} m`,
+              `${(data.snapshot.NIVEL_METALICO?.value ?? 0).toFixed(2)} %`,
             ]}
             text2={[
               "Volumen Actual",
-              `${((60 / 7) * data.snapshot.estanque_metalico.value).toFixed(
-                2,
-              )} m³`,
+              `${(
+                (40 / 100) *
+                (data.snapshot.NIVEL_METALICO?.value ?? 0)
+              ).toFixed(2)} m³`,
             ]}
-            text3={["Tiempo Vaciado", data.tiempo_vaciado_metalico_formatted]}
-            date={data.snapshot.estanque_metalico.time}
+            text3={["Tiempo Vaciado", data.tiempo_vaciado_2_formatted]}
+            date={data.snapshot.NIVEL_METALICO?.time}
           />
           <TankLevelCircular
-            nivelActual={data.snapshot.estanque_metalico.value}
-            nivelMaximo={3.5}
+            nivelActual={data.snapshot.NIVEL_METALICO?.value ?? 0}
+            nivelMaximo={100}
           />
           <ToggleCardButton
             isOpen={isOpenEstanque2}
             onToggle={() => setIsOpenEstanque2(!isOpenEstanque2)}
           />
         </Card>
-        <DropdownCard
-          className="mb-4 d-below-1500-none d-1500-block"
+        <GraphCard
           isOpen={isOpenEstanque2}
           title="Estanque Metálico"
-          chartLabel="Nivel del Estanque (m)"
-          data={nivel2ChartData}
-          nivelMax={3.5}
-          nivelAlarma={1}
+          chartLabel="Nivel del Estanque (%)"
+          initialData={nivel2ChartData}
+          type="nivel"
+          nivelMax={100}
+          nivelAlarma={30}
+          fetchEndpoint="https://app.jteanalytics.cl/california/metalico"
         />
       </div>
       {/* Bomba */}
@@ -208,28 +257,21 @@ function App() {
             title="Bomba"
             text1={[
               "Caudal Impulsión",
-              `${data.snapshot.caudal.value.toFixed(2)} l/s`,
+              `${(data.snapshot.CAUDAL?.value ?? 0).toFixed(2)} l/s`,
             ]}
             text2={[
-              "Nivel Freático Pozo",
-              `${(data.snapshot.freatico_pozo.value / 100).toFixed(2)} m`,
+              "Nivel Freático",
+              `${((data.snapshot.FREATICO?.value ?? 0) / 100).toFixed(2)} m`,
             ]}
-            text3={[
-              "Nivel Freático Sentina",
-              `${(data.snapshot.freatico_sentina.value / 100).toFixed(2)} m`,
-            ]}
-            text4={["Horómetro por Día", minutesToHHMM(ultimoHorometro)]}
+            text3={["Horómetro", minutesToHHMM(ultimoHorometro)]}
+            text4={["Totalizador", `${(ultimoTotalizador / 10).toFixed(2)} m³`]}
             text5={[
-              "Totalizador por Día",
-              `${ultimoTotalizador.toFixed(2)} m³`,
+              "Totalizador",
+              `${((data.snapshot.TOTALIZADOR?.value ?? 0) / 10).toFixed(2)} m³`,
             ]}
             text6={[
-              "Totalizador",
-              `${data.snapshot.totalizador.value.toFixed(2)} m³`,
-            ]}
-            text7={[
               "Presión",
-              `${data.snapshot.presion ? data.snapshot.presion.value.toFixed(2) : 0} bar`,
+              `${(data.snapshot.PRESION?.value ?? 0).toFixed(2)} psi`,
             ]}
           />
           <ToggleCardButton
@@ -237,62 +279,35 @@ function App() {
             onToggle={() => setIsOpenBomba(!isOpenBomba)}
           />
         </Card>
-        <DropdownCard
+        <GraphCard
           isOpen={isOpenBomba}
           title="Caudal"
           chartLabel="Caudal de Impulsión (l/s)"
-          data={caudalChartData}
-          nivelMax={4}
+          initialData={caudalChartData}
+          type="caudal"
+          nivelMax={15}
+          fetchEndpoint="https://app.jteanalytics.cl/california/caudal"
         />
-        <DropdownCardv2
+        <GraphCard
           isOpen={isOpenBomba}
           title="Horómetro Diario"
           chartLabel="Horómetro"
-          data={horometroChartData}
+          initialData={horometroChartData}
+          type="horometro"
         />
-        <DropdownCardv3
+        <GraphCard
           isOpen={isOpenBomba}
           title="Totalizador Diario"
           chartLabel="Totalizador en m³"
-          data={totalizadorChartData}
-        />{" "}
+          initialData={totalizadorChartData}
+          divisor={10}
+          type="totalizador"
+        />
         {/* Panel de Estados */}
         <States
-          automatico={"1"}
-          bomba={data.snapshot.bomba.value.toString()}
-          falla={data.snapshot.falla.value.toString()}
-        />
-      </div>
-      <div className="col-12 col-lg-4 mb-1">
-        <States
-          title="Estado Tablero Eléctrico"
-          corriente1={(data.snapshot.i1.value / 100).toFixed(2)}
-          voltaje1={(data.snapshot.v1.value / 10).toFixed(2)}
-        />
-        <DropdownCardv3
-          isOpen={true}
-          title="kWh"
-          chartLabel="kWh"
-          data={kwhChartData}
-          mult={10}
-        />{" "}
-        <DropdownCardv4
-          isOpen={true}
-          title="Voltaje"
-          chartLabel="Voltaje (V)"
-          data={{
-            v1: voltajeChartData.v1,
-          }}
-          divisor={10}
-        />
-        <DropdownCardv4
-          isOpen={true}
-          title="Corriente"
-          chartLabel="Corriente (A)"
-          data={{
-            i1: corrienteChartData.i1,
-          }}
-          divisor={100}
+          automatico={(data.snapshot.TELEMETRIA?.value ?? 0).toString()}
+          bomba={(data.snapshot.BOMBA?.value ?? 0).toString()}
+          manual={(data.snapshot.MANUAL?.value ?? 0).toString()}
         />
       </div>
     </>
@@ -307,11 +322,12 @@ function App() {
       style={{
         display: "grid",
         gridTemplateColumns: "1fr 1fr 1fr",
-        gridTemplateRows: "1fr 1fr 1fr 1fr",
+        gridTemplateRows: "auto auto 1fr",
         gap: "1rem",
         width: "100%",
         maxWidth: "2400px",
         margin: "0 auto",
+        minHeight: "calc(100vh - 100px)",
       }}
     >
       {/* Diagrama SCADA (ocupa 0,0; 0,1; 1,0; 1,1) */}
@@ -319,95 +335,73 @@ function App() {
         <div className="card w-100 p-4 justify-content-center">
           <ScadaDiagram
             data={data}
-            hor={ultimoHorometro.toFixed(2)}
-            tot={ultimoTotalizador.toFixed(2)}
+            hor={ultimoHorometro}
+            tot={ultimoTotalizador}
           />
         </div>
       </div>
 
       {/* Horómetro (0,2) */}
       <div style={{ gridColumn: "1", gridRow: "3" }}>
-        <DropdownCardv2
+        <GraphCard
           isOpen={true}
           title="Horómetro Diario"
           chartLabel="Horómetro"
-          data={horometroChartData}
+          initialData={horometroChartData}
+          type="horometro"
         />
       </div>
 
       {/* Totalizador (1,2) */}
       <div style={{ gridColumn: "2", gridRow: "3" }}>
-        <DropdownCardv3
+        <GraphCard
           isOpen={true}
           title="Totalizador Diario"
           chartLabel="Totalizador en m³"
-          data={totalizadorChartData}
+          initialData={totalizadorChartData}
+          divisor={10}
+          type="totalizador"
         />
       </div>
 
       {/* Estanque 1 (2,0) */}
       <div style={{ gridColumn: "3", gridRow: "1" }}>
-        <DropdownCard
+        <GraphCard
           isOpen={true}
           title="Estanque Hormigón"
           chartLabel="Nivel del Estanque (m)"
-          data={nivelChartData}
-          nivelMax={3.5}
-          nivelAlarma={1}
+          initialData={nivelChartData}
+          type="nivel"
+          nivelMax={100}
+          nivelAlarma={50}
+          fetchEndpoint="https://app.jteanalytics.cl/california/cerro"
         />
       </div>
 
       {/* Estanque 2 (2,1) */}
       <div style={{ gridColumn: "3", gridRow: "2" }}>
-        <DropdownCard
+        <GraphCard
           isOpen={true}
           title="Estanque Metálico"
           chartLabel="Nivel del Estanque (m)"
-          data={nivel2ChartData}
-          nivelMax={3.5}
-          nivelAlarma={1}
+          initialData={nivel2ChartData}
+          type="nivel"
+          nivelMax={100}
+          nivelAlarma={30}
+          fetchEndpoint="https://app.jteanalytics.cl/california/metalico"
         />
       </div>
 
       {/* Caudal (2,2) */}
       <div style={{ gridColumn: "3", gridRow: "3" }}>
-        <DropdownCard
+        <GraphCard
           isOpen={true}
           title="Caudal"
           chartLabel="Caudal de Impulsión (l/s)"
-          data={caudalChartData}
-          nivelMax={4}
-        />
-      </div>
-
-      {/* Kwh (2,3) */}
-      <div style={{ gridColumn: "0", gridRow: "4" }}>
-        <DropdownCardv3
-          isOpen={true}
-          title="kWh"
-          chartLabel="kWh"
-          data={kwhChartData}
-          mult={10}
-        />
-      </div>
-
-      {/* Voltaje (3,0) */}
-      <div style={{ gridColumn: "1", gridRow: "4" }}>
-        <DropdownCardv4
-          isOpen={true}
-          title="Voltaje"
-          chartLabel="Voltaje"
-          data={voltajeChartData}
-        />
-      </div>
-
-      {/* Corriente (3,1) */}
-      <div style={{ gridColumn: "2", gridRow: "4" }}>
-        <DropdownCardv4
-          isOpen={true}
-          title="Corriente"
-          chartLabel="Corriente"
-          data={corrienteChartData}
+          initialData={caudalChartData}
+          type="caudal"
+          nivelMax={20}
+          fetchEndpoint="https://app.jteanalytics.cl/california/caudal"
         />
       </div>
     </div>
@@ -417,7 +411,7 @@ function App() {
     <>
       <div className="container-fluid min-vh-100 p-0 d-flex flex-column align-items-center">
         <div className="mb-3 w-100" style={{ maxWidth: "5000px" }}>
-          <Navbar text={data.snapshot.caudal.time}>
+          <Navbar text={data.snapshot.CAUDAL?.time ?? ""}>
             <button
               className="btn btn-outline-primary bi bi-save"
               onClick={() => setIsOpenExport(true)}

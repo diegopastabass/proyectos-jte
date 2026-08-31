@@ -1,8 +1,6 @@
 import { useState } from "react";
-import logoInacap from "../assets/logo_inacap.png";
-import logoProOhiggins from "../assets/logo_A.png";
-import logoSecundarioB from "../assets/logo_B.png";
 import logoJte from "../assets/logoJte.png";
+import logo from "../assets/logo.png";
 
 interface NavbarProps {
   text?: string;
@@ -48,7 +46,7 @@ function Navbar(props: NavbarProps) {
         })
         .catch((err) => {
           console.error(
-            `Error al intentar activar pantalla completa: ${err.message}`
+            `Error al intentar activar pantalla completa: ${err.message}`,
           );
         });
     } else {
@@ -59,7 +57,7 @@ function Navbar(props: NavbarProps) {
         })
         .catch((err) => {
           console.error(
-            `Error al intentar desactivar pantalla completa: ${err.message}`
+            `Error al intentar desactivar pantalla completa: ${err.message}`,
           );
         });
     }
@@ -74,10 +72,11 @@ function Navbar(props: NavbarProps) {
         {/* 1. Logo Principal (Marca) */}
         <a
           className="navbar-brand d-flex align-items-center gap-2 mb-0 me-lg-4"
-          href="/quillay/"
+          href="/california/"
         >
           <img src={logoJte} alt="logo" width={50} height={34} />{" "}
-          <span className="h5 mb-0">SSR Quillay la Ligua</span>
+          <img src={logo} alt="logo" width={60} />{" "}
+          <span className="h5 mb-0">SSR California</span>
         </a>
       </div>{" "}
       <div className="d-flex align-items-center gap-2 flex-grow-1">
@@ -87,26 +86,7 @@ function Navbar(props: NavbarProps) {
           </span>
         </div>
       </div>{" "}
-      <div className="d-flex align-items-center gap-2 m-2">
-        <img
-          src={logoProOhiggins}
-          alt="logoProOhiggins"
-          width={100}
-          className="d-none d-md-block"
-        />
-        <img
-          src={logoSecundarioB}
-          alt="logoSecundarioB"
-          width={250}
-          className="d-none d-md-block"
-        />
-        <img
-          src={logoInacap}
-          alt="logoSecundarioC"
-          width={100}
-          className="d-none d-md-block"
-        />
-      </div>
+      <div className="d-flex align-items-center gap-2 m-2"></div>
       <div className="ms-auto d-none d-md-block m-4 ">{children}</div>
       <button
         className="btn btn-outline-secondary d-none d-md-inline-block"

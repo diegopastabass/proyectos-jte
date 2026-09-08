@@ -41,7 +41,8 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({
   horometro,
   totalizador,
 }) => {
-  const hasWaterFlow = data.pozo1?.bomba?.value === 1;
+  const hasWaterFlow1 = data.pozo1?.bomba?.value === 1;
+  const hasWaterFlow2 = (data.pozo2?.caudal_pozos?.value ?? 0) > 0;
 
   const latestHorometro =
     horometro.length > 0 ? horometro[horometro.length - 1].value : 0;
@@ -68,32 +69,26 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({
       <div style={containerStyle}>
         <State
           title="Estado Tablero - San Enrique 6"
-          style={{ maxWidth: "270px", maxHeight: "350px" }}
+          style={{ maxWidth: "270px", maxHeight: "360px" }}
         >
           <StateBody
             automatico={data.pozo1?.automatico?.value?.toString() ?? "0"}
             falla={data.pozo1?.falla?.value?.toString() ?? "0"}
             bomba={data.pozo1?.bomba?.value?.toString() ?? "0"}
-            falla_asimetria={data.pozo1?.["AIB17:0"]?.value?.toString()}
+            falla_asimetria={data.pozo1?.asimetria?.value?.toString()}
             presion={data.pozo1?.presion?.value ?? 0}
             horometro_diario={latestHorometro}
             horometro_total={data.pozo1?.horometro?.value ?? 0}
           ></StateBody>
         </State>
 
-        <State
-          title="Estado Tablero - San Enrique 3"
-          style={{ maxWidth: "270px", maxHeight: "120px" }}
-        >
-          <StateBody caudal={data.pozo2?.caudal_pozos?.value ?? 0} />
-        </State>
         {/* 1. Bomba - Posición (0, 300) */}
         <Pump
           spriteWidth={SPRITE_SIZE}
           spriteHeight={SPRITE_SIZE}
           sentido={0}
           image={imageAssets.newPump}
-          isActive={hasWaterFlow}
+          isActive={hasWaterFlow1}
           style={{ top: 300, left: 50 }}
         />
 
@@ -113,7 +108,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({
           spriteHeight={SPRITE_SIZE}
           sentido={0}
           image={imageAssets.newPump}
-          isActive={hasWaterFlow}
+          isActive={hasWaterFlow2}
           style={{ top: 300, left: 123 }}
         />
 
@@ -133,12 +128,15 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({
           spriteHeight={SPRITE_SIZE}
           sentido={1}
           image={imageAssets.newPipe}
-          hasWaterFlow={hasWaterFlow}
+          hasWaterFlow={hasWaterFlow1 || hasWaterFlow2}
           style={{ top: 0, left: 405 }}
-          caudal={
+          caudal_pozo2={
             data.pozo2?.caudal_pozos?.value
               ? data.pozo2.caudal_pozos.value / 100
               : 0
+          }
+          caudal_pozo1={
+            data.pozo1?.caudal?.value ? data.pozo1.caudal.value / 100 : 0
           }
           totalizador_diario={latestTotalizador / 10}
           totalizador_total={
@@ -146,6 +144,8 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({
               ? data.pozo1.totalizador.value / 10
               : 0
           }
+          titleTotalizador="San Enrique 6"
+          titleCaudal="San Enrique 3"
         />
 
         {/* 5. Tanque Principal - Posición (600, 0). Max Volume: 4.5 */}

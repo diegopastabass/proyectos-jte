@@ -23,8 +23,8 @@ export class SsrMetricsService {
     if (!dto.start || !dto.end) return null;
 
     const startDate = new Date(`${dto.start}T00:00:00Z`);
-    const nextDay = new Date(dto.end);
-    nextDay.setDate(nextDay.getDate() + 1);
+    const nextDay = new Date(`${dto.end}T00:00:00Z`);
+    nextDay.setUTCDate(nextDay.getUTCDate() + 1);
     const endDate = new Date(`${nextDay.toISOString().slice(0, 10)}T00:00:00Z`);
 
     return { start: startDate, end: endDate };
@@ -167,7 +167,7 @@ export class SsrMetricsService {
         if (!metricsMap.has(dateStr) || dateStr === todayStr) {
           missingDates.push(dateStr);
         }
-        currentDate.setDate(currentDate.getDate() + 1);
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
       }
 
       if (missingDates.length > 0) {
@@ -217,7 +217,7 @@ export class SsrMetricsService {
         if (metricsMap.has(dateStr)) {
           results.push({ time: dateStr, value: metricsMap.get(dateStr)! });
         }
-        currentDate.setDate(currentDate.getDate() + 1);
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
       }
 
       return results;
@@ -322,7 +322,7 @@ export class SsrMetricsService {
       const today = new Date();
       const todayStr = today.toISOString().split("T")[0];
       const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
+      yesterday.setUTCDate(yesterday.getUTCDate() - 1);
       const yesterdayStr = yesterday.toISOString().split("T")[0];
 
       while (currentDate <= endDate) {
@@ -334,7 +334,7 @@ export class SsrMetricsService {
         ) {
           missingDates.push(dateStr);
         }
-        currentDate.setDate(currentDate.getDate() + 1);
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
       }
 
       if (missingDates.length > 0) {
@@ -343,7 +343,7 @@ export class SsrMetricsService {
         const maxDate = new Date(
           `${missingDates[missingDates.length - 1]}T00:00:00Z`,
         );
-        maxDate.setDate(maxDate.getDate() + 1);
+        maxDate.setUTCDate(maxDate.getUTCDate() + 1);
         const maxDateStr = maxDate.toISOString().split("T")[0];
 
         const query = `
@@ -448,7 +448,7 @@ export class SsrMetricsService {
         } else {
           results.push({ time: dateStr, value: 0 });
         }
-        currentDate.setDate(currentDate.getDate() + 1);
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
       }
 
       return results;

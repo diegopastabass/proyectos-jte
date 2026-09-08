@@ -1,5 +1,6 @@
 import { useState } from "react";
 import logoJte from "../assets/logoJte.png";
+import logoCarmen from "../assets/logoCarmen.png";
 
 interface NavbarProps {
   text?: string;
@@ -74,6 +75,7 @@ function Navbar(props: NavbarProps) {
           href="/villacarmen/"
         >
           <img src={logoJte} alt="logo" width={50} height={34} />
+          <img src={logoCarmen} alt="logo" width={80} />
         </a>
       </div>{" "}
       <div className="d-flex align-items-center gap-2 flex-grow-1">

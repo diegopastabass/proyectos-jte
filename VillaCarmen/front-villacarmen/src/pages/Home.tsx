@@ -30,6 +30,7 @@ interface Datos {
   freatico: Metric;
   estanque: Metric;
   solar: Metric;
+  caudal: Metric;
 }
 
 interface Metric {
@@ -45,6 +46,7 @@ function App() {
 
   const [totalizadorChartData, setTotalizador] = useState<Metric[]>([]);
   const [horometroChartData, setHorometro] = useState<Metric[]>([]);
+  const [caudalChartData, setCaudal] = useState<Metric[]>([]);
 
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1500);
   const [isOpenExport, setIsOpenExport] = useState(false);
@@ -73,14 +75,16 @@ function App() {
 
     const fetchData = async () => {
       try {
-        const [snapshotRes, nivelRes] = await Promise.all([
+        const [snapshotRes, nivelRes, caudalRes] = await Promise.all([
           fetch("https://app.jteanalytics.cl/villacarmen/snapshot"),
           fetch(`https://app.jteanalytics.cl/villacarmen/nivel`),
+          fetch(`https://app.jteanalytics.cl/villacarmen/caudal`),
         ]);
 
         const snapshotData: Snapshot = await snapshotRes.json();
         setData(snapshotData);
         setNivelData(await nivelRes.json());
+        setCaudal(await caudalRes.json());
 
         setTotalizador(await fetchWithCache("totalizador", end));
         setHorometro(await fetchWithCache("horometro", end));
@@ -136,7 +140,7 @@ function App() {
             ]}
             text2={[
               "Volumen Actual",
-              `${(((60 / 7) * data.snapshot.estanque.value) / 100).toFixed(2)} m³`,
+              `${(((70 / 3.6) * data.snapshot.estanque.value) / 100).toFixed(2)} m³`,
             ]}
             text3={["Tiempo de Vaciado", data.tiempo_vaciado_formatted]}
             text4={[
@@ -156,7 +160,7 @@ function App() {
         <DropdownCard
           className="mb-4 d-below-1500-none d-1500-block"
           isOpen={isOpenEstanque}
-          title="Estanque 1"
+          title="Estanque 70m³"
           chartLabel="Nivel del Estanque (m)"
           data={nivelChartData}
           divisor={100}
@@ -173,18 +177,22 @@ function App() {
               "Nivel Freático",
               `${(data.snapshot.freatico.value / 100).toFixed(2)} m`,
             ]}
-            text5={[
+            text3={[
               "Totalizador por Día",
               `${ultimoTotalizador.toFixed(2)} m³`,
             ]}
-            text6={[
+            text4={[
               "Totalizador",
               `${data.snapshot.totalizador.value.toFixed(2)} m³`,
             ]}
-            text7={["Horómetro Diario", minutesToHHMM(ultimoHorometro)]}
-            text8={[
+            text5={["Horómetro Diario", minutesToHHMM(ultimoHorometro)]}
+            text6={[
               "Horómetro Total",
               minutesToHHMM(data.snapshot.horometro.value),
+            ]}
+            text7={[
+              "Caudal",
+              `${(data.snapshot.caudal.value / 1000).toFixed(2)} l/s`,
             ]}
           />
           <ToggleCardButton
@@ -198,11 +206,19 @@ function App() {
           chartLabel="Totalizador en m³"
           data={totalizadorChartData}
         />{" "}
-        <DropdownCardv3
+        <DropdownCardv2
           isOpen={isOpenBomba}
           title="Horómetro"
           chartLabel="Horómetro"
           data={horometroChartData}
+        />
+        <DropdownCard
+          isOpen={isOpenBomba}
+          title="Caudal"
+          chartLabel="Caudal"
+          data={caudalChartData}
+          divisor={1000}
+          nivelMax={30}
         />
       </div>
       {/* Panel de Estados */}
@@ -244,12 +260,24 @@ function App() {
       <div style={{ gridColumn: "3", gridRow: "1" }}>
         <DropdownCard
           isOpen={true}
-          title="Estanque Nuevo"
+          title="Estanque 70m³"
           chartLabel="Nivel del Estanque (m)"
           data={nivelChartData}
           nivelMax={4}
           divisor={100}
           nivelAlarma={nivelAlarma}
+        />
+      </div>
+
+      <div style={{ gridColumn: "3", gridRow: "2" }}>
+        <DropdownCard
+          className="mb-4 d-below-1500-none d-1500-block"
+          isOpen={true}
+          title="Caudal"
+          chartLabel="Caudal (l/s)"
+          data={caudalChartData}
+          divisor={1000}
+          nivelMax={30}
         />
       </div>
 

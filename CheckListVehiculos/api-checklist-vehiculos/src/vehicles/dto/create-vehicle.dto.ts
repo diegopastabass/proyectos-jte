@@ -13,7 +13,7 @@ export class CreateVehicleDto {
 
   @IsOptional()
   @IsInt()
-  km_desde_ultima_mantencion?: number;
+  km_ultima_mantencion?: number;
 
   @IsOptional()
   @IsDateString()

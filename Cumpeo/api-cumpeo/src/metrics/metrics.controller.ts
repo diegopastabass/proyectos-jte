@@ -31,8 +31,13 @@ export class SsrCumpeoController {
     return this.service.getNivel(dto);
   }
 
-  @Get('caudal')
-  getCaudal(@Query() dto: DateRangeDto) {
-    return this.service.getCaudal(dto);
+  @Get('caudal-pozo2')
+  getCaudal2(@Query() dto: DateRangeDto) {
+    return this.service.getCaudal2(dto);
+  }
+
+  @Get('caudal-pozo1')
+  getCaudal1(@Query() dto: DateRangeDto) {
+    return this.service.getCaudal1(dto);
   }
 }

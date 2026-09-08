@@ -30,11 +30,13 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicle, setViewState, ad
 
   const [visualChecks, setVisualChecks] = useState<Record<string, ChecklistItem>>(initChecks(VISUAL_CONFIG));
   const [mechanicalChecks, setMechanicalChecks] = useState<Record<string, ChecklistItem>>(initChecks(MECHANICAL_CONFIG));
-  const [kmActual, setKmActual] = useState(vehicle?.kilometraje || 0);
+  const [kmActual, setKmActual] = useState<number | ''>('');
+  const [kmTouched, setKmTouched] = useState(false);
   const [obsGeneral, setObsGeneral] = useState('');
   const [showPhotoModal, setShowPhotoModal] = useState(false);
-  const [currentPhotoId, setCurrentPhotoId] = useState<{ section: 'visual'|'mechanical'|'mandatory', id: string } | null>(null);
+  const [currentPhotoId, setCurrentPhotoId] = useState<{ section: 'visual'|'mechanical'|'mandatory'|'interior', id: string } | null>(null);
   const [mandatoryPhotos, setMandatoryPhotos] = useState<{ frontal: string; trasera: string; lateral_izquierdo: string; lateral_derecho: string }>({ frontal: '', trasera: '', lateral_izquierdo: '', lateral_derecho: '' });
+  const [interiorPhotos, setInteriorPhotos] = useState<{ tablero: string; asientos_delanteros: string; asientos_traseros: string; piso_interior: string }>({ tablero: '', asientos_delanteros: '', asientos_traseros: '', piso_interior: '' });
 
   const hasIssues = Object.values(visualChecks).some(c => !c.isGood) || Object.values(mechanicalChecks).some(c => !c.isGood);
 
@@ -53,6 +55,8 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicle, setViewState, ad
     const { section, id } = currentPhotoId;
     if (section === 'mandatory') {
       setMandatoryPhotos(prev => ({ ...prev, [id]: dataUrl }));
+    } else if (section === 'interior') {
+      setInteriorPhotos(prev => ({ ...prev, [id]: dataUrl }));
     } else {
       const setter = section === 'visual' ? setVisualChecks : setMechanicalChecks;
       setter(prev => ({ ...prev, [id]: { ...prev[id], photo: dataUrl } }));
@@ -85,13 +89,28 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicle, setViewState, ad
     e.preventDefault();
     if (!vehicle) return;
 
+    // Validar kilometraje
+    if (kmActual === '' || kmActual === 0) {
+      setKmTouched(true);
+      addToast('Debe ingresar el kilometraje actual del vehículo', 'warning');
+      return;
+    }
+
+    // Validar fotos exteriores obligatorias
     const missingPhotos = [];
     if (!mandatoryPhotos.frontal) missingPhotos.push('Frontal');
     if (!mandatoryPhotos.trasera) missingPhotos.push('Trasera');
     if (!mandatoryPhotos.lateral_izquierdo) missingPhotos.push('Lateral Izquierdo');
     if (!mandatoryPhotos.lateral_derecho) missingPhotos.push('Lateral Derecho');
     if (missingPhotos.length > 0) {
-      addToast(`Faltan fotos obligatorias: ${missingPhotos.join(', ')}`, 'warning');
+      addToast(`Faltan fotos exteriores obligatorias: ${missingPhotos.join(', ')}`, 'warning');
+      return;
+    }
+
+    // Validar fotos interiores (mínimo 2)
+    const interiorCount = Object.values(interiorPhotos).filter(p => p !== '').length;
+    if (interiorCount < 2) {
+      addToast(`Debe adjuntar al menos 2 fotos interiores (tiene ${interiorCount})`, 'warning');
       return;
     }
 
@@ -118,7 +137,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicle, setViewState, ad
         }
       });
 
-      // Append mandatory photos
+      // Append mandatory exterior photos
       const mandatoryEntries: [string, string][] = [
         ['foto_frontal.jpg', mandatoryPhotos.frontal],
         ['foto_trasera.jpg', mandatoryPhotos.trasera],
@@ -126,6 +145,20 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicle, setViewState, ad
         ['foto_lateral_derecho.jpg', mandatoryPhotos.lateral_derecho],
       ];
       mandatoryEntries.forEach(([filename, dataUrl]) => {
+        if (dataUrl && dataUrl.startsWith('data:')) {
+          const blob = dataURLtoBlob(dataUrl);
+          formData.append('files', blob, filename);
+        }
+      });
+
+      // Append interior photos
+      const interiorEntries: [string, string][] = [
+        ['foto_interior_tablero.jpg', interiorPhotos.tablero],
+        ['foto_interior_asientos_delanteros.jpg', interiorPhotos.asientos_delanteros],
+        ['foto_interior_asientos_traseros.jpg', interiorPhotos.asientos_traseros],
+        ['foto_interior_piso.jpg', interiorPhotos.piso_interior],
+      ];
+      interiorEntries.forEach(([filename, dataUrl]) => {
         if (dataUrl && dataUrl.startsWith('data:')) {
           const blob = dataURLtoBlob(dataUrl);
           formData.append('files', blob, filename);
@@ -192,16 +225,56 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicle, setViewState, ad
 
       <h3 className="text-dark mb-4">Checklist de Vehículo</h3>
       {vehicle && (
-        <div className="glass-card p-3 mb-4 d-flex justify-content-between align-items-center border-primary">
-          <div>
-            <h5 className="text-dark mb-0">{vehicle.patente}</h5>
-            <small className="text-secondary">{vehicle.model}</small>
+        <>
+          <div className="glass-card p-3 mb-3 d-flex justify-content-between align-items-center border-primary">
+            <div>
+              <h5 className="text-dark mb-0">{vehicle.patente}</h5>
+              <small className="text-secondary">{vehicle.model}</small>
+            </div>
+            <span className="badge bg-primary fs-6">
+              <i className="bi bi-truck me-1"></i>Checklist
+            </span>
           </div>
-          <div className="text-end">
-            <small className="text-secondary d-block">Kilometraje Actual</small>
-            <input type="number" className="form-control form-control-sm bg-light text-dark border-secondary" style={{ width: '100px' }} value={kmActual} onChange={e => setKmActual(Number(e.target.value))} required />
+
+          <div className={`glass-card p-4 mb-4 ${kmActual === '' && kmTouched ? 'border-danger border-2' : kmActual === '' ? 'border-warning border-2' : 'border-success border-2'}`}>
+            <label className="form-label fs-5 fw-bold text-dark d-flex align-items-center mb-3">
+              <i className="bi bi-speedometer2 fs-4 me-2 text-primary"></i>
+              Kilometraje Actual
+              <span className="text-danger ms-1">*</span>
+            </label>
+            <input
+              type="number"
+              className={`form-control form-control-lg fs-4 fw-bold text-center ${kmActual === '' && kmTouched ? 'is-invalid' : ''}`}
+              placeholder="Ingrese el kilometraje actual"
+              value={kmActual}
+              onChange={e => {
+                const val = e.target.value;
+                setKmActual(val === '' ? '' : Number(val));
+                setKmTouched(true);
+              }}
+              min={vehicle.kilometraje || 0}
+              required
+            />
+            <div className="d-flex justify-content-between align-items-center mt-2">
+              <small className="text-secondary">
+                <i className="bi bi-info-circle me-1"></i>
+                Último registrado: <strong>{(vehicle.kilometraje || 0).toLocaleString()} km</strong>
+              </small>
+              {kmActual === '' && kmTouched && (
+                <small className="text-danger fw-bold">
+                  <i className="bi bi-exclamation-triangle me-1"></i>
+                  Obligatorio
+                </small>
+              )}
+              {kmActual !== '' && kmActual > 0 && (
+                <small className="text-success fw-bold">
+                  <i className="bi bi-check-circle me-1"></i>
+                  {Number(kmActual).toLocaleString()} km
+                </small>
+              )}
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       <form onSubmit={handleSubmit}>
@@ -224,9 +297,9 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicle, setViewState, ad
 
         <div className="glass-card p-3 mb-4">
           <h5 className="text-dark mb-3">
-            <i className="bi bi-camera-fill me-2"></i>Fotos Obligatorias del Vehículo
+            <i className="bi bi-camera-fill me-2"></i>Fotos Exteriores Obligatorias
           </h5>
-          <p className="text-secondary small mb-3">Debe adjuntar las 4 fotos del vehículo: frontal, trasera, lateral izquierdo y lateral derecho.</p>
+          <p className="text-secondary small mb-3">Debe adjuntar las 4 fotos exteriores del vehículo.</p>
           <div className="row g-3">
             {[
               { id: 'frontal', label: 'Frontal', icon: 'bi-car-front' },
@@ -258,6 +331,56 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicle, setViewState, ad
               </div>
             ))}
           </div>
+        </div>
+
+        <div className="glass-card p-3 mb-4">
+          <h5 className="text-dark mb-3">
+            <i className="bi bi-camera-fill me-2"></i>Fotos Interiores
+            <span className="text-danger ms-1">*</span>
+          </h5>
+          <p className="text-secondary small mb-3">
+            Debe adjuntar al menos <strong>2 de 4</strong> fotos interiores del vehículo.
+            <span className="ms-2 badge bg-secondary">
+              {Object.values(interiorPhotos).filter(p => p !== '').length}/4 capturadas
+            </span>
+          </p>
+          <div className="row g-3">
+            {[
+              { id: 'tablero', label: 'Tablero', icon: 'bi-speedometer' },
+              { id: 'asientos_delanteros', label: 'Asientos Delant.', icon: 'bi-person-workspace' },
+              { id: 'asientos_traseros', label: 'Asientos Traseros', icon: 'bi-people' },
+              { id: 'piso_interior', label: 'Piso / Alfombras', icon: 'bi-grid-3x3' },
+            ].map(photo => (
+              <div className="col-6" key={photo.id}>
+                <div
+                  className={`border rounded p-3 text-center ${(interiorPhotos as any)[photo.id] ? 'border-success' : 'border-warning'}`}
+                  style={{ minHeight: '120px', cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
+                  onClick={() => { setCurrentPhotoId({ section: 'interior', id: photo.id }); setShowPhotoModal(true); }}
+                >
+                  {(interiorPhotos as any)[photo.id] ? (
+                    <>
+                      <img src={(interiorPhotos as any)[photo.id]} alt={photo.label} className="w-100 rounded" style={{ maxHeight: '100px', objectFit: 'cover' }} />
+                      <div className="mt-1">
+                        <span className="badge bg-success"><i className="bi bi-check-circle me-1"></i>{photo.label}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="d-flex flex-column align-items-center justify-content-center h-100 text-warning">
+                      <i className={`bi ${photo.icon} fs-1 mb-1`}></i>
+                      <small className="fw-bold">{photo.label}</small>
+                      <small className="text-muted">Opcional</small>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          {Object.values(interiorPhotos).filter(p => p !== '').length < 2 && (
+            <div className="alert alert-warning mt-3 mb-0 py-2 d-flex align-items-center">
+              <i className="bi bi-exclamation-triangle me-2"></i>
+              <small className="fw-bold">Faltan al menos {2 - Object.values(interiorPhotos).filter(p => p !== '').length} foto(s) interior(es)</small>
+            </div>
+          )}
         </div>
 
         <button type="submit" className="btn btn-primary w-100 py-3 fw-bold fs-5 shadow-lg mb-4" disabled={submitting}>

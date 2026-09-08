@@ -1,12 +1,10 @@
 export declare class UpdateVehicleDto {
-    marca?: string;
-    modelo?: string;
+    model?: string;
     patente?: string;
-    ano?: number;
     kilometraje?: number;
     km_ultima_mantencion?: number;
-    vencimiento_revision_tecnica?: string;
-    vencimiento_permiso_circulacion?: string;
-    vencimiento_seguro?: string;
+    fecha_venc_revision_tecnica?: string;
+    fecha_venc_circulacion?: string;
+    fecha_prox_mantencion?: string;
     is_active?: boolean;
 }

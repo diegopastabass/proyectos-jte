@@ -138,9 +138,7 @@ export class SsrCumpeoService {
         }
       };
 
-      const vaciado = await calcularTiempoVaciado(
-        'SSR_CUMPEO--slave.estanque',
-      );
+      const vaciado = await calcularTiempoVaciado('SSR_CUMPEO--slave.estanque');
       return {
         pozo1,
         pozo2,
@@ -357,7 +355,44 @@ export class SsrCumpeoService {
     }
   }
 
-  async getCaudal(dto: DateRangeDto): Promise<Metric[]> {
+  async getCaudal1(dto: DateRangeDto): Promise<Metric[]> {
+    try {
+      const range = this.normalizeDateRange(dto);
+      if (!range) {
+        const results = await this.repo.find({
+          where: { mt_name: 'SSR_CUMPEO_6--slave.caudal' },
+          order: { mt_time_2: 'DESC' },
+          take: 100,
+        });
+        return results.reverse().map((r) => ({
+          time: this.toLocalISOString(r.mt_time_2),
+          value: Number(r.mt_value),
+        }));
+      }
+      const results = await this.repo.find({
+        where: {
+          mt_name: 'SSR_CUMPEO_6--slave.caudal',
+          mt_time_2: Raw((a) => `${a} >= :start AND ${a} < :end`, {
+            start: range.start,
+            end: range.end,
+          }),
+        },
+        order: { mt_time_2: 'ASC' },
+      });
+      return results.map((r) => ({
+        time: this.toLocalISOString(r.mt_time_2),
+        value: Number(r.mt_value),
+      }));
+    } catch (error) {
+      this.logger.error(
+        `Error en getCaudal1 con dto: ${JSON.stringify(dto)} - ${error instanceof Error ? error.message : error}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw error;
+    }
+  }
+
+  async getCaudal2(dto: DateRangeDto): Promise<Metric[]> {
     try {
       const range = this.normalizeDateRange(dto);
       if (!range) {

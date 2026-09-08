@@ -2,7 +2,7 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  role: 'admin' | 'operador';
+  role: "admin" | "operador";
   is_active: boolean;
 }
 
@@ -11,7 +11,7 @@ export interface Vehicle {
   model: string;
   patente: string;
   kilometraje: number;
-  km_desde_ultima_mantencion: number;
+  km_ultima_mantencion: number;
   fecha_venc_revision_tecnica: string; // YYYY-MM-DD
   fecha_venc_circulacion: string;
   fecha_prox_mantencion: string;
@@ -36,14 +36,20 @@ export interface Checklist {
   visual_checks: Record<string, ChecklistItem>;
   mechanical_checks: Record<string, ChecklistItem>;
   has_issues: boolean;
-  estado: 'aprobado' | 'rechazado' | 'observado';
+  estado: "aprobado" | "rechazado" | "observado";
   observaciones_generales?: string;
 }
 
-export type ViewState = 'login' | 'register' | 'home' | 'checklist-form' | 'checklist-list' | 'checklist-detail';
+export type ViewState =
+  | "login"
+  | "register"
+  | "home"
+  | "checklist-form"
+  | "checklist-list"
+  | "checklist-detail";
 
 export interface ToastMessage {
   id: number;
   message: string;
-  type: 'success' | 'error' | 'warning' | 'info';
+  type: "success" | "error" | "warning" | "info";
 }

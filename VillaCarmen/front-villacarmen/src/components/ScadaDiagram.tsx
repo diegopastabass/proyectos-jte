@@ -24,6 +24,7 @@ interface DatosSnapshot {
   freatico: Metric;
   estanque: Metric;
   solar: Metric;
+  caudal: Metric;
 }
 
 interface Metric {
@@ -64,7 +65,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
         <States
           style={{
             maxWidth: "250px",
-            maxHeight: "150px",
+            maxHeight: "120px",
             marginBottom: "8px",
           }}
           title="Estado Tablero"
@@ -106,6 +107,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           style={{ top: 0, left: 305 }}
           totalizador_diario={Number(tot)}
           totalizador_total={data.snapshot.totalizador.value}
+          caudal={data.snapshot.caudal.value / 1000}
         />
 
         {/* 4. Tanque Principal - Posición (600, 0). Max Volume: 7 */}
@@ -121,7 +123,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           name="Estanque 1"
           labelX={600}
           solar={(data.snapshot.solar.value / 1000).toFixed(2)}
-          labelY={120}
+          labelY={150}
           tiempoVaciado={data.tiempo_vaciado_formatted}
         />
       </div>

@@ -4,6 +4,7 @@ import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 export declare class VehiclesService {
     private vehiclesRepository;
+    private readonly logger;
     constructor(vehiclesRepository: Repository<Vehicle>);
     create(createVehicleDto: CreateVehicleDto): Promise<Vehicle>;
     findAll(): Promise<Vehicle[]>;

@@ -8,43 +8,57 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var AuthService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
 const users_service_1 = require("../users/users.service");
 const bcrypt = require("bcrypt");
-let AuthService = class AuthService {
+let AuthService = AuthService_1 = class AuthService {
     constructor(usersService, jwtService) {
         this.usersService = usersService;
         this.jwtService = jwtService;
+        this.logger = new common_1.Logger(AuthService_1.name);
     }
     async validateUser(email, pass) {
-        const user = await this.usersService.findByEmail(email);
-        if (user && await bcrypt.compare(pass, user.password_hash)) {
-            if (!user.is_active) {
-                throw new common_1.UnauthorizedException('User account is inactive. Please contact administrator.');
+        try {
+            const user = await this.usersService.findByEmail(email);
+            if (user && await bcrypt.compare(pass, user.password_hash)) {
+                if (!user.is_active) {
+                    throw new common_1.UnauthorizedException('User account is inactive. Please contact administrator.');
+                }
+                const { password_hash, ...result } = user;
+                return result;
             }
-            const { password_hash, ...result } = user;
-            return result;
+            return null;
         }
-        return null;
+        catch (error) {
+            this.logger.error(`Error in validateUser: ${error.message}`, error.stack);
+            throw error;
+        }
     }
     async login(user) {
-        const payload = { email: user.email, sub: user.id, is_admin: user.is_admin };
-        return {
-            access_token: this.jwtService.sign(payload),
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                is_admin: user.is_admin
-            }
-        };
+        try {
+            const payload = { email: user.email, sub: user.id, is_admin: user.is_admin };
+            return {
+                access_token: this.jwtService.sign(payload),
+                user: {
+                    id: user.id,
+                    name: user.name,
+                    email: user.email,
+                    is_admin: user.is_admin
+                }
+            };
+        }
+        catch (error) {
+            this.logger.error(`Error in login: ${error.message}`, error.stack);
+            throw error;
+        }
     }
 };
 exports.AuthService = AuthService;
-exports.AuthService = AuthService = __decorate([
+exports.AuthService = AuthService = AuthService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [users_service_1.UsersService,
         jwt_1.JwtService])

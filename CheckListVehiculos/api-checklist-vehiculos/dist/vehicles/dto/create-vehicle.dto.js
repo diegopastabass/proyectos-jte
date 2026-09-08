@@ -17,20 +17,11 @@ exports.CreateVehicleDto = CreateVehicleDto;
 __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
-], CreateVehicleDto.prototype, "marca", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], CreateVehicleDto.prototype, "modelo", void 0);
+], CreateVehicleDto.prototype, "model", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateVehicleDto.prototype, "patente", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsInt)(),
-    __metadata("design:type", Number)
-], CreateVehicleDto.prototype, "ano", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsInt)(),
@@ -45,15 +36,15 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsDateString)(),
     __metadata("design:type", String)
-], CreateVehicleDto.prototype, "vencimiento_revision_tecnica", void 0);
+], CreateVehicleDto.prototype, "fecha_venc_revision_tecnica", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsDateString)(),
     __metadata("design:type", String)
-], CreateVehicleDto.prototype, "vencimiento_permiso_circulacion", void 0);
+], CreateVehicleDto.prototype, "fecha_venc_circulacion", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsDateString)(),
     __metadata("design:type", String)
-], CreateVehicleDto.prototype, "vencimiento_seguro", void 0);
+], CreateVehicleDto.prototype, "fecha_prox_mantencion", void 0);
 //# sourceMappingURL=create-vehicle.dto.js.map

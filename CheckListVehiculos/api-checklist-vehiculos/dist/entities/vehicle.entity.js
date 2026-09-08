@@ -19,21 +19,13 @@ __decorate([
     __metadata("design:type", String)
 ], Vehicle.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
-    __metadata("design:type", String)
-], Vehicle.prototype, "marca", void 0);
-__decorate([
     (0, typeorm_1.Column)(),
     __metadata("design:type", String)
-], Vehicle.prototype, "modelo", void 0);
+], Vehicle.prototype, "model", void 0);
 __decorate([
     (0, typeorm_1.Column)({ unique: true }),
     __metadata("design:type", String)
 ], Vehicle.prototype, "patente", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'int', nullable: true }),
-    __metadata("design:type", Number)
-], Vehicle.prototype, "ano", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'int', default: 0 }),
     __metadata("design:type", Number)
@@ -43,21 +35,17 @@ __decorate([
     __metadata("design:type", Number)
 ], Vehicle.prototype, "km_ultima_mantencion", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'int', default: 0 }),
-    __metadata("design:type", Number)
-], Vehicle.prototype, "km_desde_ultima_mantencion", void 0);
+    (0, typeorm_1.Column)({ type: 'date', nullable: true }),
+    __metadata("design:type", Date)
+], Vehicle.prototype, "fecha_venc_revision_tecnica", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'date', nullable: true }),
     __metadata("design:type", Date)
-], Vehicle.prototype, "vencimiento_revision_tecnica", void 0);
+], Vehicle.prototype, "fecha_venc_circulacion", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'date', nullable: true }),
     __metadata("design:type", Date)
-], Vehicle.prototype, "vencimiento_permiso_circulacion", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'date', nullable: true }),
-    __metadata("design:type", Date)
-], Vehicle.prototype, "vencimiento_seguro", void 0);
+], Vehicle.prototype, "fecha_prox_mantencion", void 0);
 __decorate([
     (0, typeorm_1.Column)({ default: true }),
     __metadata("design:type", Boolean)
@@ -66,10 +54,6 @@ __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)
 ], Vehicle.prototype, "created_at", void 0);
-__decorate([
-    (0, typeorm_1.UpdateDateColumn)(),
-    __metadata("design:type", Date)
-], Vehicle.prototype, "updated_at", void 0);
 exports.Vehicle = Vehicle = __decorate([
     (0, typeorm_1.Entity)('vehicles')
 ], Vehicle);

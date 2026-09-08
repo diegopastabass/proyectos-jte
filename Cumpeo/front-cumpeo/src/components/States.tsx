@@ -164,7 +164,7 @@ export function StateBody(props: CardBodyProps) {
       {caudal !== undefined && (
         <div className="d-flex justify-content-between align-items-center mb-2">
           <span>Caudal:</span>
-          <span className="fw-bold">{caudal} l/s</span>
+          <span className="fw-bold">{caudal.toFixed(2)} l/s</span>
         </div>
       )}
     </>

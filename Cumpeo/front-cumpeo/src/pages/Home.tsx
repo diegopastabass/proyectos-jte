@@ -37,7 +37,8 @@ function App() {
   const [data, setData] = useState<Datos | null>(null);
 
   const [nivelEstanque, setNivelEstanque] = useState<Metric[]>([]);
-  const [caudal, setCaudal] = useState<Metric[]>([]);
+  const [caudalPozo1, setCaudalPozo1] = useState<Metric[]>([]);
+  const [caudalPozo2, setCaudalPozo2] = useState<Metric[]>([]);
   const [horometro, setHorometro] = useState<Metric[]>([]);
   const [horometroPozo2, setHorometroPozo2] = useState<Metric[]>([]);
   const [totalizador, setTotalizador] = useState<Metric[]>([]);
@@ -65,17 +66,20 @@ function App() {
 
     const fetchData = async () => {
       try {
-        const [snapshotRes, nivelRes, caudalRes] = await Promise.all([
-          fetch(`${BASE_URL}/snapshot`),
-          fetch(`${BASE_URL}/nivel?start=${date}&end=${date}`),
-          fetch(`${BASE_URL}/caudal?start=${date}&end=${date}`),
-        ]);
+        const [snapshotRes, nivelRes, caudalPozo1Res, caudalPozo2Res] =
+          await Promise.all([
+            fetch(`${BASE_URL}/snapshot`),
+            fetch(`${BASE_URL}/nivel?start=${date}&end=${date}`),
+            fetch(`${BASE_URL}/caudal-pozo1?start=${date}&end=${date}`),
+            fetch(`${BASE_URL}/caudal-pozo2?start=${date}&end=${date}`),
+          ]);
 
         const snapshotData: Datos = await snapshotRes.json();
 
         setData(snapshotData);
         setNivelEstanque(await nivelRes.json());
-        setCaudal(await caudalRes.json());
+        setCaudalPozo1(await caudalPozo1Res.json());
+        setCaudalPozo2(await caudalPozo2Res.json());
         setTotalizador(await fetchWithCache("totalizador", date));
         setHorometro(await fetchWithCache("horometro", date));
         setHorometroPozo2(await fetchWithCache("horometro-pozo2", date));
@@ -166,12 +170,16 @@ function App() {
           <GraphCard
             isOpen
             title="Caudal"
-            chartLabel="Caudal (l/s)"
-            initialData={caudal}
+            chartLabel="San Enrique 6 (l/s)"
+            initialData={caudalPozo1}
             type="caudal"
-            fetchEndpoint={`${BASE_URL}/caudal`}
-            divisor={100}
-            nivelMax={2000}
+            fetchEndpoint={`${BASE_URL}/caudal-pozo1`}
+            divisor={1}
+            nivelMax={20}
+            secondaryInitialData={caudalPozo2}
+            secondaryFetchEndpoint={`${BASE_URL}/caudal-pozo2`}
+            secondaryLabel="San Enrique 3 (l/s)"
+            secondaryDivisor={100}
           />
         </div>
 
@@ -334,13 +342,17 @@ function App() {
         <div className="mb-2">
           <GraphCard
             isOpen={isOpenPozo2}
-            title="Caudal - San Enrique 3"
-            chartLabel="Caudal (l/s)"
-            initialData={caudal}
+            title="Caudal"
+            chartLabel="San Enrique 6 (l/s)"
+            initialData={caudalPozo1}
             type="caudal"
-            fetchEndpoint={`${BASE_URL}/caudal`}
-            divisor={100}
-            nivelMax={2000}
+            fetchEndpoint={`${BASE_URL}/caudal-pozo1`}
+            divisor={1}
+            nivelMax={20}
+            secondaryInitialData={caudalPozo2}
+            secondaryFetchEndpoint={`${BASE_URL}/caudal-pozo2`}
+            secondaryLabel="San Enrique 3 (l/s)"
+            secondaryDivisor={100}
           />
           <GraphCard
             isOpen={isOpenPozo2}
@@ -358,17 +370,18 @@ function App() {
               automatico={data.pozo1?.automatico?.value?.toString() ?? "0"}
               bomba={data.pozo1?.bomba?.value?.toString() ?? "0"}
               falla={data.pozo1?.falla?.value?.toString() ?? "0"}
-              falla_asimetria={data.pozo1?.["AIB17:0"]?.value?.toString()}
+              falla_asimetria={data.pozo1?.asimetria.value?.toString()}
               presion={data.pozo1?.presion?.value ?? 0}
               horometro_diario={latestHorometro}
               horometro_total={data.pozo1?.horometro?.value ?? 0}
+              caudal={data.pozo1?.caudal?.value ?? 0}
             />
           </State>
         </div>
         {/* Estado Pozo 3 */}
         <div className="mb-2">
           <State title="Estado Tablero - San Enrique 3">
-            <StateBody caudal={data.pozo2?.caudal_pozos?.value ?? 0} />
+            <StateBody caudal={(data.pozo2?.caudal_pozos?.value ?? 0) / 100} />
           </State>
         </div>
       </div>

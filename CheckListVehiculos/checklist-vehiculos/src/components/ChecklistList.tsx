@@ -30,6 +30,9 @@ const ChecklistList: React.FC<ChecklistListProps> = ({ setViewState, addToast, o
   const fetchChecklists = async () => {
     try {
       const response = await api.get('/checklists');
+      console.log('Checklist[0] keys:', Object.keys(response.data[0]));
+      console.log('Checklist[0].vehicle:', response.data[0]?.vehicle);
+      console.log('Checklist[0].user:', response.data[0]?.user);
       setChecklists(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       addToast('Error al cargar checklists', 'error');

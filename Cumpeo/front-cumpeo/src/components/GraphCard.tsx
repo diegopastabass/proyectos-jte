@@ -46,6 +46,11 @@ export interface GraphCardProps {
   nivelAlarma?: number; // Opcional
   fetchEndpoint?: string; // Para consultas por fecha
   divisor?: number; // Para transformar valores de entrada
+  // Props opcionales para modo dual (dos series en el mismo gráfico)
+  secondaryInitialData?: Metric[];
+  secondaryFetchEndpoint?: string;
+  secondaryLabel?: string;
+  secondaryDivisor?: number;
 }
 
 const minutesToHHMM = (mins: number): string => {
@@ -68,8 +73,17 @@ function GraphCard({
   nivelAlarma,
   fetchEndpoint,
   divisor = 1,
+  secondaryInitialData,
+  secondaryFetchEndpoint,
+  secondaryLabel,
+  secondaryDivisor = 1,
 }: GraphCardProps) {
+  const isDualMode = !!secondaryInitialData && !!secondaryLabel;
+
   const [currentData, setCurrentData] = useState<Metric[]>(initialData);
+  const [secondaryData, setSecondaryData] = useState<Metric[]>(
+    secondaryInitialData ?? [],
+  );
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -80,21 +94,42 @@ function GraphCard({
     }
   }, [initialData, selectedDate]);
 
+  // Sincronizar secondaryInitialData
+  useEffect(() => {
+    if (!selectedDate && secondaryInitialData) {
+      setSecondaryData(secondaryInitialData);
+    }
+  }, [secondaryInitialData, selectedDate]);
+
   useEffect(() => {
     const fetchDataByDate = async () => {
       if (selectedDate && fetchEndpoint) {
         setIsLoading(true);
         try {
           const formattedDate = format(selectedDate, "yyyy-MM-dd");
-          const response = await fetch(
+
+          // Fetch primario
+          const primaryPromise = fetch(
             `${fetchEndpoint}?start=${formattedDate}&end=${formattedDate}`,
-          );
-          if (response.ok) {
-            const data = await response.json();
-            setCurrentData(data);
-          } else {
-            console.error("Error al obtener datos por fecha");
-          }
+          ).then((r) => (r.ok ? r.json() : Promise.reject("Error fetch primario")));
+
+          // Fetch secundario (si existe)
+          const secondaryPromise =
+            isDualMode && secondaryFetchEndpoint
+              ? fetch(
+                  `${secondaryFetchEndpoint}?start=${formattedDate}&end=${formattedDate}`,
+                ).then((r) =>
+                  r.ok ? r.json() : Promise.reject("Error fetch secundario"),
+                )
+              : Promise.resolve(null);
+
+          const [primaryData, secData] = await Promise.all([
+            primaryPromise,
+            secondaryPromise,
+          ]);
+
+          setCurrentData(primaryData);
+          if (secData !== null) setSecondaryData(secData);
         } catch (error) {
           console.error("Excepción al hacer fetch:", error);
         } finally {
@@ -102,11 +137,12 @@ function GraphCard({
         }
       } else if (!selectedDate) {
         setCurrentData(initialData);
+        if (secondaryInitialData) setSecondaryData(secondaryInitialData);
       }
     };
 
     fetchDataByDate();
-  }, [selectedDate, fetchEndpoint, initialData]);
+  }, [selectedDate, fetchEndpoint, secondaryFetchEndpoint, initialData, secondaryInitialData, isDualMode]);
 
   // Procesamiento de datos y etiquetas según el tipo
   const isTimeChart = type === "nivel" || type === "caudal";
@@ -163,9 +199,39 @@ function GraphCard({
     pointHoverBorderColor: isTimeChart ? "#fff" : undefined,
   };
 
+  // Dataset secundario (solo en modo dual)
+  const secDivisor = secondaryDivisor ?? 1;
+  const secondaryValues = isDualMode
+    ? secondaryData.map((d) => ({
+        x: parseAsLocal(d.time),
+        y: d.value / secDivisor,
+      }))
+    : [];
+
+  const secondaryDataset = isDualMode
+    ? {
+        label: secondaryLabel!,
+        data: secondaryValues,
+        backgroundColor: "rgba(255, 159, 64, 0.6)",
+        borderColor: "rgba(255, 159, 64, 1)",
+        borderWidth: 2,
+        tension: 0.3,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        pointHoverBackgroundColor: "rgba(255, 159, 64, 1)",
+        pointHoverBorderColor: "#fff",
+      }
+    : null;
+
+  const datasets = [
+    mainDataset,
+    ...(secondaryDataset ? [secondaryDataset] : []),
+    ...(alarmaDataset ? [alarmaDataset] : []),
+  ];
+
   const chartData = {
     ...(isTimeChart ? {} : { labels }),
-    datasets: [mainDataset, ...(alarmaDataset ? [alarmaDataset] : [])],
+    datasets,
   };
 
   const isBarChart = type === "horometro" || type === "totalizador";

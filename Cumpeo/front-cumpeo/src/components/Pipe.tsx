@@ -7,9 +7,12 @@ interface PipeProps {
   image: string;
   hasWaterFlow: boolean;
   style?: CSSProperties;
-  caudal?: number;
+  caudal_pozo2?: number;
+  caudal_pozo1?: number;
   totalizador_total?: number;
   totalizador_diario?: number;
+  titleTotalizador?: string;
+  titleCaudal?: string;
 }
 
 const FRAMES_COUNT = 3;
@@ -22,9 +25,12 @@ const Pipe: React.FC<PipeProps> = ({
   image,
   hasWaterFlow,
   style,
-  caudal,
+  caudal_pozo1,
+  caudal_pozo2,
   totalizador_diario,
   totalizador_total,
+  titleTotalizador,
+  titleCaudal,
 }) => {
   const [frameX, setFrameX] = useState(0);
 
@@ -52,34 +58,61 @@ const Pipe: React.FC<PipeProps> = ({
   return (
     <div className="pipe-container">
       <div
-        className="text-center alert alert-light "
         style={{
-          maxWidth: "220px",
           position: "absolute",
-          top: 80,
+          top: 70,
           left: 320,
           zIndex: 10,
+          display: "flex",
+          gap: "15px",
         }}
       >
-        <div className="mb-2">
-          <span className="text-muted small">Totalizador:</span>
-          <strong>
-            <h6>
-              {totalizador_diario ? totalizador_diario?.toFixed(2) : 0} m³
-            </h6>
-          </strong>
+        <div
+          className="text-center alert alert-light m-0 p-2"
+          style={{ minWidth: "160px", boxShadow: "0 2px 5px rgba(0,0,0,0.1)" }}
+        >
+          {titleTotalizador && (
+            <h6 className="mb-2 text-primary">{titleTotalizador}</h6>
+          )}
+          <div className="mb-2">
+            <span className="text-muted small">Totalizador:</span>
+            <strong>
+              <h6>
+                {totalizador_diario ? totalizador_diario?.toFixed(2) : 0} m³
+              </h6>
+            </strong>
+          </div>
+          <div className="mb-0">
+            <span className="text-muted small">Totalizador Total:</span>
+            <strong>
+              <h6>
+                {totalizador_total ? totalizador_total?.toFixed(2) : 0} m³
+              </h6>
+            </strong>
+          </div>
+          <div className="mb-0">
+            <span className="text-muted small">Caudal de Impulsión:</span>
+            <strong>
+              <h6>{caudal_pozo1 ? caudal_pozo1?.toFixed(2) : 0} l/s</h6>
+            </strong>
+          </div>
         </div>
-        <div className="mb-2">
-          <span className="text-muted small">Totalizador Total:</span>
-          <strong>
-            <h6>{totalizador_total ? totalizador_total?.toFixed(2) : 0} m³</h6>
-          </strong>
-        </div>
-        <div className="mb-2">
-          <span className="text-muted small">Caudal de Impulsión:</span>
-          <strong>
-            <h6>{caudal ? caudal?.toFixed(2) : 0} l/s</h6>
-          </strong>
+
+        <div
+          className="text-center alert alert-light m-0 p-2"
+          style={{
+            maxHeight: "100px",
+            maxWidth: "160px",
+            boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+          }}
+        >
+          {titleCaudal && <h6 className="mb-2 text-primary">{titleCaudal}</h6>}
+          <div className="mb-0">
+            <span className="text-muted small">Caudal de Impulsión:</span>
+            <strong>
+              <h6>{caudal_pozo2 ? caudal_pozo2?.toFixed(2) : 0} l/s</h6>
+            </strong>
+          </div>
         </div>
       </div>
       <img

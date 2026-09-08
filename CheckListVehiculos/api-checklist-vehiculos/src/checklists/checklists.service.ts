@@ -33,9 +33,7 @@ export class ChecklistsService {
         throw new BadRequestException('Current kilometraje cannot be less than previous kilometraje');
       }
 
-      const kmDiff = createChecklistDto.kilometraje_actual - vehicle.kilometraje;
       vehicle.kilometraje = createChecklistDto.kilometraje_actual;
-      vehicle.km_desde_ultima_mantencion += kmDiff;
       await queryRunner.manager.save(vehicle);
 
       const checklist = queryRunner.manager.create(Checklist, {

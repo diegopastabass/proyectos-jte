@@ -19,9 +19,8 @@ export class SsrManzanoService {
   ): { start: Date; end: Date } | null {
     if (!dto.start || !dto.end) return null;
     const startDate = new Date(`${dto.start}T00:00:00Z`);
-    const nextDay = new Date(dto.end);
-    nextDay.setDate(nextDay.getDate() + 1);
-    const endDate = new Date(`${nextDay.toISOString().slice(0, 10)}T00:00:00Z`);
+    const endDate = new Date(`${dto.end}T00:00:00Z`);
+    endDate.setUTCDate(endDate.getUTCDate() + 1);
     return { start: startDate, end: endDate };
   }
 
@@ -125,7 +124,7 @@ export class SsrManzanoService {
         const dateStr = currentDate.toISOString().split('T')[0];
         if (!metricsMap.has(dateStr) || dateStr === todayStr)
           missingDates.push(dateStr);
-        currentDate.setDate(currentDate.getDate() + 1);
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
       }
 
       if (missingDates.length > 0) {
@@ -165,7 +164,7 @@ export class SsrManzanoService {
         const dateStr = currentDate.toISOString().split('T')[0];
         if (metricsMap.has(dateStr))
           results.push({ time: dateStr, value: metricsMap.get(dateStr)! });
-        currentDate.setDate(currentDate.getDate() + 1);
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
       }
       return results;
     } catch (error) {

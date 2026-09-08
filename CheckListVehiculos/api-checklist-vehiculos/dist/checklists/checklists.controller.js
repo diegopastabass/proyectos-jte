@@ -42,6 +42,9 @@ let ChecklistsController = class ChecklistsController {
     findOne(req, id) {
         return this.checklistsService.findOne(id, req.user);
     }
+    remove(req, id) {
+        return this.checklistsService.remove(id, req.user);
+    }
 };
 exports.ChecklistsController = ChecklistsController;
 __decorate([
@@ -78,6 +81,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", void 0)
 ], ChecklistsController.prototype, "findOne", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", void 0)
+], ChecklistsController.prototype, "remove", null);
 exports.ChecklistsController = ChecklistsController = __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Controller)('checklists'),

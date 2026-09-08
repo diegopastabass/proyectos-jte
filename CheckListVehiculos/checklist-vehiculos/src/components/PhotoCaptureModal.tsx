@@ -61,8 +61,15 @@ const PhotoCaptureModal: React.FC<PhotoCaptureModalProps> = ({ show, onClose, on
   const handleConfirm = () => {
     if (photoData) {
       onCapture(photoData);
+      setPhotoData(null);
       onClose();
     }
+  };
+
+  const handleClose = () => {
+    setPhotoData(null);
+    stopCamera();
+    onClose();
   };
 
   if (!show) return null;
@@ -73,7 +80,7 @@ const PhotoCaptureModal: React.FC<PhotoCaptureModalProps> = ({ show, onClose, on
         <div className="modal-content bg-light border-secondary">
           <div className="modal-header border-secondary">
             <h5 className="modal-title text-dark">Capturar Foto Evidencia</h5>
-            <button type="button" className="btn-close btn-close-white" onClick={onClose}></button>
+            <button type="button" className="btn-close btn-close-white" onClick={handleClose}></button>
           </div>
           <div className="modal-body p-0 text-center position-relative bg-black">
             {!photoData ? (

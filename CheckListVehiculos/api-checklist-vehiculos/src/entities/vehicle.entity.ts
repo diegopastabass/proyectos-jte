@@ -15,7 +15,7 @@ export class Vehicle {
   kilometraje: number;
 
   @Column({ type: 'int', default: 0 })
-  km_desde_ultima_mantencion: number;
+  km_ultima_mantencion: number;
 
   @Column({ type: 'date', nullable: true })
   fecha_venc_revision_tecnica: Date;

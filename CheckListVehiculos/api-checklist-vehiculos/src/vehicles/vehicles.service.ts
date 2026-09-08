@@ -61,7 +61,7 @@ export class VehiclesService {
   async resetMantencion(id: string): Promise<Vehicle> {
     try {
       const vehicle = await this.findOne(id);
-      vehicle.km_desde_ultima_mantencion = 0;
+      vehicle.km_ultima_mantencion = vehicle.kilometraje;
       return await this.vehiclesRepository.save(vehicle);
     } catch (error) {
       this.logger.error(`Error in resetMantencion: ${error.message}`, error.stack);

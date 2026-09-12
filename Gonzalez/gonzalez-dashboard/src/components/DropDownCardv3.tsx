@@ -17,7 +17,7 @@ ChartJS.register(
   BarElement,
   Tooltip,
   Legend,
-  Title
+  Title,
 );
 
 interface DropdownCardProps {
@@ -38,12 +38,8 @@ function DropdownCardv3({
   chartLabel,
   date,
 }: DropdownCardProps) {
-  let divisor = 10;
-
   const labels = data.map((d) => new Date(d.time).toISOString().split("T")[0]);
-  const values = data.map((d) => (d.value / divisor));
-
-
+  const values = data.map((d) => d.value);
 
   const chartData = {
     labels,

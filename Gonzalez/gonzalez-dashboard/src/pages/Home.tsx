@@ -66,6 +66,15 @@ function App() {
     window.addEventListener("resize", handleResize);
     handleResize();
 
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === "F5") {
+        e.preventDefault();
+        localStorage.clear();
+        window.location.reload();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
     const formatter = new Intl.DateTimeFormat("en-CA", {
       timeZone: "America/Santiago",
       year: "numeric",
@@ -106,6 +115,7 @@ function App() {
     return () => {
       clearInterval(intervalId);
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
 

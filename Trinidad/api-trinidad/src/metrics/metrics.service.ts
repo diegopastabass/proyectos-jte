@@ -319,13 +319,72 @@ export class SsrTrinidadService implements OnModuleInit, OnModuleDestroy {
   }
 
   async getCaudal(dto: DateRangeDto): Promise<Metric[]> {
+    return this.getTimeSeriesMetric(
+      'SSR_TRINIDAD--slave.caudal_pozo',
+      dto,
+      'getCaudal',
+    );
+  }
+
+  // --- Métodos de estado de bombas (para gráficos on/off en el tiempo) ---
+
+  async getBombaElevadora1(dto: DateRangeDto): Promise<Metric[]> {
+    return this.getTimeSeriesMetric(
+      'SSR_TRINIDAD--slave.bomba_elevadora_1',
+      dto,
+      'getBombaElevadora1',
+    );
+  }
+
+  async getBombaElevadora2(dto: DateRangeDto): Promise<Metric[]> {
+    return this.getTimeSeriesMetric(
+      'SSR_TRINIDAD--slave.bomba_elevadora_2',
+      dto,
+      'getBombaElevadora2',
+    );
+  }
+
+  async getBombaPozo(dto: DateRangeDto): Promise<Metric[]> {
+    return this.getTimeSeriesMetric(
+      'SSR_TRINIDAD--slave.bomba_pozo',
+      dto,
+      'getBombaPozo',
+    );
+  }
+
+  // --- Métodos de crecimiento de totalizadores (valor bruto acumulativo) ---
+
+  async getTotalizadorPozoCrecimiento(dto: DateRangeDto): Promise<Metric[]> {
+    return this.getTimeSeriesMetric(
+      'SSR_TRINIDAD--slave.totalizador_pozo',
+      dto,
+      'getTotalizadorPozoCrecimiento',
+    );
+  }
+
+  async getTotalizadorSentinaCrecimiento(dto: DateRangeDto): Promise<Metric[]> {
+    return this.getTimeSeriesMetric(
+      'SSR_TRINIDAD--slave.totalizador_sentina',
+      dto,
+      'getTotalizadorSentinaCrecimiento',
+    );
+  }
+
+  // --- Método genérico para series de tiempo desde PostgreSQL ---
+
+  private async getTimeSeriesMetric(
+    metricName: string,
+    dto: DateRangeDto,
+    methodName: string,
+  ): Promise<Metric[]> {
     try {
       const range = this.normalizeDateRange(dto);
       if (!range) {
+        const limit = dto.limit ? Number(dto.limit) : 100;
         const results = await this.repo.find({
-          where: { mt_name: 'SSR_TRINIDAD--slave.caudal_pozo' },
+          where: { mt_name: metricName },
           order: { mt_time_2: 'DESC' },
-          take: 100,
+          take: limit,
         });
         return results.reverse().map((r) => ({
           time: r.mt_time_2.toISOString(),
@@ -334,7 +393,7 @@ export class SsrTrinidadService implements OnModuleInit, OnModuleDestroy {
       }
       const results = await this.repo.find({
         where: {
-          mt_name: 'SSR_TRINIDAD--slave.caudal_pozo',
+          mt_name: metricName,
           mt_time_2: Raw((a) => `${a} >= :start AND ${a} < :end`, {
             start: range.start,
             end: range.end,
@@ -347,7 +406,7 @@ export class SsrTrinidadService implements OnModuleInit, OnModuleDestroy {
         value: Number(r.mt_value),
       }));
     } catch (error) {
-      this.logger.error('Error en getCaudal', error);
+      this.logger.error(`Error en ${methodName}`, error);
       throw error;
     }
   }

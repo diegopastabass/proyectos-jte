@@ -16,7 +16,7 @@ interface TankProps {
 }
 
 const MAX_LEVEL_FRAMES = 20;
-const FRAME_DELAY = 150;
+const FRAME_DELAY = 500; // Reducido de 150ms para menos re-renders (solo alterna 2 frames)
 
 const Tank: React.FC<TankProps> = ({
   spriteWidth,

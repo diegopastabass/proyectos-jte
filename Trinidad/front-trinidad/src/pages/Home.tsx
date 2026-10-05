@@ -48,6 +48,15 @@ function App() {
   const [horometroElevadora1, setHorometroElevadora1] = useState<Metric[]>([]);
   const [horometroElevadora2, setHorometroElevadora2] = useState<Metric[]>([]);
   const [totalizadorSentina, setTotalizadorSentina] = useState<Metric[]>([]);
+  const [bombaPozo, setBombaPozo] = useState<Metric[]>([]);
+  const [bombaElevadora1, setBombaElevadora1] = useState<Metric[]>([]);
+  const [bombaElevadora2, setBombaElevadora2] = useState<Metric[]>([]);
+  const [totalizadorPozoBruto, setTotalizadorPozoBruto] = useState<Metric[]>(
+    [],
+  );
+  const [totalizadorSentinaBruto, setTotalizadorSentinaBruto] = useState<
+    Metric[]
+  >([]);
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 992);
 
   const [isOpenEstanque, setIsOpenEstanque] = useState(isLargeScreen);
@@ -93,6 +102,35 @@ function App() {
         setHorometroPozo(await fetchWithCache("horometro_pozo", date));
         setHorometroElevadora1(await fetchWithCache("horometro_e1", date));
         setHorometroElevadora2(await fetchWithCache("horometro_e2", date));
+
+        const [
+          bombaPozoRes,
+          bombaE1Res,
+          bombaE2Res,
+          totPozoBrutoRes,
+          totSentinaBrutoRes,
+        ] = await Promise.all([
+          fetch(
+            `https://app.jteanalytics.cl/trinidad/bomba_pozo?start=${date}&end=${date}`,
+          ),
+          fetch(
+            `https://app.jteanalytics.cl/trinidad/bomba_elevadora_1?start=${date}&end=${date}`,
+          ),
+          fetch(
+            `https://app.jteanalytics.cl/trinidad/bomba_elevadora_2?start=${date}&end=${date}`,
+          ),
+          fetch(
+            `https://app.jteanalytics.cl/trinidad/totalizador_pozo_crecimiento?start=${date}&end=${date}`,
+          ),
+          fetch(
+            `https://app.jteanalytics.cl/trinidad/totalizador_sentina_crecimiento?start=${date}&end=${date}`,
+          ),
+        ]);
+        setBombaPozo(await bombaPozoRes.json());
+        setBombaElevadora1(await bombaE1Res.json());
+        setBombaElevadora2(await bombaE2Res.json());
+        setTotalizadorPozoBruto(await totPozoBrutoRes.json());
+        setTotalizadorSentinaBruto(await totSentinaBrutoRes.json());
       } catch (error) {
         console.error("Error al cargar datos:", error);
       } finally {
@@ -230,6 +268,31 @@ function App() {
           </div>
         </div>
 
+        <div className="w-100 row g-2 p-0 order-3 justify-content-center mt-2">
+          <div className="col-12 col-lg-6">
+            <GraphCard
+              isOpen
+              title="Totalizador Bruto Pozo"
+              chartLabel="Totalizador Bruto (m³)"
+              initialData={totalizadorPozoBruto}
+              type="totalizador_bruto"
+              fetchEndpoint="https://app.jteanalytics.cl/trinidad/totalizador_pozo_crecimiento"
+              divisor={10}
+            />
+          </div>
+          <div className="col-12 col-lg-6">
+            <GraphCard
+              isOpen
+              title="Totalizador Bruto Sentina"
+              chartLabel="Totalizador Bruto (m³)"
+              initialData={totalizadorSentinaBruto}
+              type="totalizador_bruto"
+              fetchEndpoint="https://app.jteanalytics.cl/trinidad/totalizador_sentina_crecimiento"
+              divisor={10}
+            />
+          </div>
+        </div>
+
         <div className="w-100 row g-2 p-0 order-4 justify-content-center mt-2">
           <div className="col-12 col-lg-4">
             <GraphCard
@@ -256,6 +319,39 @@ function App() {
               chartLabel="Horómetro"
               initialData={horometroElevadora2}
               type="horometro"
+            />
+          </div>
+        </div>
+
+        <div className="w-100 row g-2 p-0 order-5 justify-content-center mt-2">
+          <div className="col-12 col-lg-4">
+            <GraphCard
+              isOpen
+              title="Actividad Bomba Pozo"
+              chartLabel="Estado"
+              initialData={bombaPozo}
+              type="bomba"
+              fetchEndpoint="https://app.jteanalytics.cl/trinidad/bomba_pozo"
+            />
+          </div>
+          <div className="col-12 col-lg-4">
+            <GraphCard
+              isOpen
+              title="Actividad Bomba Elevadora 1"
+              chartLabel="Estado"
+              initialData={bombaElevadora1}
+              type="bomba"
+              fetchEndpoint="https://app.jteanalytics.cl/trinidad/bomba_elevadora_1"
+            />
+          </div>
+          <div className="col-12 col-lg-4">
+            <GraphCard
+              isOpen
+              title="Actividad Bomba Elevadora 2"
+              chartLabel="Estado"
+              initialData={bombaElevadora2}
+              type="bomba"
+              fetchEndpoint="https://app.jteanalytics.cl/trinidad/bomba_elevadora_2"
             />
           </div>
         </div>
@@ -334,7 +430,7 @@ function App() {
               text5={["Totalizador Diario Pozo", `${latestTotalizadorPozo} m³`]}
               text6={[
                 "Totalizador Total Pozo",
-                `${data.snapshot.totalizador_pozo.value.toFixed(2)} m³`,
+                `${(data.snapshot.totalizador_pozo.value / 10).toFixed(2)} m³`,
               ]}
             />
             <ToggleCardButton
@@ -356,6 +452,14 @@ function App() {
           />
           <GraphCard
             isOpen={isOpenBomba}
+            title="Actividad Bomba Pozo"
+            chartLabel="Estado"
+            initialData={bombaPozo}
+            type="bomba"
+            fetchEndpoint="https://app.jteanalytics.cl/trinidad/bomba_pozo"
+          />
+          <GraphCard
+            isOpen={isOpenBomba}
             title="Horómetro Pozo"
             chartLabel="Horómetro"
             initialData={horometroPozo}
@@ -367,6 +471,15 @@ function App() {
             chartLabel="Totalizador (m³)"
             initialData={totalizadorPozo}
             type="totalizador"
+          />
+          <GraphCard
+            isOpen={isOpenBomba}
+            title="Totalizador Bruto Pozo"
+            chartLabel="Totalizador Bruto (m³)"
+            initialData={totalizadorPozoBruto}
+            type="totalizador_bruto"
+            fetchEndpoint="https://app.jteanalytics.cl/trinidad/totalizador_pozo_crecimiento"
+            divisor={10}
           />
         </div>
 
@@ -389,7 +502,7 @@ function App() {
               ]}
               text4={[
                 "Totalizador Total Sentina",
-                `${data.snapshot.totalizador_sentina.value.toFixed(2)} m³`,
+                `${(data.snapshot.totalizador_sentina.value / 10).toFixed(2)} m³`,
               ]}
             />
             <ToggleCardButton
@@ -409,6 +522,14 @@ function App() {
           />
           <GraphCard
             isOpen={isOpenSentina}
+            title="Actividad Bomba Elevadora 1"
+            chartLabel="Estado"
+            initialData={bombaElevadora1}
+            type="bomba"
+            fetchEndpoint="https://app.jteanalytics.cl/trinidad/bomba_elevadora_1"
+          />
+          <GraphCard
+            isOpen={isOpenSentina}
             title="Horómetro Elevadora 2"
             chartLabel="Horómetro"
             initialData={horometroElevadora2}
@@ -416,10 +537,27 @@ function App() {
           />
           <GraphCard
             isOpen={isOpenSentina}
+            title="Actividad Bomba Elevadora 2"
+            chartLabel="Estado"
+            initialData={bombaElevadora2}
+            type="bomba"
+            fetchEndpoint="https://app.jteanalytics.cl/trinidad/bomba_elevadora_2"
+          />
+          <GraphCard
+            isOpen={isOpenSentina}
             title="Totalizador Sentina"
             chartLabel="Totalizador (m³)"
             initialData={totalizadorSentina}
             type="totalizador"
+          />
+          <GraphCard
+            isOpen={isOpenSentina}
+            title="Totalizador Bruto Sentina"
+            chartLabel="Totalizador Bruto (m³)"
+            initialData={totalizadorSentinaBruto}
+            type="totalizador_bruto"
+            fetchEndpoint="https://app.jteanalytics.cl/trinidad/totalizador_sentina_crecimiento"
+            divisor={10}
           />
         </div>
       </div>

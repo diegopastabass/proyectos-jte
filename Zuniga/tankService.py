@@ -12,6 +12,7 @@ load_dotenv()
 API_URL = os.getenv("API_URL")
 TOKEN = os.getenv("TOKEN")
 TO = os.getenv("TO")
+TO_ADMIN = os.getenv("API_TO_ADMIN")
 
 # Estos valores se recargarán en cada ciclo
 def get_dynamic_config():
@@ -97,8 +98,45 @@ def enviar_alerta(mensaje: str):
     except requests.RequestException as e:
         logging.error(f"❌ Error enviando mensaje a UltaMsg: {e}")
 
+def enviar_alerta_admin(mensaje: str):
+    if not TO_ADMIN:
+        logging.warning("⚠️ No se puede enviar alerta de administrador porque API_TO_ADMIN no está definido.")
+        return
+
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    data = {"token": TOKEN, "to": TO_ADMIN, "body": mensaje}
+
+    try:
+        response = requests.post(API_URL, data=data, headers=headers, timeout=10)
+        if response.status_code == 200:
+            logging.info(f"📤 Alerta de Admin enviada con éxito: {mensaje}")
+        else:
+            logging.warning(f"⚠️ Error en respuesta UltaMsg (Admin) ({response.status_code}): {response.text}")
+    except requests.RequestException as e:
+        logging.error(f"❌ Error enviando mensaje a UltaMsg (Admin): {e}")
+
 def procesar_estanque(sensor, nombre_publico, nivel_alerta):
     nivel_actual, nivel_anterior, time_actual, time_anterior = obtener_niveles(sensor)
+
+    # Verificar si el equipo está desconectado (más de 30 minutos sin datos)
+    if time_actual is not None:
+        tiempo_desconectado = datetime.utcnow() - time_actual
+        if tiempo_desconectado.total_seconds() > 1800:
+            horas = int(tiempo_desconectado.total_seconds() // 3600)
+            minutos = int((tiempo_desconectado.total_seconds() % 3600) // 60)
+            
+            tiempo_str = f"{minutos} minuto(s)"
+            if horas > 0:
+                tiempo_str = f"{horas} hora(s) y " + tiempo_str
+                
+            mensaje = (
+                f"⚠️ ALERTA DESCONEXIÓN ⚠️\n"
+                f"Estanque: {nombre_publico}\n"
+                f"El equipo no ha reportado datos recientes.\n"
+                f"Tiempo sin conexión: {tiempo_str}."
+            )
+            enviar_alerta_admin(mensaje)
+            return True
 
     if nivel_actual is None:
         return False

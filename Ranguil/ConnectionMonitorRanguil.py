@@ -24,7 +24,8 @@ logging.basicConfig(
     ]
 )
 
-alertas_activas = set()
+equipo_desconectado = False
+ultima_alerta_enviada = None
 
 # --- enviar_alerta ---
 def enviar_alerta(mensaje: str):
@@ -40,7 +41,7 @@ def enviar_alerta(mensaje: str):
 
 # --- verificar_estado_endpoint ---
 def verificar_estado_endpoint():
-    global alertas_activas
+    global equipo_desconectado, ultima_alerta_enviada
     try:
         response = requests.get(ENDPOINT, timeout=10)
         response.raise_for_status()
@@ -48,6 +49,8 @@ def verificar_estado_endpoint():
         snapshot = data.get("snapshot", {})
 
         ahora = datetime.now(timezone.utc)
+        mas_reciente = None
+        ultimo_registro_str = ""
 
         for sensor, info in snapshot.items():
             if not isinstance(info, dict) or "time" not in info:
@@ -56,23 +59,39 @@ def verificar_estado_endpoint():
             tiempo_str = info["time"].replace("Z", "+00:00")
             tiempo_sensor = datetime.fromisoformat(tiempo_str)
 
-            minutos_inactivo = (ahora - tiempo_sensor).total_seconds() / 60
+            if mas_reciente is None or tiempo_sensor > mas_reciente:
+                mas_reciente = tiempo_sensor
+                ultimo_registro_str = info["time"]
 
-            if minutos_inactivo > 10:
-                if sensor not in alertas_activas:
-                    mensaje = (
-                        f"🚨 ALERTA DE CONEXIÓN 🚨\n"
-                        f"Sensor: {sensor}\n"
-                        f"Sin datos hace: {minutos_inactivo:.1f} minutos.\n"
-                        f"Último registro: {info['time']}"
-                    )
-                    enviar_alerta(mensaje)
-                    logging.info(f"Alerta enviada para {sensor}")
-                    alertas_activas.add(sensor)
-            else:
-                if sensor in alertas_activas:
-                    alertas_activas.remove(sensor)
-                    logging.info(f"{sensor} recuperado.")
+        if mas_reciente is None:
+            return
+
+        minutos_inactivo = (ahora - mas_reciente).total_seconds() / 60
+
+        if minutos_inactivo > 30:
+            enviar = False
+            if not equipo_desconectado:
+                enviar = True
+            elif ultima_alerta_enviada is not None:
+                horas_desde_alerta = (ahora - ultima_alerta_enviada).total_seconds() / 3600
+                if horas_desde_alerta >= 24:
+                    enviar = True
+
+            if enviar:
+                mensaje = (
+                    f"🚨 ALERTA DE CONEXIÓN RANGUIL 🚨\n"
+                    f"Equipo sin conexión.\n"
+                    f"Sin datos hace: {minutos_inactivo:.1f} minutos.\n"
+                    f"Último registro: {ultimo_registro_str}"
+                )
+                enviar_alerta(mensaje)
+                logging.info(f"Alerta de equipo enviada. Minutos inactivo: {minutos_inactivo:.1f}")
+                ultima_alerta_enviada = ahora
+                equipo_desconectado = True
+        else:
+            if equipo_desconectado:
+                equipo_desconectado = False
+                logging.info("Equipo Ranguil recuperado.")
                     
     except Exception as e:
         logging.error(f"Error consultando endpoint: {e}")

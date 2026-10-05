@@ -2,7 +2,6 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  CreateDateColumn,
 } from 'typeorm';
 
 @Entity('carracedo_reports')
@@ -22,6 +21,6 @@ export class CarracedoReport {
   @Column({ type: 'jsonb', nullable: true })
   response: any;
 
-  @CreateDateColumn({ type: 'timestamp' })
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   time: Date;
 }

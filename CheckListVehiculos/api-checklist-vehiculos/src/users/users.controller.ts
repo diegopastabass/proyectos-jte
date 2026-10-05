@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Logger } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -8,38 +8,64 @@ import { Roles } from '../auth/roles.decorator';
 
 @Controller('users')
 export class UsersController {
+  private readonly logger = new Logger(UsersController.name);
+
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    // Public registration
-    return this.usersService.create(createUserDto);
+  async create(@Body() createUserDto: CreateUserDto) {
+    try {
+      return await this.usersService.create(createUserDto);
+    } catch (error) {
+      this.logger.error(`Error creating user: ${error.message}`, error.stack);
+      throw error;
+    }
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(true) // require admin
   @Get()
-  findAll() {
-    return this.usersService.findAll();
+  async findAll() {
+    try {
+      return await this.usersService.findAll();
+    } catch (error) {
+      this.logger.error(`Error finding all users: ${error.message}`, error.stack);
+      throw error;
+    }
   }
 
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(id);
+  async findOne(@Param('id') id: string) {
+    try {
+      return await this.usersService.findOne(id);
+    } catch (error) {
+      this.logger.error(`Error finding user ${id}: ${error.message}`, error.stack);
+      throw error;
+    }
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(true) // require admin
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(id, updateUserDto);
+  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    try {
+      return await this.usersService.update(id, updateUserDto);
+    } catch (error) {
+      this.logger.error(`Error updating user ${id}: ${error.message}`, error.stack);
+      throw error;
+    }
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(true) // require admin
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(id);
+  async remove(@Param('id') id: string) {
+    try {
+      return await this.usersService.remove(id);
+    } catch (error) {
+      this.logger.error(`Error removing user ${id}: ${error.message}`, error.stack);
+      throw error;
+    }
   }
 }

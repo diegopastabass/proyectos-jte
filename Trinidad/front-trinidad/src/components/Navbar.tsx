@@ -77,7 +77,7 @@ function Navbar(props: NavbarProps) {
         >
           <img src={lgoJte} alt="logo" width={50} height={34} />
           <img src={logoTrinidad} alt="logoT" width={50} height={50} />
-          <span className="h5 mb-0">SSR Trinidad </span>
+          <span className="h5 mb-0">SSR Trinidad - Los Maitenes</span>
         </a>
         {/* Fecha y estado */}
         <div className="d-flex flex-column align-items-center text-lg-start flex-grow-1 order-2 order-lg-0">

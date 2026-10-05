@@ -9,7 +9,23 @@ export const fetchWithCache = async (
 ): Promise<Metric[]> => {
   const cacheKey = `jte_cache_auquinco${endpoint}`;
   const cached = localStorage.getItem(cacheKey);
-  let data: Metric[] = cached ? JSON.parse(cached) : [];
+  let data: Metric[] = [];
+
+  // Validar que los datos cacheados sean un array válido
+  if (cached) {
+    try {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed)) {
+        data = parsed;
+      } else {
+        console.warn(`Cache corrupta para ${cacheKey}, limpiando...`);
+        localStorage.removeItem(cacheKey);
+      }
+    } catch {
+      console.warn(`Error al parsear cache para ${cacheKey}, limpiando...`);
+      localStorage.removeItem(cacheKey);
+    }
+  }
 
   let startStr = "";
   if (data.length > 0) {
@@ -25,7 +41,13 @@ export const fetchWithCache = async (
   const res = await fetch(
     `https://app.jteanalytics.cl/auquinco/${endpoint}?start=${startStr}&end=${endStr}`,
   );
-  const newData: Metric[] = await res.json();
+  const rawData = await res.json();
+
+  // Validar que la respuesta de la API sea un array
+  const newData: Metric[] = Array.isArray(rawData) ? rawData : [];
+  if (!Array.isArray(rawData)) {
+    console.warn(`Respuesta inesperada del endpoint ${endpoint}:`, rawData);
+  }
 
   const newDates = new Set(newData.map((d) => d.time.split("T")[0]));
   data = data.filter((d) => !newDates.has(d.time.split("T")[0]));
@@ -41,7 +63,7 @@ export const fetchWithCacheMulti = async <T extends Record<string, Metric[]>>(
   endpoint: string,
   endStr: string,
 ): Promise<T> => {
-  const cacheKey = `jte_cache_${endpoint}`;
+  const cacheKey = `jte_cache_auquinco${endpoint}`;
   const cached = localStorage.getItem(cacheKey);
   const data: Record<string, Metric[]> = cached ? JSON.parse(cached) : {};
 
@@ -90,3 +112,26 @@ export const fetchWithCacheMulti = async <T extends Record<string, Metric[]>>(
 
   return merged as T;
 };
+
+// Limpiar toda la caché de auquinco del localStorage
+export const clearAuquincoCache = () => {
+  const keysToRemove: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith("jte_cache_auquinco")) {
+      keysToRemove.push(key);
+    }
+  }
+  keysToRemove.forEach((key) => localStorage.removeItem(key));
+  return keysToRemove.length;
+};
+
+// Ctrl+Shift+F5 → limpiar caché y recargar
+window.addEventListener("keydown", (e: KeyboardEvent) => {
+  if (e.ctrlKey && e.shiftKey && e.key === "F5") {
+    e.preventDefault();
+    const removed = clearAuquincoCache();
+    console.log(`Caché limpiada: ${removed} entrada(s) eliminada(s).`);
+    window.location.reload();
+  }
+});

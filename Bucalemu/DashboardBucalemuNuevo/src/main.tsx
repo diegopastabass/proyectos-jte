@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "bootstrap/dist/css/bootstrap.min.css";
+import "./components/chartSetup"; // Registro centralizado de Chart.js (una sola vez)
 import App from "./App.tsx";
 import { BrowserRouter } from "react-router";
 

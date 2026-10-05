@@ -59,4 +59,10 @@ export class MetricsController {
   getCaudal(@Query() dto: DateRangeDto) {
     return this.metricsService.getCaudal(dto);
   }
+
+  // Endpoint consolidado: devuelve latest + levels + emptying + caudal en 1 sola llamada
+  @Get('snapshot')
+  async snapshot() {
+    return this.metricsService.getSnapshot();
+  }
 }

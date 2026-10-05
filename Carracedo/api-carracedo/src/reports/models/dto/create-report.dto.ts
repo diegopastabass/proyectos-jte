@@ -3,4 +3,5 @@ export class CreateReportDto {
   caudal: number;
   totalizador: number;
   response: any;
+  time?: string | Date;
 }

@@ -36,7 +36,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicle, setViewState, ad
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [currentPhotoId, setCurrentPhotoId] = useState<{ section: 'visual'|'mechanical'|'mandatory'|'interior', id: string } | null>(null);
   const [mandatoryPhotos, setMandatoryPhotos] = useState<{ frontal: string; trasera: string; lateral_izquierdo: string; lateral_derecho: string }>({ frontal: '', trasera: '', lateral_izquierdo: '', lateral_derecho: '' });
-  const [interiorPhotos, setInteriorPhotos] = useState<{ tablero: string; asientos_delanteros: string; asientos_traseros: string; piso_interior: string }>({ tablero: '', asientos_delanteros: '', asientos_traseros: '', piso_interior: '' });
+  const [interiorPhotos, setInteriorPhotos] = useState<{ interior_1: string; interior_2: string }>({ interior_1: '', interior_2: '' });
 
   const hasIssues = Object.values(visualChecks).some(c => !c.isGood) || Object.values(mechanicalChecks).some(c => !c.isGood);
 
@@ -85,6 +85,27 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicle, setViewState, ad
     return new Blob([u8arr], { type: mime });
   };
 
+  const compressImage = (dataUrl: string, maxWidth = 1024, quality = 0.6): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = dataUrl;
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!vehicle) return;
@@ -116,6 +137,36 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicle, setViewState, ad
 
     setSubmitting(true);
     try {
+      // Comprimir todas las fotos antes de enviar
+      const compressPhoto = async (dataUrl: string): Promise<string> => {
+        if (dataUrl && dataUrl.startsWith('data:')) {
+          return await compressImage(dataUrl, 1024, 0.6);
+        }
+        return dataUrl;
+      };
+
+      // Comprimir fotos de checks
+      const allChecks = { ...visualChecks, ...mechanicalChecks };
+      for (const [key, check] of Object.entries(allChecks)) {
+        if (check.photo && check.photo.startsWith('data:')) {
+          allChecks[key] = { ...check, photo: await compressPhoto(check.photo) };
+        }
+      }
+
+      // Comprimir fotos exteriores
+      const compressedMandatory = {
+        frontal: await compressPhoto(mandatoryPhotos.frontal),
+        trasera: await compressPhoto(mandatoryPhotos.trasera),
+        lateral_izquierdo: await compressPhoto(mandatoryPhotos.lateral_izquierdo),
+        lateral_derecho: await compressPhoto(mandatoryPhotos.lateral_derecho),
+      };
+
+      // Comprimir fotos interiores
+      const compressedInterior = {
+        interior_1: await compressPhoto(interiorPhotos.interior_1),
+        interior_2: await compressPhoto(interiorPhotos.interior_2),
+      };
+
       const checklistData = {
         vehicle_id: vehicle.id,
         kilometraje_actual: kmActual,
@@ -128,8 +179,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicle, setViewState, ad
       const formData = new FormData();
       formData.append('data', JSON.stringify(checklistData));
 
-      // Convert base64 photos to files and append
-      const allChecks = { ...visualChecks, ...mechanicalChecks };
+      // Convert compressed check photos to files and append
       Object.entries(allChecks).forEach(([key, check]) => {
         if (check.photo && check.photo.startsWith('data:')) {
           const blob = dataURLtoBlob(check.photo);
@@ -137,12 +187,12 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicle, setViewState, ad
         }
       });
 
-      // Append mandatory exterior photos
+      // Append compressed mandatory exterior photos
       const mandatoryEntries: [string, string][] = [
-        ['foto_frontal.jpg', mandatoryPhotos.frontal],
-        ['foto_trasera.jpg', mandatoryPhotos.trasera],
-        ['foto_lateral_izquierdo.jpg', mandatoryPhotos.lateral_izquierdo],
-        ['foto_lateral_derecho.jpg', mandatoryPhotos.lateral_derecho],
+        ['foto_frontal.jpg', compressedMandatory.frontal],
+        ['foto_trasera.jpg', compressedMandatory.trasera],
+        ['foto_lateral_izquierdo.jpg', compressedMandatory.lateral_izquierdo],
+        ['foto_lateral_derecho.jpg', compressedMandatory.lateral_derecho],
       ];
       mandatoryEntries.forEach(([filename, dataUrl]) => {
         if (dataUrl && dataUrl.startsWith('data:')) {
@@ -151,12 +201,10 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicle, setViewState, ad
         }
       });
 
-      // Append interior photos
+      // Append compressed interior photos
       const interiorEntries: [string, string][] = [
-        ['foto_interior_tablero.jpg', interiorPhotos.tablero],
-        ['foto_interior_asientos_delanteros.jpg', interiorPhotos.asientos_delanteros],
-        ['foto_interior_asientos_traseros.jpg', interiorPhotos.asientos_traseros],
-        ['foto_interior_piso.jpg', interiorPhotos.piso_interior],
+        ['foto_interior_1.jpg', compressedInterior.interior_1],
+        ['foto_interior_2.jpg', compressedInterior.interior_2],
       ];
       interiorEntries.forEach(([filename, dataUrl]) => {
         if (dataUrl && dataUrl.startsWith('data:')) {
@@ -172,8 +220,13 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicle, setViewState, ad
       addToast('Checklist guardado exitosamente', 'success');
       setViewState('home');
     } catch (error: any) {
-      const msg = error?.response?.data?.message || 'Error al guardar checklist';
+      const msg = error?.response?.data?.message || 'Error al guardar checklist. Si hay problemas de conexión, el error se registrará para análisis.';
       addToast(typeof msg === 'string' ? msg : JSON.stringify(msg), 'error');
+      
+      // Log the error
+      import('../errorLogger').then(({ logError }) => {
+        logError(error);
+      });
     } finally {
       setSubmitting(false);
     }
@@ -339,17 +392,15 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicle, setViewState, ad
             <span className="text-danger ms-1">*</span>
           </h5>
           <p className="text-secondary small mb-3">
-            Debe adjuntar al menos <strong>2 de 4</strong> fotos interiores del vehículo.
+            Debe adjuntar <strong>2 fotos</strong> del interior del vehículo.
             <span className="ms-2 badge bg-secondary">
-              {Object.values(interiorPhotos).filter(p => p !== '').length}/4 capturadas
+              {Object.values(interiorPhotos).filter(p => p !== '').length}/2 capturadas
             </span>
           </p>
           <div className="row g-3">
             {[
-              { id: 'tablero', label: 'Tablero', icon: 'bi-speedometer' },
-              { id: 'asientos_delanteros', label: 'Asientos Delant.', icon: 'bi-person-workspace' },
-              { id: 'asientos_traseros', label: 'Asientos Traseros', icon: 'bi-people' },
-              { id: 'piso_interior', label: 'Piso / Alfombras', icon: 'bi-grid-3x3' },
+              { id: 'interior_1', label: 'Interior 1', icon: 'bi-camera' },
+              { id: 'interior_2', label: 'Interior 2', icon: 'bi-camera' },
             ].map(photo => (
               <div className="col-6" key={photo.id}>
                 <div
@@ -368,7 +419,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicle, setViewState, ad
                     <div className="d-flex flex-column align-items-center justify-content-center h-100 text-warning">
                       <i className={`bi ${photo.icon} fs-1 mb-1`}></i>
                       <small className="fw-bold">{photo.label}</small>
-                      <small className="text-muted">Opcional</small>
+                      <small className="text-danger">* Requerida</small>
                     </div>
                   )}
                 </div>

@@ -12,6 +12,7 @@ import ScadaDiagram from "../components/ScadaDiagram";
 import ExportModal from "../components/ExportModal";
 import lgoJte from "../assets/logoJte.png";
 import { fetchWithCache } from "../components/fetchWithcache";
+import DataArrivalIndicator from "../components/DataArrivalIndicator";
 
 interface Metric {
   value: number;
@@ -31,6 +32,16 @@ interface Datos {
 }
 
 const BASE_URL = "https://app.jteanalytics.cl/cumpeo";
+
+/** Returns the most recent timestamp from all metrics in a snapshot */
+function getLatestTime(snapshot: MetricSnapshot | undefined): string | undefined {
+  if (!snapshot) return undefined;
+  const times = Object.values(snapshot)
+    .map((m) => new Date(m.time).getTime())
+    .filter((t) => !isNaN(t));
+  if (times.length === 0) return undefined;
+  return new Date(Math.max(...times)).toISOString();
+}
 
 function App() {
   const [loading, setLoading] = useState(true);
@@ -170,7 +181,7 @@ function App() {
           <GraphCard
             isOpen
             title="Caudal"
-            chartLabel="San Enrique 6 (l/s)"
+            chartLabel="San Enrique 3 (l/s)"
             initialData={caudalPozo1}
             type="caudal"
             fetchEndpoint={`${BASE_URL}/caudal-pozo1`}
@@ -178,7 +189,7 @@ function App() {
             nivelMax={20}
             secondaryInitialData={caudalPozo2}
             secondaryFetchEndpoint={`${BASE_URL}/caudal-pozo2`}
-            secondaryLabel="San Enrique 3 (l/s)"
+            secondaryLabel="San Enrique 1 (l/s)"
             secondaryDivisor={100}
           />
         </div>
@@ -188,7 +199,7 @@ function App() {
           <div className="col-12 col-lg-4">
             <GraphCard
               isOpen
-              title="Totalizador - San Enrique 6"
+              title="Totalizador - San Enrique 3"
               chartLabel="Totalizador (m³)"
               initialData={totalizador}
               type="totalizador"
@@ -198,7 +209,7 @@ function App() {
           <div className="col-12 col-lg-4">
             <GraphCard
               isOpen
-              title="Horómetro - San Enrique 6"
+              title="Horómetro - San Enrique 3"
               chartLabel="Horómetro"
               initialData={horometro}
               type="horometro"
@@ -207,7 +218,7 @@ function App() {
           <div className="col-12 col-lg-4">
             <GraphCard
               isOpen
-              title="Horómetro - San Enrique 3"
+              title="Horómetro - San Enrique 1"
               chartLabel="Horómetro"
               initialData={horometroPozo2}
               type="horometro"
@@ -236,6 +247,18 @@ function App() {
       </div>
 
       <div className="w-100 px-2">
+        {/* Indicadores de llegada de datos */}
+        <div className="mb-2 d-flex flex-column gap-2">
+          <DataArrivalIndicator
+            label="San Enrique 3"
+            latestTime={getLatestTime(data.pozo1)}
+          />
+          <DataArrivalIndicator
+            label="San Enrique 1"
+            latestTime={getLatestTime(data.pozo2)}
+          />
+        </div>
+
         {/* Estanque */}
         <div className="mb-2">
           <Card>
@@ -271,11 +294,11 @@ function App() {
           />
         </div>
 
-        {/* San Enrique 6 */}
+        {/* San Enrique 3 */}
         <div className="mb-2">
           <Card>
             <CardBody
-              title="San Enrique 6"
+              title="San Enrique 3"
               text1={[
                 "Presión",
                 `${(data.pozo1?.presion?.value / 10).toFixed(1) ?? "—"} bar`,
@@ -303,14 +326,14 @@ function App() {
         <div className="mb-2">
           <GraphCard
             isOpen={isOpenBomba}
-            title="Horómetro - San Enrique 6"
+            title="Horómetro - San Enrique 3"
             chartLabel="Horómetro"
             initialData={horometro}
             type="horometro"
           />
           <GraphCard
             isOpen={isOpenBomba}
-            title="Totalizador - San Enrique 6"
+            title="Totalizador - San Enrique 3"
             chartLabel="Totalizador (m³)"
             initialData={totalizador}
             type="totalizador"
@@ -318,11 +341,11 @@ function App() {
           />
         </div>
 
-        {/* San Enrique 3 */}
+        {/* San Enrique 1 */}
         <div className="mb-2">
           <Card>
             <CardBody
-              title="San Enrique 3"
+              title="San Enrique 1"
               text1={[
                 "Caudal",
                 `${(data.pozo2?.caudal_pozos?.value / 100).toFixed(2) ?? "—"} l/s`,
@@ -343,7 +366,7 @@ function App() {
           <GraphCard
             isOpen={isOpenPozo2}
             title="Caudal"
-            chartLabel="San Enrique 6 (l/s)"
+            chartLabel="San Enrique 3 (l/s)"
             initialData={caudalPozo1}
             type="caudal"
             fetchEndpoint={`${BASE_URL}/caudal-pozo1`}
@@ -351,12 +374,12 @@ function App() {
             nivelMax={20}
             secondaryInitialData={caudalPozo2}
             secondaryFetchEndpoint={`${BASE_URL}/caudal-pozo2`}
-            secondaryLabel="San Enrique 3 (l/s)"
+            secondaryLabel="San Enrique 1 (l/s)"
             secondaryDivisor={100}
           />
           <GraphCard
             isOpen={isOpenPozo2}
-            title="Horómetro - San Enrique 3"
+            title="Horómetro - San Enrique 1"
             chartLabel="Horómetro"
             initialData={horometroPozo2}
             type="horometro"
@@ -365,7 +388,7 @@ function App() {
 
         {/* Estado */}
         <div className="mb-2">
-          <State title="Estado Tablero - San Enrique 6">
+          <State title="Estado Tablero - San Enrique 3">
             <StateBody
               automatico={data.pozo1?.automatico?.value?.toString() ?? "0"}
               bomba={data.pozo1?.bomba?.value?.toString() ?? "0"}
@@ -380,7 +403,7 @@ function App() {
         </div>
         {/* Estado Pozo 3 */}
         <div className="mb-2">
-          <State title="Estado Tablero - San Enrique 3">
+          <State title="Estado Tablero - San Enrique 1">
             <StateBody caudal={(data.pozo2?.caudal_pozos?.value ?? 0) / 100} />
           </State>
         </div>

@@ -24,6 +24,49 @@ interface DailyQueryResult {
   daily_value: number;
 }
 
+// ── Caché en memoria con TTL ─────────────────────────────────────────
+interface CacheEntry<T> {
+  data: T;
+  expiry: number;
+}
+
+class MemoryCache {
+  private store = new Map<string, CacheEntry<unknown>>();
+
+  get<T>(key: string): T | null {
+    const entry = this.store.get(key) as CacheEntry<T> | undefined;
+    if (!entry) return null;
+    if (Date.now() > entry.expiry) {
+      this.store.delete(key);
+      return null;
+    }
+    return entry.data;
+  }
+
+  set<T>(key: string, data: T, ttlMs: number): void {
+    this.store.set(key, { data, expiry: Date.now() + ttlMs });
+  }
+
+  invalidate(key: string): void {
+    this.store.delete(key);
+  }
+}
+
+// ── Deduplicación de requests en vuelo ───────────────────────────────
+class InFlightTracker {
+  private pending = new Map<string, Promise<unknown>>();
+
+  async dedupe<T>(key: string, fn: () => Promise<T>): Promise<T> {
+    const existing = this.pending.get(key);
+    if (existing) return existing as Promise<T>;
+
+    const promise = fn().finally(() => this.pending.delete(key));
+    this.pending.set(key, promise);
+    return promise;
+  }
+}
+
+// ── Servicio ─────────────────────────────────────────────────────────
 @Injectable()
 export class MetricsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MetricsService.name);
@@ -34,6 +77,11 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
   private lastDataArrivalTime: number = Date.now();
   private noDataAlertSent: boolean = false;
   private noDataCheckInterval: NodeJS.Timeout;
+
+  // Caché con TTL de 30 segundos (los datos llegan cada ~4 min)
+  private readonly cache = new MemoryCache();
+  private readonly inFlight = new InFlightTracker();
+  private static readonly CACHE_TTL = 30_000;
 
   constructor(
     @InjectRepository(Metric)
@@ -145,34 +193,42 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
   async findLatestForEachName(): Promise<
     Record<string, { value: number; time: Date }>
   > {
-    const metrics = await this.metricRepository
-      .createQueryBuilder('metric')
-      .distinctOn(['metric.mt_name'])
-      .orderBy('metric.mt_name')
-      .addOrderBy('metric.mt_time_2', 'DESC')
-      .getMany();
+    const cacheKey = 'latestForEachName';
+    const cached =
+      this.cache.get<Record<string, { value: number; time: Date }>>(cacheKey);
+    if (cached) return cached;
 
-    const result: Record<string, { value: number; time: Date }> = {};
-    metrics.forEach((metric) => {
-      let finalName = metric.mt_name;
-      let finalValue = Number(metric.mt_value);
+    return this.inFlight.dedupe(cacheKey, async () => {
+      const metrics = await this.metricRepository
+        .createQueryBuilder('metric')
+        .distinctOn(['metric.mt_name'])
+        .orderBy('metric.mt_name')
+        .addOrderBy('metric.mt_time_2', 'DESC')
+        .getMany();
 
-      if (metric.mt_name === 'CASUTO--slave.AI12') {
-        finalName = 'ssr_casuto_nivel';
-        finalValue = finalValue / 100;
-      } else if (metric.mt_name === 'CASUTO--slave.AI32') {
-        finalName = 'ssr_casuto_bateria';
-      } else if (metric.mt_name === 'BBAJO_NUEVO--slave.nivel_balto') {
-        finalName = 'BBAJO_NUEVO--slave.nivel_balto';
-      }
+      const result: Record<string, { value: number; time: Date }> = {};
+      metrics.forEach((metric) => {
+        let finalName = metric.mt_name;
+        let finalValue = Number(metric.mt_value);
 
-      result[finalName] = {
-        value: finalValue,
-        time: metric.mt_time_2,
-      };
+        if (metric.mt_name === 'CASUTO--slave.AI12') {
+          finalName = 'ssr_casuto_nivel';
+          finalValue = finalValue / 100;
+        } else if (metric.mt_name === 'CASUTO--slave.AI32') {
+          finalName = 'ssr_casuto_bateria';
+        } else if (metric.mt_name === 'BBAJO_NUEVO--slave.nivel_balto') {
+          finalName = 'BBAJO_NUEVO--slave.nivel_balto';
+        }
+
+        result[finalName] = {
+          value: finalValue,
+          time: metric.mt_time_2,
+        };
+      });
+
+      this.cache.set(cacheKey, result, MetricsService.CACHE_TTL);
+      return result;
     });
-
-    return result;
   }
 
   // Find Last Update Time
@@ -185,90 +241,51 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     return result?.lastUpdateTime ?? null;
   }
 
-  // Find All Measurements (Incluye Casuto y corrección valor)
+  // Find All Measurements — Optimizado con filtro temporal
   async findAllMeasurements(): Promise<
     Record<string, { mt_value: number; mt_time_2: Date }[]>
   > {
-    const rawQuery = `
-      SELECT subquery.*
-      FROM (
-        SELECT
-          *,
-          ROW_NUMBER() OVER (PARTITION BY "mt_name" ORDER BY "mt_time_2" DESC) as rn
-        FROM "ssr_bucalemu"
-      ) as subquery
-      WHERE subquery.rn <= 100
-      AND subquery."mt_name" IN ('CASUTO--slave.AI12', 'BBAJO_NUEVO--slave.nivel_balto', 'ssr_bucalemu_bajo_nivel', 'ssr_nilahue_nivel')
-      ORDER BY subquery."mt_name", subquery.rn DESC;
-    `;
+    const cacheKey = 'allMeasurements';
+    const cached =
+      this.cache.get<
+        Record<string, { mt_value: number; mt_time_2: Date }[]>
+      >(cacheKey);
+    if (cached) return cached;
 
-    type MeasurementRow = {
-      mt_name: string;
-      mt_value: number | string;
-      mt_time_2: string | Date;
-      [key: string]: unknown;
-    };
-
-    const rows = (await this.metricRepository.query(
-      rawQuery,
-    )) as MeasurementRow[];
-
-    const grouped: Record<string, { mt_value: number; mt_time_2: Date }[]> = {};
-    rows.forEach((row) => {
-      let name = row.mt_name;
-      let value = Number(row.mt_value);
-
-      if (name === 'CASUTO--slave.AI12') {
-        name = 'ssr_casuto_nivel';
-        value = value / 100;
-      } else if (name === 'BBAJO_NUEVO--slave.nivel_balto') {
-        name = 'ssr_bucalemu_alto_nivel';
-      }
-
-      if (!grouped[name]) {
-        grouped[name] = [];
-      }
-      grouped[name].push({
-        mt_value: value,
-        mt_time_2: new Date(row.mt_time_2),
-      });
-    });
-
-    return grouped;
-  }
-
-  async estimateEmptyingTimes(): Promise<{ [key: string]: string }> {
-    try {
+    return this.inFlight.dedupe(cacheKey, async () => {
+      // Optimización: filtrar por las últimas 24h en lugar de escanear toda la tabla
       const rawQuery = `
-      SELECT *
-      FROM (
-        SELECT 
-          "mt_name",
-          "mt_value",
-          "mt_time_2",
-          ROW_NUMBER() OVER (PARTITION BY "mt_name" ORDER BY "mt_time_2" DESC) AS rn
-        FROM "ssr_bucalemu"
-        WHERE "mt_name" IN ('CASUTO--slave.AI12', 'BBAJO_NUEVO--slave.nivel_balto', 'ssr_bucalemu_bajo_nivel', 'ssr_nilahue_nivel')
-      ) t
-      WHERE t.rn <= 2
-      ORDER BY t."mt_name", t.rn;
-    `;
+        SELECT subquery.*
+        FROM (
+          SELECT
+            "mt_name", "mt_value", "mt_time_2",
+            ROW_NUMBER() OVER (PARTITION BY "mt_name" ORDER BY "mt_time_2" DESC) as rn
+          FROM "ssr_bucalemu"
+          WHERE "mt_name" IN ('CASUTO--slave.AI12', 'BBAJO_NUEVO--slave.nivel_balto', 'ssr_bucalemu_bajo_nivel', 'ssr_nilahue_nivel')
+            AND "mt_time_2" >= NOW() - INTERVAL '2 days'
+        ) as subquery
+        WHERE subquery.rn <= 100
+        ORDER BY subquery."mt_name", subquery.rn DESC;
+      `;
 
       type MeasurementRow = {
         mt_name: string;
         mt_value: number | string;
         mt_time_2: string | Date;
-        rn: number;
+        [key: string]: unknown;
       };
 
       const rows = (await this.metricRepository.query(
         rawQuery,
       )) as MeasurementRow[];
 
-      const grouped: Record<string, { value: number; time: string }[]> = {};
+      const grouped: Record<
+        string,
+        { mt_value: number; mt_time_2: Date }[]
+      > = {};
       rows.forEach((row) => {
-        let value = Number(row.mt_value);
         let name = row.mt_name;
+        let value = Number(row.mt_value);
 
         if (name === 'CASUTO--slave.AI12') {
           name = 'ssr_casuto_nivel';
@@ -277,42 +294,106 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
           name = 'ssr_bucalemu_alto_nivel';
         }
 
-        if (!grouped[name]) grouped[name] = [];
+        if (!grouped[name]) {
+          grouped[name] = [];
+        }
         grouped[name].push({
-          value: value,
-          time: new Date(row.mt_time_2).toISOString(),
+          mt_value: value,
+          mt_time_2: new Date(row.mt_time_2),
         });
       });
 
-      const result: { [key: string]: string } = {};
-      for (const name in grouped) {
-        const datos = grouped[name];
-        if (datos.length < 2) continue;
+      this.cache.set(cacheKey, grouped, MetricsService.CACHE_TTL);
+      return grouped;
+    });
+  }
 
-        const nivel1 = datos[0].value;
-        const timestamp1 = datos[0].time;
-        const nivel2 = datos[1].value;
-        const timestamp2 = datos[1].time;
+  async estimateEmptyingTimes(): Promise<{ [key: string]: string }> {
+    const cacheKey = 'emptyingTimes';
+    const cached = this.cache.get<{ [key: string]: string }>(cacheKey);
+    if (cached) return cached;
 
-        const segundos = this.estimateEmptyingTime(
-          nivel1,
-          timestamp1,
-          nivel2,
-          timestamp2,
+    return this.inFlight.dedupe(cacheKey, async () => {
+      try {
+        const rawQuery = `
+        SELECT *
+        FROM (
+          SELECT 
+            "mt_name",
+            "mt_value",
+            "mt_time_2",
+            ROW_NUMBER() OVER (PARTITION BY "mt_name" ORDER BY "mt_time_2" DESC) AS rn
+          FROM "ssr_bucalemu"
+          WHERE "mt_name" IN ('CASUTO--slave.AI12', 'BBAJO_NUEVO--slave.nivel_balto', 'ssr_bucalemu_bajo_nivel', 'ssr_nilahue_nivel')
+            AND "mt_time_2" >= NOW() - INTERVAL '1 hour'
+        ) t
+        WHERE t.rn <= 2
+        ORDER BY t."mt_name", t.rn;
+      `;
+
+        type MeasurementRow = {
+          mt_name: string;
+          mt_value: number | string;
+          mt_time_2: string | Date;
+          rn: number;
+        };
+
+        const rows = (await this.metricRepository.query(
+          rawQuery,
+        )) as MeasurementRow[];
+
+        const grouped: Record<string, { value: number; time: string }[]> = {};
+        rows.forEach((row) => {
+          let value = Number(row.mt_value);
+          let name = row.mt_name;
+
+          if (name === 'CASUTO--slave.AI12') {
+            name = 'ssr_casuto_nivel';
+            value = value / 100;
+          } else if (name === 'BBAJO_NUEVO--slave.nivel_balto') {
+            name = 'ssr_bucalemu_alto_nivel';
+          }
+
+          if (!grouped[name]) grouped[name] = [];
+          grouped[name].push({
+            value: value,
+            time: new Date(row.mt_time_2).toISOString(),
+          });
+        });
+
+        const result: { [key: string]: string } = {};
+        for (const name in grouped) {
+          const datos = grouped[name];
+          if (datos.length < 2) continue;
+
+          const nivel1 = datos[0].value;
+          const timestamp1 = datos[0].time;
+          const nivel2 = datos[1].value;
+          const timestamp2 = datos[1].time;
+
+          const segundos = this.estimateEmptyingTime(
+            nivel1,
+            timestamp1,
+            nivel2,
+            timestamp2,
+          );
+
+          const key = `t_vaciado_${name.replace(/^ssr_/, '')}`;
+
+          result[key] = isNaN(segundos)
+            ? 'NaN'
+            : this.formatSecondsToDuration(Math.round(segundos));
+        }
+
+        this.cache.set(cacheKey, result, MetricsService.CACHE_TTL);
+        return result;
+      } catch (error) {
+        this.logger.error('Error estimating emptying times', error);
+        throw new InternalServerErrorException(
+          'Error estimating emptying times',
         );
-
-        const key = `t_vaciado_${name.replace(/^ssr_/, '')}`;
-
-        result[key] = isNaN(segundos)
-          ? 'NaN'
-          : this.formatSecondsToDuration(Math.round(segundos));
       }
-
-      return result;
-    } catch (error) {
-      this.logger.error('Error estimating emptying times', error);
-      throw new InternalServerErrorException('Error estimating emptying times');
-    }
+    });
   }
 
   // Helper Estimate Calculation
@@ -421,6 +502,23 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
       time: row.mt_time_2,
       value: Number(row.mt_value),
     }));
+  }
+
+  // ── Endpoint consolidado: devuelve todo lo necesario para el render inicial ──
+  async getSnapshot(): Promise<{
+    latest: Record<string, { value: number; time: Date }>;
+    levels: Record<string, { mt_value: number; mt_time_2: Date }[]>;
+    emptying: { [key: string]: string };
+    caudal: { time: string; value: number }[];
+  }> {
+    const [latest, levels, emptying, caudal] = await Promise.all([
+      this.findLatestForEachName(),
+      this.findAllMeasurements(),
+      this.estimateEmptyingTimes(),
+      this.getCaudal({} as DateRangeDto),
+    ]);
+
+    return { latest, levels, emptying, caudal };
   }
 
   private formatSecondsToDuration(seconds: number): string {

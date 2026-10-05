@@ -6,6 +6,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { DatabaseModule } from './database/database.module';
 import { DatabaseConfig } from './database/database.config';
 import { SsrAuquincoModule } from './metrics/metrics.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { SsrAuquincoModule } from './metrics/metrics.module';
 
     DatabaseModule,
     SsrAuquincoModule,
+    ReportsModule,
   ],
   providers: [
     {

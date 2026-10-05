@@ -86,7 +86,7 @@ function Navbar(props: NavbarProps) {
         </div>
       </div>{" "}
       <div className="d-flex align-items-center gap-2 m-2"></div>
-      <div className="ms-auto d-none d-md-block m-4 ">{children}</div>
+      <div className="ms-auto m-2 m-md-4">{children}</div>
       <button
         className="btn btn-outline-secondary d-none d-md-inline-block"
         onClick={toggleFullScreen}

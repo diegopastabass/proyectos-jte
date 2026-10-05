@@ -5,6 +5,7 @@ import { User } from '../entities/user.entity';
 import { Vehicle } from '../entities/vehicle.entity';
 import { Checklist } from '../entities/checklist.entity';
 import { ChecklistImage } from '../entities/checklist-image.entity';
+import { ErrorLog } from '../entities/error-log.entity';
 
 @Injectable()
 export class DatabaseConfigService implements TypeOrmOptionsFactory {
@@ -18,7 +19,7 @@ export class DatabaseConfigService implements TypeOrmOptionsFactory {
       username: this.configService.get<string>('DB_USER'),
       password: this.configService.get<string>('DB_PASS'),
       database: this.configService.get<string>('DB_NAME'),
-      entities: [User, Vehicle, Checklist, ChecklistImage],
+      entities: [User, Vehicle, Checklist, ChecklistImage, ErrorLog],
       synchronize: true, // Use carefully in production
       ssl: {
         rejectUnauthorized: false,

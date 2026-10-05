@@ -8,6 +8,7 @@ import ChecklistDetail from "./components/ChecklistDetail";
 import Navbar from "./components/Navbar";
 import ToastContainer from "./components/ToastContainer";
 import ChecklistList from "./components/ChecklistList";
+import { syncPendingErrors } from "./errorLogger";
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>("login");
@@ -25,6 +26,7 @@ const App: React.FC = () => {
         const parsedUser = JSON.parse(storedUser);
         setUser(parsedUser);
         setView("home");
+        syncPendingErrors(); // Sync pending errors on load
       } catch (e) {
         localStorage.removeItem("jwt_token");
         localStorage.removeItem("user_data");
@@ -80,6 +82,7 @@ const App: React.FC = () => {
     setUser(userData);
     changeView("home");
     addToast(`Bienvenido, ${userData.name}`, "success");
+    syncPendingErrors(); // Sync pending errors after login
   };
 
   const handleLogout = () => {
@@ -88,6 +91,7 @@ const App: React.FC = () => {
     setUser(null);
     changeView("login");
   };
+
 
   return (
     <>

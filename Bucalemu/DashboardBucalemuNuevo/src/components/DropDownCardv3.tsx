@@ -1,24 +1,8 @@
+import { useMemo } from "react";
 import Card, { CardBody } from "./Card";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Tooltip,
-  Legend,
-  Title,
-} from "chart.js";
 import { Bar } from "react-chartjs-2";
 
-// Registrar componentes de Chart.js
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Tooltip,
-  Legend,
-  Title
-);
+// Chart.js ya se registra globalmente desde chartSetup.ts
 
 interface DropdownCardProps {
   isOpen: boolean;
@@ -38,51 +22,60 @@ function DropdownCardv3({
   chartLabel,
   date,
 }: DropdownCardProps) {
-  const labels = data.map((d) => new Date(d.time).toISOString().split("T")[0]);
-  const values = data.map((d) => d.value);
+  const labels = useMemo(
+    () => data.map((d) => new Date(d.time).toISOString().split("T")[0]),
+    [data],
+  );
+  const values = useMemo(() => data.map((d) => d.value), [data]);
 
-  const chartData = {
-    labels,
-    datasets: [
-      {
-        label: chartLabel,
-        data: values,
-        backgroundColor: "rgba(13, 110, 253, 0.6)",
-        borderColor: "rgba(13, 110, 253, 1)",
-        borderWidth: 1,
-      },
-    ],
-  };
+  const chartData = useMemo(
+    () => ({
+      labels,
+      datasets: [
+        {
+          label: chartLabel,
+          data: values,
+          backgroundColor: "rgba(13, 110, 253, 0.6)",
+          borderColor: "rgba(13, 110, 253, 1)",
+          borderWidth: 1,
+        },
+      ],
+    }),
+    [labels, values, chartLabel],
+  );
 
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false as const,
-    plugins: {
-      legend: {
-        display: true,
-        labels: {
-          color: "#333",
+  const options = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false as const,
+      plugins: {
+        legend: {
+          display: true,
+          labels: {
+            color: "#333",
+          },
+        },
+        title: {
+          display: true,
+          text: chartLabel,
         },
       },
-      title: {
-        display: true,
-        text: chartLabel,
-      },
-    },
-    scales: {
-      x: {
-        ticks: {
-          color: "#555",
+      scales: {
+        x: {
+          ticks: {
+            color: "#555",
+          },
+        },
+        y: {
+          beginAtZero: true,
+          ticks: {
+            color: "#555",
+          },
         },
       },
-      y: {
-        beginAtZero: true,
-        ticks: {
-          color: "#555",
-        },
-      },
-    },
-  };
+    }),
+    [chartLabel],
+  );
 
   return (
     <div

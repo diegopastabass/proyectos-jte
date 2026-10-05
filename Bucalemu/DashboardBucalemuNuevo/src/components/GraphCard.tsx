@@ -1,31 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Card, { CardBody } from "./Card";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Tooltip,
-  Legend,
-  Title,
-} from "chart.js";
 import { Line, Bar } from "react-chartjs-2";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { format } from "date-fns";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Tooltip,
-  Legend,
-  Title,
-);
+// Chart.js ya se registra globalmente desde chartSetup.ts
 
 interface Metric {
   value: number;
@@ -105,106 +85,118 @@ function GraphCard({
     fetchDataByDate();
   }, [selectedDate, fetchEndpoint, initialData]);
 
-  // Procesamiento de datos y etiquetas según el tipo
-  const labels = currentData.map((d) => {
-    if (type === "nivel" || type === "caudal") {
-      return new Date(d.time).toLocaleTimeString("es-CL", {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } else {
-      return new Date(d.time).toISOString().split("T")[0];
-    }
-  });
-
-  const values = currentData.map((d) => d.value / divisor);
-
-  // Dataset de Alarma (solo aplica si hay nivelAlarma y es línea)
-  const alarmaDataset =
-    nivelAlarma !== undefined
-      ? {
-          label: "Nivel de alarma",
-          data: Array(values.length).fill(nivelAlarma / divisor),
-          borderColor: "rgba(255, 0, 0, 0.7)",
-          borderWidth: 1.5,
-          pointRadius: 0,
-          borderDash: [4, 4],
-          type: "line" as const, // Especificar line explícitamente si alguna vez se mezclan
+  // Memoizar procesamiento de datos y etiquetas para evitar recálculos en cada render
+  const labels = useMemo(
+    () =>
+      currentData.map((d) => {
+        if (type === "nivel" || type === "caudal") {
+          return new Date(d.time).toLocaleTimeString("es-CL", {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+        } else {
+          return new Date(d.time).toISOString().split("T")[0];
         }
-      : null;
+      }),
+    [currentData, type],
+  );
 
-  const mainDataset = {
-    label: chartLabel,
-    data: values,
-    backgroundColor: "rgba(13, 110, 253, 0.6)",
-    borderColor: "rgba(13, 110, 253, 1)",
-    borderWidth: type === "horometro" || type === "totalizador" ? 1 : 2,
-    tension: type === "nivel" || type === "caudal" ? 0.5 : undefined,
-    pointRadius: type === "nivel" || type === "caudal" ? 3 : undefined,
-    pointBackgroundColor:
-      type === "nivel" || type === "caudal" ? "transparent" : undefined,
-    pointBorderColor:
-      type === "nivel" || type === "caudal" ? "transparent" : undefined,
-  };
+  const values = useMemo(
+    () => currentData.map((d) => d.value / divisor),
+    [currentData, divisor],
+  );
 
-  const chartData = {
-    labels,
-    datasets: [mainDataset, ...(alarmaDataset ? [alarmaDataset] : [])],
-  };
+  // Memoizar chartData y options para evitar re-renders innecesarios de Chart.js
+  const chartData = useMemo(() => {
+    const alarmaDataset =
+      nivelAlarma !== undefined
+        ? {
+            label: "Nivel de alarma",
+            data: Array(values.length).fill(nivelAlarma / divisor),
+            borderColor: "rgba(255, 0, 0, 0.7)",
+            borderWidth: 1.5,
+            pointRadius: 0,
+            borderDash: [4, 4],
+            type: "line" as const,
+          }
+        : null;
+
+    const mainDataset = {
+      label: chartLabel,
+      data: values,
+      backgroundColor: "rgba(13, 110, 253, 0.6)",
+      borderColor: "rgba(13, 110, 253, 1)",
+      borderWidth: type === "horometro" || type === "totalizador" ? 1 : 2,
+      tension: type === "nivel" || type === "caudal" ? 0.5 : undefined,
+      pointRadius: type === "nivel" || type === "caudal" ? 3 : undefined,
+      pointBackgroundColor:
+        type === "nivel" || type === "caudal" ? "transparent" : undefined,
+      pointBorderColor:
+        type === "nivel" || type === "caudal" ? "transparent" : undefined,
+    };
+
+    return {
+      labels,
+      datasets: [mainDataset, ...(alarmaDataset ? [alarmaDataset] : [])],
+    };
+  }, [labels, values, chartLabel, type, nivelAlarma, divisor]);
 
   const isBarChart = type === "horometro" || type === "totalizador";
 
-  const options: any = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: true,
-        labels: {
-          color: "#333",
+  const options: any = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          labels: {
+            color: "#333",
+          },
         },
-      },
-      title: {
-        display: isBarChart,
-        text: isBarChart ? chartLabel : undefined, // Para bars muestran título encima
-      },
-      tooltip: {
-        callbacks: {
-          label: (context: any) => {
-            const val = context.raw as number;
-            if (type === "horometro" && context.datasetIndex === 0) {
-              return `${context.dataset.label}: ${minutesToHHMM(val)}`;
-            }
-            return `${context.dataset.label}: ${val}`;
+        title: {
+          display: isBarChart,
+          text: isBarChart ? chartLabel : undefined,
+        },
+        tooltip: {
+          callbacks: {
+            label: (context: any) => {
+              const val = context.raw as number;
+              if (type === "horometro" && context.datasetIndex === 0) {
+                return `${context.dataset.label}: ${minutesToHHMM(val)}`;
+              }
+              return `${context.dataset.label}: ${val}`;
+            },
           },
         },
       },
-    },
-    scales: {
-      x: {
-        ticks: {
-          color: "#555",
+      scales: {
+        x: {
+          ticks: {
+            color: "#555",
+          },
         },
-      },
-      y: {
-        beginAtZero: true,
-        min: type === "nivel" ? 0 : undefined,
-        max:
-          type === "nivel" || type === "caudal"
-            ? nivelMax / divisor
-            : undefined,
-        ticks: {
-          color: "#555",
-          callback: function (value: number | string) {
-            if (type === "horometro") {
-              return minutesToHHMM(Number(value));
-            }
-            return value;
+        y: {
+          beginAtZero: true,
+          min: type === "nivel" ? 0 : undefined,
+          max:
+            type === "nivel" || type === "caudal"
+              ? nivelMax / divisor
+              : undefined,
+          ticks: {
+            color: "#555",
+            callback: function (value: number | string) {
+              if (type === "horometro") {
+                return minutesToHHMM(Number(value));
+              }
+              return value;
+            },
           },
         },
       },
-    },
-  };
+    }),
+    [isBarChart, chartLabel, type, nivelMax, divisor],
+  );
 
   return (
     <div

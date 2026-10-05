@@ -7,6 +7,7 @@ import {
   PointElement,
   LineElement,
   BarElement,
+  Filler,
   Tooltip,
   Legend,
   Title,
@@ -22,6 +23,7 @@ ChartJS.register(
   PointElement,
   LineElement,
   BarElement,
+  Filler,
   Tooltip,
   Legend,
   Title,
@@ -37,7 +39,7 @@ export interface GraphCardProps {
   title: string;
   chartLabel: string;
   initialData: Metric[];
-  type: "nivel" | "caudal" | "horometro" | "totalizador";
+  type: "nivel" | "caudal" | "horometro" | "totalizador" | "bomba" | "totalizador_bruto";
   date?: string;
   nivelMax?: number; // Opcional, por defecto 3 en la lógica
   nivelAlarma?: number; // Opcional
@@ -105,9 +107,12 @@ function GraphCard({
     fetchDataByDate();
   }, [selectedDate, fetchEndpoint, initialData]);
 
+  // Tipos que usan formato de hora (series de tiempo con timestamps)
+  const isTimeSeries = type === "nivel" || type === "caudal" || type === "bomba" || type === "totalizador_bruto";
+
   // Procesamiento de datos y etiquetas según el tipo
   const labels = currentData.map((d) => {
-    if (type === "nivel" || type === "caudal") {
+    if (isTimeSeries) {
       return new Date(d.time).toLocaleTimeString("es-CL", {
         hour: "2-digit",
         minute: "2-digit",
@@ -133,18 +138,20 @@ function GraphCard({
         }
       : null;
 
+  const isFilled = type === "bomba" || type === "totalizador_bruto";
+
   const mainDataset = {
     label: chartLabel,
     data: values,
-    backgroundColor: "rgba(13, 110, 253, 0.6)",
-    borderColor: "rgba(13, 110, 253, 1)",
+    backgroundColor: type === "bomba" ? "rgba(40, 167, 69, 0.15)" : (type === "totalizador_bruto" ? "rgba(13, 110, 253, 0.12)" : "rgba(13, 110, 253, 0.6)"),
+    borderColor: type === "bomba" ? "rgba(40, 167, 69, 1)" : "rgba(13, 110, 253, 1)",
     borderWidth: type === "horometro" || type === "totalizador" ? 1 : 2,
-    tension: type === "nivel" || type === "caudal" ? 0.5 : undefined,
-    pointRadius: type === "nivel" || type === "caudal" ? 3 : undefined,
-    pointBackgroundColor:
-      type === "nivel" || type === "caudal" ? "transparent" : undefined,
-    pointBorderColor:
-      type === "nivel" || type === "caudal" ? "transparent" : undefined,
+    tension: type === "bomba" ? 0 : (isTimeSeries ? 0.5 : undefined),
+    stepped: type === "bomba" ? true as const : undefined,
+    fill: isFilled ? true : undefined,
+    pointRadius: type === "bomba" ? 0 : (isTimeSeries ? 3 : undefined),
+    pointBackgroundColor: isTimeSeries ? "transparent" : undefined,
+    pointBorderColor: isTimeSeries ? "transparent" : undefined,
   };
 
   const chartData = {
@@ -153,6 +160,7 @@ function GraphCard({
   };
 
   const isBarChart = type === "horometro" || type === "totalizador";
+  const hasDatePicker = isTimeSeries;
 
   const options: any = {
     responsive: true,
@@ -188,16 +196,23 @@ function GraphCard({
       },
       y: {
         beginAtZero: true,
-        min: type === "nivel" ? 0 : undefined,
-        max: type === "nivel" || type === "caudal" ? nivelMax : undefined,
+        min: type === "nivel" || type === "bomba" ? 0 : undefined,
+        max: type === "bomba" ? 1 : (type === "nivel" || type === "caudal" ? nivelMax : undefined),
         ticks: {
           color: "#555",
-          callback: function (value: number | string) {
-            if (type === "horometro") {
-              return minutesToHHMM(Number(value));
-            }
-            return value;
-          },
+          ...(type === "bomba" ? {
+            stepSize: 1,
+            callback: function (value: number | string) {
+              return Number(value) === 1 ? "ON" : Number(value) === 0 ? "OFF" : "";
+            },
+          } : {
+            callback: function (value: number | string) {
+              if (type === "horometro") {
+                return minutesToHHMM(Number(value));
+              }
+              return value;
+            },
+          }),
         },
       },
     },
@@ -234,7 +249,7 @@ function GraphCard({
             <Line data={chartData as any} options={options} />
           )}
         </div>
-        {(type === "nivel" || type === "caudal") && (
+        {hasDatePicker && (
           <div className="d-flex justify-content-center align-items-center p-2 border-top">
             <span className="me-2 text-muted" style={{ fontSize: "0.9rem" }}>
               Consultar fecha:

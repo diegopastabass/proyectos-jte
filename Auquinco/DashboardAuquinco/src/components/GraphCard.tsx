@@ -24,7 +24,7 @@ ChartJS.register(
   BarElement,
   Tooltip,
   Legend,
-  Title
+  Title,
 );
 
 interface Metric {
@@ -37,7 +37,14 @@ export interface GraphCardProps {
   title: string;
   chartLabel: string;
   initialData: Metric[] | Record<string, Metric[]>;
-  type: "nivel" | "caudal" | "horometro" | "totalizador" | "voltaje" | "voltaje-neutro" | "corriente";
+  type:
+    | "nivel"
+    | "caudal"
+    | "horometro"
+    | "totalizador"
+    | "voltaje"
+    | "voltaje-neutro"
+    | "corriente";
   date?: string;
   nivelMax?: number; // Opcional, por defecto 3 en la lógica
   nivelAlarma?: number; // Opcional
@@ -51,7 +58,7 @@ const minutesToHHMM = (mins: number): string => {
   const minutes = Math.round(mins % 60); // Redondear minutos para evitar decimales
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
     2,
-    "0"
+    "0",
   )}`;
 };
 
@@ -68,7 +75,9 @@ function GraphCard({
   divisor = 1,
   className = "",
 }: GraphCardProps) {
-  const [currentData, setCurrentData] = useState<Metric[] | Record<string, Metric[]>>(initialData);
+  const [currentData, setCurrentData] = useState<
+    Metric[] | Record<string, Metric[]>
+  >(initialData);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -86,7 +95,7 @@ function GraphCard({
         try {
           const formattedDate = format(selectedDate, "yyyy-MM-dd");
           const response = await fetch(
-            `${fetchEndpoint}?start=${formattedDate}&end=${formattedDate}`
+            `${fetchEndpoint}?start=${formattedDate}&end=${formattedDate}`,
           );
           if (response.ok) {
             const data = await response.json();
@@ -150,7 +159,7 @@ function GraphCard({
     if (nivelAlarma !== undefined) {
       datasets.push({
         label: "Nivel de alarma",
-        data: Array(values.length).fill(nivelAlarma / divisor),
+        data: Array(values.length).fill(nivelAlarma),
         borderColor: "rgba(255, 0, 0, 0.7)",
         borderWidth: 1.5,
         pointRadius: 0,
@@ -161,7 +170,9 @@ function GraphCard({
   } else {
     const dataRecord = currentData as Record<string, Metric[]>;
     const keys = Object.keys(dataRecord);
-    const firstKey = keys.find((key) => dataRecord[key] && dataRecord[key].length > 0);
+    const firstKey = keys.find(
+      (key) => dataRecord[key] && dataRecord[key].length > 0,
+    );
 
     labels = firstKey
       ? dataRecord[firstKey].map((d) => {
@@ -237,10 +248,12 @@ function GraphCard({
         },
       },
     },
-    hover: isMultiDataset ? {
-      mode: "index",
-      intersect: false,
-    } : undefined,
+    hover: isMultiDataset
+      ? {
+          mode: "index",
+          intersect: false,
+        }
+      : undefined,
     scales: {
       x: {
         ticks: {
@@ -250,7 +263,10 @@ function GraphCard({
       y: {
         beginAtZero: true,
         min: type === "nivel" ? 0 : undefined,
-        max: (type === "nivel" || type === "caudal") && nivelMax ? nivelMax / divisor : undefined,
+        max:
+          (type === "nivel" || type === "caudal") && nivelMax
+            ? nivelMax
+            : undefined,
         ticks: {
           color: "#555",
           callback: function (value: number | string) {
@@ -265,7 +281,9 @@ function GraphCard({
   };
 
   return (
-    <div className={`mt-2 mb-2 mt-lg-0 mb-lg-0 ${isOpen ? "show" : "collapse-card"} ${className}`}>
+    <div
+      className={`mt-2 mb-2 mt-lg-0 mb-lg-0 ${isOpen ? "show" : "collapse-card"} ${className}`}
+    >
       <Card>
         <CardBody title={`Detalle ${title}`} date={date} />
         <div
@@ -301,7 +319,9 @@ function GraphCard({
         </div>
         {typeIsLine && (
           <div className="d-flex justify-content-center align-items-center p-2 border-top">
-            <span className="me-2 text-muted" style={{ fontSize: "0.9rem" }}>Consultar fecha:</span>
+            <span className="me-2 text-muted" style={{ fontSize: "0.9rem" }}>
+              Consultar fecha:
+            </span>
             <DatePicker
               selected={selectedDate}
               onChange={(date: Date | null) => setSelectedDate(date)}

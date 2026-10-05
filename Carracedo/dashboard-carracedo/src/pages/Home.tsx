@@ -5,6 +5,7 @@ import TimeSeriesChart from "../components/TimeSeriesChart";
 import Loading from "./Loading";
 import type { Metric, Snapshot } from "../components/types";
 import ExportModal from "../components/ExportModal";
+import ReportsHistoryModal from "../components/ReportsHistoryModal";
 import logoJte from "../assets/logoJte.png";
 import { fetchWithCache } from "../components/fetchWithcache";
 
@@ -18,6 +19,7 @@ function Home() {
   const [nivelData, setNivelData] = useState<Metric[]>([]);
 
   const [isOpenExport, setIsOpenExport] = useState(false);
+  const [isOpenHistory, setIsOpenHistory] = useState(false);
 
   // EFECTO PARA CARGAR DATOS Y REFRESCAR
   useEffect(() => {
@@ -80,10 +82,18 @@ function Home() {
       <div className="container-fluid min-vh-100 p-0 d-flex flex-column align-items-center">
         <div className="mb-3 w-100" style={{ maxWidth: "5000px" }}>
           <Navbar text={lastMetric ? lastMetric.time : ""}>
-            <button
-              className="btn btn-outline-primary bi bi-save"
-              onClick={() => setIsOpenExport(true)}
-            ></button>
+            <div className="d-flex gap-2">
+              <button
+                className="btn btn-outline-info bi bi-clock-history"
+                title="Historial de Reportes DGA"
+                onClick={() => setIsOpenHistory(true)}
+              ></button>
+              <button
+                className="btn btn-outline-primary bi bi-save"
+                title="Exportar a Excel"
+                onClick={() => setIsOpenExport(true)}
+              ></button>
+            </div>
           </Navbar>
         </div>
 
@@ -168,6 +178,7 @@ function Home() {
         </footer>
       </div>
       <ExportModal show={isOpenExport} onClose={() => setIsOpenExport(false)} />
+      <ReportsHistoryModal show={isOpenHistory} onClose={() => setIsOpenHistory(false)} />
     </>
   );
 }

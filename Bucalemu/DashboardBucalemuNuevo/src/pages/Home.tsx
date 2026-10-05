@@ -1,5 +1,5 @@
 import Card, { CardBody } from "../components/Card";
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import { TankLevelCircular } from "../components/Level";
 import Navbar from "../components/Navbar";
 import "../index.css";
@@ -55,81 +55,66 @@ interface ChartPoint {
   mt_time_2: string;
 }
 
-function App() {
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<Datos | null>(null);
-  const [vData, setVaciadoData] = useState<DatosVaciado | null>(null);
-  const [totalizador, setTotalizador] = useState<Metric[] | null>(null);
+// ── Mapeo de datos de chart ──────────────────────────────────────────
+const mapToMetrics = (data: any[] | undefined | null): Metric[] => {
+  if (!data) return [];
+  return data.map((d) => {
+    if ("mt_value" in d) {
+      return { value: d.mt_value, time: d.mt_time_2 };
+    }
+    return d as Metric;
+  });
+};
 
+// ── Skeleton de carga para gráficos individuales ─────────────────────
+const GraphSkeleton = () => (
+  <div
+    className="card mt-2 mb-2"
+    style={{
+      height: "230px",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "#f8f9fa",
+    }}
+  >
+    <div className="d-flex flex-column align-items-center gap-2">
+      <div
+        className="spinner-border spinner-border-sm text-primary"
+        role="status"
+      >
+        <span className="visually-hidden">Cargando gráfico...</span>
+      </div>
+      <span className="text-muted small">Cargando gráfico...</span>
+    </div>
+  </div>
+);
+
+// =====================
+// VISTA MÓVIL (extraída como componente con memo)
+// =====================
+interface VistaMovilProps {
+  data: Datos;
+  vData: DatosVaciado | null;
+  chartData: ChartData | null;
+  caudal: Metric[] | null;
+  totalizador: Metric[] | null;
+  chartsReady: boolean;
+}
+
+const VistaMovil = memo(function VistaMovil({
+  data,
+  vData,
+  chartData,
+  caudal,
+  totalizador,
+  chartsReady,
+}: VistaMovilProps) {
   const [isOpenAlto, setIsOpenAlto] = useState(false);
   const [isOpenBajo, setIsOpenBajo] = useState(false);
   const [isOpenNilahue, setIsOpenNilahue] = useState(false);
   const [isOpenCasuto, setIsOpenCasuto] = useState(false);
   const [isOpenBomba, setIsOpenBomba] = useState(false);
-  const [chartData, setChartData] = useState<ChartData | null>(null);
-  const [caudal, setCaudal] = useState<Metric[] | null>(null);
-
-  const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1500);
-
-  useEffect(() => {
-    const handleResize = () => setIsLargeScreen(window.innerWidth >= 1500);
-    window.addEventListener("resize", handleResize);
-    handleResize();
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  useEffect(() => {
-    const formatter = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "America/Santiago",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    });
-
-    const now = new Date();
-    const end = formatter.format(now);
-
-    const fetchData = async () => {
-      try {
-        const [snapshotRes, nivelRes, caudalRes, vaciadoRes] =
-          await Promise.all([
-            fetch("https://app.jteanalytics.cl/bucalemu/metrics/latest"),
-            fetch(`https://app.jteanalytics.cl/bucalemu/metrics/all`),
-            fetch(`https://app.jteanalytics.cl/bucalemu/metrics/caudal`),
-            fetch(`https://app.jteanalytics.cl/bucalemu/metrics/emptying`),
-          ]);
-
-        const snapshotData: Datos = await snapshotRes.json();
-        setData(snapshotData);
-
-        setTotalizador(await fetchWithCache("totalizador", end));
-        setChartData(await nivelRes.json());
-        setCaudal(await caudalRes.json());
-        setVaciadoData(await vaciadoRes.json());
-      } catch (error) {
-        console.error("Error al cargar datos:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-    const intervalId = setInterval(fetchData, 120000);
-    return () => clearInterval(intervalId);
-  }, []);
-
-  if (loading) return <Loading />;
-  if (!data) return <Error />;
-
-  const mapToMetrics = (data: any[] | undefined | null): Metric[] => {
-    if (!data) return [];
-    return data.map((d) => {
-      if ("mt_value" in d) {
-        return { value: d.mt_value, time: d.mt_time_2 };
-      }
-      return d as Metric;
-    });
-  };
 
   let ultimoTotalizador = 0;
   if (totalizador) {
@@ -137,10 +122,7 @@ function App() {
       totalizador?.length > 0 ? totalizador[totalizador.length - 1].value : 0;
   }
 
-  // =====================
-  // VISTA MÓVIL
-  // =====================
-  const VistaMovil = () => (
+  return (
     <>
       {/* Nilahue */}
       <div className="col-12 mb-1">
@@ -172,16 +154,20 @@ function App() {
           />
         </Card>
         <div className="mb-4">
-          <GraphCard
-            isOpen={isOpenNilahue}
-            title="Nilahue"
-            chartLabel="Nivel del Nilahue (m)"
-            initialData={mapToMetrics(chartData?.ssr_nilahue_nivel)}
-            type="nivel"
-            fetchEndpoint="https://app.jteanalytics.cl/bucalemu/metrics/nivel_nilahue"
-            nivelAlarma={1}
-            nivelMax={5}
-          />
+          {chartsReady ? (
+            <GraphCard
+              isOpen={isOpenNilahue}
+              title="Nilahue"
+              chartLabel="Nivel del Nilahue (m)"
+              initialData={mapToMetrics(chartData?.ssr_nilahue_nivel)}
+              type="nivel"
+              fetchEndpoint="https://app.jteanalytics.cl/bucalemu/metrics/nivel_nilahue"
+              nivelAlarma={1}
+              nivelMax={5}
+            />
+          ) : (
+            isOpenNilahue && <GraphSkeleton />
+          )}
         </div>
       </div>
 
@@ -215,16 +201,20 @@ function App() {
           />
         </Card>
         <div className="mb-4">
-          <GraphCard
-            isOpen={isOpenCasuto}
-            title="Casuto"
-            chartLabel="Nivel del Casuto (m)"
-            initialData={mapToMetrics(chartData?.ssr_casuto_nivel)}
-            type="nivel"
-            fetchEndpoint="https://app.jteanalytics.cl/bucalemu/metrics/nivel_casuto"
-            nivelAlarma={2}
-            nivelMax={5}
-          />
+          {chartsReady ? (
+            <GraphCard
+              isOpen={isOpenCasuto}
+              title="Casuto"
+              chartLabel="Nivel del Casuto (m)"
+              initialData={mapToMetrics(chartData?.ssr_casuto_nivel)}
+              type="nivel"
+              fetchEndpoint="https://app.jteanalytics.cl/bucalemu/metrics/nivel_casuto"
+              nivelAlarma={2}
+              nivelMax={5}
+            />
+          ) : (
+            isOpenCasuto && <GraphSkeleton />
+          )}
         </div>
       </div>
       {/* Bucalemu Bajo */}
@@ -260,16 +250,20 @@ function App() {
           />
         </Card>
         <div className="mb-4">
-          <GraphCard
-            isOpen={isOpenBajo}
-            title="Bucalemu Bajo"
-            chartLabel="Nivel del Bucalemu Bajo (m)"
-            initialData={mapToMetrics(chartData?.ssr_bucalemu_bajo_nivel)}
-            type="nivel"
-            fetchEndpoint="https://app.jteanalytics.cl/bucalemu/metrics/nivel_bucalemu_bajo"
-            nivelAlarma={1}
-            nivelMax={5}
-          />
+          {chartsReady ? (
+            <GraphCard
+              isOpen={isOpenBajo}
+              title="Bucalemu Bajo"
+              chartLabel="Nivel del Bucalemu Bajo (m)"
+              initialData={mapToMetrics(chartData?.ssr_bucalemu_bajo_nivel)}
+              type="nivel"
+              fetchEndpoint="https://app.jteanalytics.cl/bucalemu/metrics/nivel_bucalemu_bajo"
+              nivelAlarma={1}
+              nivelMax={5}
+            />
+          ) : (
+            isOpenBajo && <GraphSkeleton />
+          )}
         </div>
       </div>
       {/* Bucalemu Alto */}
@@ -305,16 +299,20 @@ function App() {
           />
         </Card>
         <div className="mb-4">
-          <GraphCard
-            isOpen={isOpenAlto}
-            title="Bucalemu Alto"
-            chartLabel="Nivel del Bucalemu Alto (m)"
-            initialData={mapToMetrics(chartData?.ssr_bucalemu_alto_nivel)}
-            type="nivel"
-            fetchEndpoint="https://app.jteanalytics.cl/bucalemu/metrics/nivel_bucalemu_alto"
-            nivelAlarma={1}
-            nivelMax={5}
-          />
+          {chartsReady ? (
+            <GraphCard
+              isOpen={isOpenAlto}
+              title="Bucalemu Alto"
+              chartLabel="Nivel del Bucalemu Alto (m)"
+              initialData={mapToMetrics(chartData?.ssr_bucalemu_alto_nivel)}
+              type="nivel"
+              fetchEndpoint="https://app.jteanalytics.cl/bucalemu/metrics/nivel_bucalemu_alto"
+              nivelAlarma={1}
+              nivelMax={5}
+            />
+          ) : (
+            isOpenAlto && <GraphSkeleton />
+          )}
         </div>
       </div>
 
@@ -350,32 +348,58 @@ function App() {
           />
         </Card>
         <div>
-          <GraphCard
-            isOpen={isOpenBomba}
-            title="Caudal"
-            chartLabel="Caudal de Impulsión (l/s)"
-            initialData={mapToMetrics(caudal)}
-            type="caudal"
-            fetchEndpoint="https://app.jteanalytics.cl/bucalemu/metrics/caudal"
-            nivelMax={30}
-          />
+          {chartsReady ? (
+            <GraphCard
+              isOpen={isOpenBomba}
+              title="Caudal"
+              chartLabel="Caudal de Impulsión (l/s)"
+              initialData={mapToMetrics(caudal)}
+              type="caudal"
+              fetchEndpoint="https://app.jteanalytics.cl/bucalemu/metrics/caudal"
+              nivelMax={30}
+            />
+          ) : (
+            isOpenBomba && <GraphSkeleton />
+          )}
         </div>
         <div className="my-2">
-          <DropdownCardv3
-            isOpen={isOpenBomba}
-            title="Totalizador Diario"
-            chartLabel="Totalizador en m³"
-            data={totalizador || []}
-          />
+          {chartsReady ? (
+            <DropdownCardv3
+              isOpen={isOpenBomba}
+              title="Totalizador Diario"
+              chartLabel="Totalizador en m³"
+              data={totalizador || []}
+            />
+          ) : (
+            isOpenBomba && <GraphSkeleton />
+          )}
         </div>
       </div>
     </>
   );
+});
 
-  // =====================
-  // VISTA DESKTOP
-  // =====================
-  const VistaDesktop = () => (
+// =====================
+// VISTA DESKTOP (extraída como componente con memo)
+// =====================
+interface VistaDesktopProps {
+  data: Datos;
+  vData: DatosVaciado | null;
+  chartData: ChartData | null;
+  caudal: Metric[] | null;
+  totalizador: Metric[] | null;
+  chartsReady: boolean;
+}
+
+const VistaDesktop = memo(function VistaDesktop({
+  data,
+  vData,
+  chartData,
+  caudal,
+  totalizador,
+  chartsReady,
+}: VistaDesktopProps) {
+  return (
     <div
       style={{
         display: "grid",
@@ -399,25 +423,33 @@ function App() {
 
       {/* Nivel Estanque (Col 3, Row 1) */}
       <div style={{ gridColumn: "3", gridRow: "1" }}>
-        <DropdownCardv3
-          isOpen={true}
-          title="Totalizador Diario"
-          chartLabel="Totalizador en m³"
-          data={totalizador || []}
-        />
+        {chartsReady ? (
+          <DropdownCardv3
+            isOpen={true}
+            title="Totalizador Diario"
+            chartLabel="Totalizador en m³"
+            data={totalizador || []}
+          />
+        ) : (
+          <GraphSkeleton />
+        )}
       </div>
 
       {/* Caudal (Col 3, Row 2) */}
       <div style={{ gridColumn: "3", gridRow: "2" }}>
-        <GraphCard
-          isOpen={true}
-          title="Caudal"
-          chartLabel="Caudal de Impulsión (l/s)"
-          initialData={mapToMetrics(caudal)}
-          type="caudal"
-          fetchEndpoint="https://app.jteanalytics.cl/bucalemu/metrics/caudal"
-          nivelMax={30}
-        />
+        {chartsReady ? (
+          <GraphCard
+            isOpen={true}
+            title="Caudal"
+            chartLabel="Caudal de Impulsión (l/s)"
+            initialData={mapToMetrics(caudal)}
+            type="caudal"
+            fetchEndpoint="https://app.jteanalytics.cl/bucalemu/metrics/caudal"
+            nivelMax={30}
+          />
+        ) : (
+          <GraphSkeleton />
+        )}
       </div>
 
       {/* Fila Inferior Compartida (Horómetro y Totalizador) */}
@@ -430,60 +462,143 @@ function App() {
         }}
       >
         <div style={{ flex: 1 }}>
-          <GraphCard
-            isOpen={true}
-            title="Nilahue"
-            chartLabel="Nivel del Nilahue (m)"
-            initialData={mapToMetrics(chartData?.ssr_nilahue_nivel)}
-            type="nivel"
-            fetchEndpoint="https://app.jteanalytics.cl/bucalemu/metrics/nivel_nilahue"
-            nivelMax={5}
-            nivelAlarma={1}
-          />
+          {chartsReady ? (
+            <GraphCard
+              isOpen={true}
+              title="Nilahue"
+              chartLabel="Nivel del Nilahue (m)"
+              initialData={mapToMetrics(chartData?.ssr_nilahue_nivel)}
+              type="nivel"
+              fetchEndpoint="https://app.jteanalytics.cl/bucalemu/metrics/nivel_nilahue"
+              nivelMax={5}
+              nivelAlarma={1}
+            />
+          ) : (
+            <GraphSkeleton />
+          )}
         </div>
         <div style={{ flex: 1 }}>
-          <GraphCard
-            isOpen={true}
-            title="Casuto"
-            chartLabel="Nivel del Casuto (m)"
-            initialData={mapToMetrics(chartData?.ssr_casuto_nivel)}
-            type="nivel"
-            fetchEndpoint="https://app.jteanalytics.cl/bucalemu/metrics/nivel_casuto"
-            nivelMax={5}
-            nivelAlarma={2}
-          />
+          {chartsReady ? (
+            <GraphCard
+              isOpen={true}
+              title="Casuto"
+              chartLabel="Nivel del Casuto (m)"
+              initialData={mapToMetrics(chartData?.ssr_casuto_nivel)}
+              type="nivel"
+              fetchEndpoint="https://app.jteanalytics.cl/bucalemu/metrics/nivel_casuto"
+              nivelMax={5}
+              nivelAlarma={2}
+            />
+          ) : (
+            <GraphSkeleton />
+          )}
         </div>
         <div style={{ flex: 1 }}>
-          <GraphCard
-            isOpen={true}
-            title="Bucalemu Bajo"
-            chartLabel="Nivel del Bucalemu Bajo (m)"
-            initialData={mapToMetrics(chartData?.ssr_bucalemu_bajo_nivel)}
-            type="nivel"
-            fetchEndpoint="https://app.jteanalytics.cl/bucalemu/metrics/nivel_bucalemu_bajo"
-            nivelMax={5}
-            nivelAlarma={1}
-          />
+          {chartsReady ? (
+            <GraphCard
+              isOpen={true}
+              title="Bucalemu Bajo"
+              chartLabel="Nivel del Bucalemu Bajo (m)"
+              initialData={mapToMetrics(chartData?.ssr_bucalemu_bajo_nivel)}
+              type="nivel"
+              fetchEndpoint="https://app.jteanalytics.cl/bucalemu/metrics/nivel_bucalemu_bajo"
+              nivelMax={5}
+              nivelAlarma={1}
+            />
+          ) : (
+            <GraphSkeleton />
+          )}
         </div>
         <div style={{ flex: 1 }}>
-          <GraphCard
-            isOpen={true}
-            title="Bucalemu Alto"
-            chartLabel="Nivel del Bucalemu Alto (m)"
-            initialData={mapToMetrics(chartData?.ssr_bucalemu_alto_nivel)}
-            type="nivel"
-            fetchEndpoint="https://app.jteanalytics.cl/bucalemu/metrics/nivel_bucalemu_alto"
-            nivelMax={5}
-            nivelAlarma={2}
-          />
+          {chartsReady ? (
+            <GraphCard
+              isOpen={true}
+              title="Bucalemu Alto"
+              chartLabel="Nivel del Bucalemu Alto (m)"
+              initialData={mapToMetrics(chartData?.ssr_bucalemu_alto_nivel)}
+              type="nivel"
+              fetchEndpoint="https://app.jteanalytics.cl/bucalemu/metrics/nivel_bucalemu_alto"
+              nivelMax={5}
+              nivelAlarma={2}
+            />
+          ) : (
+            <GraphSkeleton />
+          )}
         </div>
       </div>
     </div>
   );
+});
 
-  // =====================
-  // RENDER PRINCIPAL
-  // =====================
+// =====================
+// COMPONENTE PRINCIPAL
+// =====================
+function App() {
+  // Fase 1: Datos críticos (snapshot) — lo mínimo para mostrar algo al usuario
+  const [snapshotLoading, setSnapshotLoading] = useState(true);
+  const [data, setData] = useState<Datos | null>(null);
+  const [vData, setVaciadoData] = useState<DatosVaciado | null>(null);
+  const [chartData, setChartData] = useState<ChartData | null>(null);
+  const [caudal, setCaudal] = useState<Metric[] | null>(null);
+
+  // Fase 2: Datos secundarios (gráficos) — se cargan después
+  const [chartsReady, setChartsReady] = useState(false);
+  const [totalizador, setTotalizador] = useState<Metric[] | null>(null);
+
+  const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1500);
+
+  useEffect(() => {
+    const handleResize = () => setIsLargeScreen(window.innerWidth >= 1500);
+    window.addEventListener("resize", handleResize);
+    handleResize();
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Santiago",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+
+    const now = new Date();
+    const end = formatter.format(now);
+
+    const fetchData = async () => {
+      try {
+        // ── Fase 1: Snapshot consolidado (1 sola llamada HTTP) ──────
+        // Devuelve latest + levels + emptying + caudal en paralelo del lado del servidor
+        const snapshotRes = await fetch(
+          "https://app.jteanalytics.cl/bucalemu/metrics/snapshot",
+        );
+        const snapshot = await snapshotRes.json();
+
+        // Setear datos críticos → la UI se muestra inmediatamente
+        setData(snapshot.latest as Datos);
+        setVaciadoData(snapshot.emptying as DatosVaciado);
+        setChartData(snapshot.levels as ChartData);
+        setCaudal(snapshot.caudal as Metric[]);
+        setSnapshotLoading(false); // ← El usuario ya ve los tanques, SCADA y estados
+
+        // ── Fase 2: Datos secundarios (totalizador con caché local) ──
+        const totalizadorData = await fetchWithCache("totalizador", end);
+        setTotalizador(totalizadorData);
+        setChartsReady(true); // ← Los gráficos ahora se renderizan
+      } catch (error) {
+        console.error("Error al cargar datos:", error);
+        setSnapshotLoading(false);
+      }
+    };
+
+    fetchData();
+    const intervalId = setInterval(fetchData, 120000);
+    return () => clearInterval(intervalId);
+  }, []);
+
+  if (snapshotLoading) return <Loading />;
+  if (!data) return <Error />;
+
   return (
     <>
       <div className="container-fluid min-vh-100 p-0 d-flex flex-column align-items-center">
@@ -493,10 +608,24 @@ function App() {
 
         <div className="flex-grow-1 w-100 d-flex flex-column align-items-center px-3">
           {isLargeScreen ? (
-            <VistaDesktop />
+            <VistaDesktop
+              data={data}
+              vData={vData}
+              chartData={chartData}
+              caudal={caudal}
+              totalizador={totalizador}
+              chartsReady={chartsReady}
+            />
           ) : (
             <div className="row w-100" style={{ maxWidth: "800px" }}>
-              <VistaMovil />
+              <VistaMovil
+                data={data}
+                vData={vData}
+                chartData={chartData}
+                caudal={caudal}
+                totalizador={totalizador}
+                chartsReady={chartsReady}
+              />
             </div>
           )}
         </div>

@@ -80,3 +80,13 @@ body {
     max-height: 850px;
   }
 }
+
+/* Pulse animation for critical data arrival indicator */
+@keyframes pulse-dot {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}

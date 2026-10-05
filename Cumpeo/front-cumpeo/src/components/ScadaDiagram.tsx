@@ -5,6 +5,7 @@ import Pump from "./Pump";
 import Elbow from "./Elbow";
 import Tee from "./Tee";
 import State, { StateBody } from "./States";
+import DataArrivalIndicator from "./DataArrivalIndicator";
 import newTankImage from "../assets/newTank.png";
 import newPipeImage from "../assets/newPipe.png";
 import newElbowImage from "../assets/newElbow.png";
@@ -32,6 +33,16 @@ interface ScadaDiagramProps {
   data: Datos;
   horometro: Metric[];
   totalizador: Metric[];
+}
+
+/** Returns the most recent timestamp from all metrics in a snapshot */
+function getLatestTime(snapshot: MetricSnapshot | undefined): string | undefined {
+  if (!snapshot) return undefined;
+  const times = Object.values(snapshot)
+    .map((m) => new Date(m.time).getTime())
+    .filter((t) => !isNaN(t));
+  if (times.length === 0) return undefined;
+  return new Date(Math.max(...times)).toISOString();
 }
 
 const SPRITE_SIZE = 300;
@@ -68,7 +79,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({
     <div>
       <div style={containerStyle}>
         <State
-          title="Estado Tablero - San Enrique 6"
+          title="Estado Tablero - San Enrique 3"
           style={{ maxWidth: "270px", maxHeight: "360px" }}
         >
           <StateBody
@@ -144,8 +155,8 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({
               ? data.pozo1.totalizador.value / 10
               : 0
           }
-          titleTotalizador="San Enrique 6"
-          titleCaudal="San Enrique 3"
+          titleTotalizador="San Enrique 3"
+          titleCaudal="San Enrique 1"
         />
 
         {/* 5. Tanque Principal - Posición (600, 0). Max Volume: 4.5 */}
@@ -162,6 +173,30 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({
           labelOffsetX={170}
           tiempoVaciado={data.tiempo_vaciado_formatted}
         />
+
+        {/* Indicadores de llegada de datos por pozo */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 10,
+            left: 10,
+            right: 10,
+            display: "flex",
+            gap: "12px",
+            flexWrap: "wrap",
+          }}
+        >
+          <DataArrivalIndicator
+            label="San Enrique 3"
+            latestTime={getLatestTime(data.pozo1)}
+            compact
+          />
+          <DataArrivalIndicator
+            label="San Enrique 1"
+            latestTime={getLatestTime(data.pozo2)}
+            compact
+          />
+        </div>
       </div>
     </div>
   );

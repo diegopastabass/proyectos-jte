@@ -7,12 +7,16 @@ import logging
 from datetime import datetime
 from dotenv import load_dotenv
 
+# Determinar el directorio donde se encuentra este script
+script_dir = os.path.dirname(os.path.abspath(__file__))
+log_file_path = os.path.join(script_dir, "dga_reporte.log")
+
 # Configuración de Logs
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler("dga_reporte.log"),
+        logging.FileHandler(log_file_path),
         logging.StreamHandler()
     ]
 )
@@ -32,9 +36,9 @@ def get_snapshot():
 
 def format_payload_dga(snapshot):
     try:
-        nivel_freatico = snapshot['pozo']['value'] / 10
+        nivel_freatico = snapshot['pozo']['value'] 
         caudal_raw = snapshot['caudal']['value']
-        totalizador_raw = snapshot['totalizador']['value']
+        totalizador_raw = snapshot['totalizador']['value'] /10
         
         iso_time = snapshot['pozo']['time'] 
         dt_obj = datetime.fromisoformat(iso_time.replace('Z', '+00:00'))
@@ -114,8 +118,17 @@ def send_report():
             "response": dga_response_data 
         }
         
-        audit_url = f"{os.getenv('INTERNAL_API_URL')}/carracedo/reports"
-        audit_resp = requests.post(audit_url, json=audit_payload, timeout=10)
+        # Accedemos directo a la API localmente en lugar de a través de la URL pública
+        # de esta forma validamos el chequeo de localhost
+        local_port = os.getenv('API_PORT', '3021')
+        audit_url = f"http://127.0.0.1:{local_port}/reports"
+        
+        audit_headers = {
+            "Content-Type": "application/json",
+            "x-api-password": os.getenv('REPORTS_API_PASSWORD', '')
+        }
+        
+        audit_resp = requests.post(audit_url, json=audit_payload, headers=audit_headers, timeout=10)
         
         if audit_resp.status_code == 201:
              logging.info("Respaldo local guardado correctamente.")

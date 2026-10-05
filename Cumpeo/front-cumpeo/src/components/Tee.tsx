@@ -45,7 +45,7 @@ const Tee: React.FC<TeeProps> = ({
           }}
         >
           <div className="mb-0">
-            <span className="text-muted small">Caudal San Enrique 3:</span>
+            <span className="text-muted small">Caudal San Enrique 1:</span>
             <strong>
               <h6>{caudal?.toFixed(2) ?? 0} l/s</h6>
             </strong>

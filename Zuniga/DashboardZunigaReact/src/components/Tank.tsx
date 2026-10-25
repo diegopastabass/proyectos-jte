@@ -1,91 +1,178 @@
-import React, { useState, useEffect, type CSSProperties } from "react";
+import React, { type CSSProperties, type ReactNode } from "react";
 
 interface TankProps {
-  spriteWidth: number; // Ancho de un frame del sprite (e.g., 300)
-  spriteHeight: number; // Alto de un frame del sprite (e.g., 300)
-  positionX: number; // Posición X en el canvas original
-  positionY: number; // Posición Y en el canvas original
-  image: string; // URL de la imagen del sprite
-  volume: number; // Volumen actual (para el nivel de agua)
-  maxVolume: number; // Volumen máximo
-  style?: CSSProperties;
-  name?: string;
-  labelOffsetX?: number;
-  tiempoVaciado?: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  /** Nivel actual en metros. */
+  level: number;
+  /** Nivel que corresponde al estanque lleno, en metros. */
+  maxLevel: number;
+  /** Nivel de alarma baja en metros (opcional). */
+  alarmLevel?: number;
+  name: string;
+  tag?: string;
+  /** Posición X (relativa al estanque) por donde entra el agua desde el techo. */
+  inletX?: number;
+  /** Está entrando agua: muestra chorro, ondas y burbujas. */
+  inflow?: boolean;
+  /** Separación de marcas menores y rotuladas en la regla, en metros. */
+  scaleStep: number;
+  labelStep: number;
+  children?: ReactNode;
 }
 
-const MAX_LEVEL_FRAMES = 20;
-const FRAME_DELAY = 150;
+const BUBBLES = [
+  { dx: -6, size: 5, d: 2.2, delay: 0, sway: 3 },
+  { dx: 5, size: 4, d: 2.6, delay: 0.7, sway: -3 },
+  { dx: -2, size: 6, d: 3, delay: 1.3, sway: 4 },
+  { dx: 9, size: 3, d: 2.4, delay: 1.9, sway: -2 },
+];
 
 const Tank: React.FC<TankProps> = ({
-  spriteWidth,
-  spriteHeight,
-  positionX,
-  positionY,
-  image,
-  volume,
-  maxVolume,
-  style,
+  x,
+  y,
+  width,
+  height,
+  level,
+  maxLevel,
+  alarmLevel,
   name,
-  labelOffsetX,
-  tiempoVaciado,
+  tag,
+  inletX,
+  inflow = false,
+  scaleStep,
+  labelStep,
+  children,
 }) => {
-  const [frameX, setFrameX] = useState(0);
+  const ry = Math.round(width * 0.08);
+  const hc = height - 2 * ry;
+  const safeMax = Math.max(maxLevel, 0.0001);
+  const ratio = Math.max(0, level) / safeMax;
+  const fill = Math.min(1, ratio);
+  const yOf = (v: number) => hc * (1 - Math.min(1, Math.max(0, v / safeMax)));
+  const inAlarm = alarmLevel !== undefined && level < alarmLevel;
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setFrameX((prevFrameX) => (prevFrameX > 0 ? 0 : prevFrameX + 1));
-    }, FRAME_DELAY);
+  const vars = {
+    left: x,
+    top: y,
+    width,
+    height,
+    "--ry": `${ry}px`,
+    "--hc": `${hc}px`,
+    "--offset": `${(hc * (1 - fill)).toFixed(2)}px`,
+  } as CSSProperties;
 
-    return () => clearInterval(interval);
-  }, []);
+  const ticks: ReactNode[] = [];
+  const steps = Math.round(safeMax / scaleStep);
+  const every = Math.max(1, Math.round(labelStep / scaleStep));
+  for (let i = 0; i <= steps; i++) {
+    const v = i * scaleStep;
+    const major = i % every === 0;
+    ticks.push(
+      <div
+        key={i}
+        className={`tank__tick${major ? " tank__tick--major" : ""}`}
+        style={{ top: yOf(v) }}
+      />,
+    );
+    if (major) {
+      ticks.push(
+        <span key={`l${i}`} className="tank__tick-label" style={{ top: yOf(v) }}>
+          {Number(v.toFixed(2))}
+        </span>,
+      );
+    }
+  }
 
-  const safeVolume = Math.max(0, volume);
-  const safeMaxVolume = Math.max(1, maxVolume);
-  const percentage = safeVolume / safeMaxVolume;
-  let frameY = Math.floor(percentage * MAX_LEVEL_FRAMES);
-  frameY = Math.min(Math.max(frameY, 0), MAX_LEVEL_FRAMES);
-
-  const tankStyle: CSSProperties = {
-    position: "absolute",
-    left: positionX,
-    top: positionY,
-    width: 300,
-    height: 300,
-    objectFit: "none",
-    objectPosition: `-${frameX * spriteWidth}px -${frameY * spriteHeight}px`,
-    ...style,
-  };
+  const rippleW = width * 0.5;
+  const rippleH = rippleW * ((2 * ry) / width);
 
   return (
-    <div className="tank-container">
-      <div
-        className="text-center"
-        style={{
-          maxWidth: "400px",
-          position: "absolute",
-          top: 320 - (labelOffsetX ?? 0),
-          left: positionX - 30 + (labelOffsetX ?? 40),
-          zIndex: 10,
-        }}
-      >
-        <h5>{name}</h5>
-        <h6>{volume.toFixed(2)} m</h6>
-        <p>{Math.round(percentage * 100)}%</p>
-        {tiempoVaciado && (
-          <div className="alert alert-primary" style={{ padding: "5px" }}>
-            <h6>Tiempo de Vaciado Estanque</h6>
-            <p>Ø {tiempoVaciado}</p>
-          </div>
+    <div
+      className={`tank${inAlarm ? " tank--alarm" : ""}${fill <= 0.002 ? " tank--empty" : ""}`}
+      style={vars}
+    >
+      <div className="tank__base" />
+
+      <div className="tank__shell">
+        {inletX !== undefined && (
+          <div
+            className={`tank__stream${inflow ? " is-on" : ""}`}
+            style={{ left: inletX - 3.5 }}
+          />
         )}
+
+        <div className="tank__liquid">
+          <div className="tank__surface">
+            {inflow &&
+              inletX !== undefined &&
+              [0, 1, 2].map((k) => (
+                <div
+                  key={k}
+                  className="tank__ripple"
+                  style={{ left: inletX, width: rippleW, height: rippleH }}
+                />
+              ))}
+          </div>
+          {inflow &&
+            inletX !== undefined &&
+            BUBBLES.map((b, k) => (
+              <div
+                key={k}
+                className="tank__bubble"
+                style={
+                  {
+                    left: inletX + b.dx,
+                    width: b.size,
+                    height: b.size,
+                    "--d": `${b.d}s`,
+                    "--delay": `${b.delay}s`,
+                    "--sway": `${b.sway}px`,
+                  } as CSSProperties
+                }
+              />
+            ))}
+        </div>
+
+        {[0.25, 0.5, 0.75].map((f) => (
+          <div key={f} className="tank__seam" style={{ top: hc * f }} />
+        ))}
+        <div className="tank__hidden-line" />
+        <div className="tank__shade" />
       </div>
-      <img
-        src={image}
-        alt="Tank animation"
-        style={tankStyle}
-        width={300}
-        height={300}
-      />
+
+      <div className="tank__outline" />
+      <div className="tank__rim" />
+
+      {alarmLevel !== undefined && (
+        <div className="tank__alarm-line" style={{ top: ry + yOf(alarmLevel) }}>
+          <span>L {alarmLevel.toFixed(1)} m</span>
+        </div>
+      )}
+
+      <div className="tank__scale">
+        {ticks}
+        {alarmLevel !== undefined && (
+          <div className="tank__tick tank__tick--alarm" style={{ top: yOf(alarmLevel) }} />
+        )}
+        <div className="tank__marker" />
+      </div>
+
+      {tag && (
+        <span className="scada-tag" style={{ left: -26, top: ry - 24 }}>
+          {tag}
+        </span>
+      )}
+
+      <div className="tank__info" style={{ top: height + 18 }}>
+        <div className="tank__name">{name}</div>
+        <div className="tank__level">{level.toFixed(2)} m</div>
+        <div className="tank__pct">{Math.round(ratio * 100)}%</div>
+        {inAlarm && <span className="tank__badge">NIVEL BAJO</span>}
+        {children}
+      </div>
     </div>
   );
 };

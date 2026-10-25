@@ -211,6 +211,7 @@ function App() {
           data={nivelChartData}
           nivelMax={350}
           nivelAlarma={50}
+          divisor={100}
         />
       </div>
       {/* Estanque 2 */}
@@ -387,6 +388,7 @@ function App() {
           data={nivelChartData}
           nivelMax={350}
           nivelAlarma={50}
+          divisor={100}
         />
       </div>
 
@@ -487,7 +489,9 @@ function App() {
           </Navbar>
         </div>
         <div className="flex-grow-1 w-100 d-flex flex-column align-items-center px-3">
-          {isLargeScreen ? <VistaDesktop /> : <VistaMovil />}
+          {/* Se llaman como funciones (no <VistaDesktop />) para no remontar todo
+              el árbol en cada refresco: así las animaciones de nivel transicionan. */}
+          {isLargeScreen ? VistaDesktop() : VistaMovil()}
         </div>
         <footer className="mt-4 w-75 d-flex flex-wrap justify-content-between align-items-center py-3 px-4 border-top">
           <p className="text-body-secondary">&copy; 2025 JTE Analytics.</p>

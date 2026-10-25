@@ -1,0 +1,1018 @@
+/* ==========================================================================
+   SCADA — componentes dibujados con CSS
+   Todas las animaciones continuas usan transform/opacity (compositor),
+   así no fuerzan layout ni repaint y corren fluidas a 60 fps.
+   ========================================================================== */
+
+.scada {
+  --ink: #2b3138;
+  --ink-soft: rgba(43, 49, 56, 0.35);
+  --muted: #6c757d;
+
+  --water-deep: #064556;
+  --water: #0f7a91;
+  --water-light: #2fa3bb;
+  --water-surface: #6fcadb;
+
+  --ok: #22c55e;
+  --warn: #f59e0b;
+  --alarm: #dc2626;
+
+  --plate-bg: #fcfcfd;
+  --plate-border: #e3e6ea;
+
+  --level-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --level-time: 1.8s;
+
+  /* Sombreado de cilindro metálico (eje vertical) */
+  --metal-v: linear-gradient(
+    90deg,
+    #4d545b 0%,
+    #9aa2a9 18%,
+    #eceff2 38%,
+    #c4cad0 55%,
+    #7f878e 80%,
+    #4a5157 100%
+  );
+  --metal-v-dark: linear-gradient(
+    90deg,
+    #3c434a 0%,
+    #7d868e 18%,
+    #cfd4d9 38%,
+    #9aa2aa 58%,
+    #5f676f 82%,
+    #383e45 100%
+  );
+  --metal-h: linear-gradient(
+    180deg,
+    #4d545b 0%,
+    #9aa2a9 18%,
+    #eceff2 38%,
+    #c4cad0 55%,
+    #7f878e 80%,
+    #4a5157 100%
+  );
+}
+
+/* --------------------------------------------------------------------------
+   Escenario: 1200×630 unidades de diseño, escalado al ancho disponible
+   -------------------------------------------------------------------------- */
+.scada-viewport {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.scada-stage {
+  position: relative;
+  width: 1200px;
+  height: 630px;
+  margin: 0 auto;
+  transform-origin: top left;
+  font-variant-numeric: tabular-nums;
+}
+
+.scada-tag {
+  position: absolute;
+  font: 600 9px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------------------------
+   Placas de datos
+   -------------------------------------------------------------------------- */
+.scada-plate {
+  position: absolute;
+  z-index: 5;
+  padding: 12px 16px;
+  text-align: center;
+  background: var(--plate-bg);
+  border: 1px solid var(--plate-border);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+.scada-plate__row + .scada-plate__row {
+  margin-top: 10px;
+}
+
+.scada-plate__label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.scada-plate__value {
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #343a40;
+}
+
+.scada-plate--info {
+  background: #dbe9fe;
+  border-color: #b6d0fb;
+  color: #0b3b8c;
+}
+
+.scada-plate--info .scada-plate__label {
+  color: #0b3b8c;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.scada-plate--info .scada-plate__value {
+  color: #0b3b8c;
+  font-weight: 400;
+}
+
+/* --------------------------------------------------------------------------
+   Tuberías
+   -------------------------------------------------------------------------- */
+.pipe,
+.pipe-elbow,
+.pipe-flange {
+  position: absolute;
+  z-index: 3;
+}
+
+.pipe__bore {
+  position: absolute;
+  overflow: hidden;
+}
+
+.pipe__flow {
+  position: absolute;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  animation-duration: var(--flow-t, 0.6s);
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-play-state: paused;
+  will-change: transform;
+}
+
+.is-flowing .pipe__flow {
+  opacity: 1;
+  animation-play-state: running;
+}
+
+.pipe__flow--x {
+  top: 0;
+  bottom: 0;
+  left: calc(var(--period) * -1);
+  width: calc(100% + var(--period));
+  animation-name: scada-flow-x;
+}
+
+.pipe__flow--y {
+  left: 0;
+  right: 0;
+  top: calc(var(--period) * -1);
+  height: calc(100% + var(--period));
+  animation-name: scada-flow-y;
+}
+
+.pipe__flow--rev {
+  animation-direction: reverse;
+}
+
+.pipe-elbow {
+  overflow: hidden;
+}
+
+.pipe-elbow__flow {
+  position: absolute;
+  border-radius: 50%;
+  animation-name: scada-spin;
+}
+
+@keyframes scada-flow-x {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(var(--period), 0, 0); }
+}
+
+@keyframes scada-flow-y {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(0, var(--period), 0); }
+}
+
+@keyframes scada-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(var(--theta)); }
+}
+
+/* --------------------------------------------------------------------------
+   Estanque cilíndrico (vista en corte)
+   -------------------------------------------------------------------------- */
+.tank {
+  position: absolute;
+  z-index: 2;
+}
+
+.tank__base {
+  position: absolute;
+  left: -14px;
+  right: -14px;
+  top: calc(100% - var(--ry));
+  height: calc(var(--ry) + 10px);
+  background:
+    repeating-linear-gradient(45deg, rgba(43, 49, 56, 0.28) 0 1px, transparent 1px 6px),
+    linear-gradient(180deg, #e4e7ea, #cfd4d8);
+  border: 1.5px solid var(--ink);
+  border-radius: 2px;
+}
+
+.tank__shell {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 50% / var(--ry);
+  background: linear-gradient(
+    90deg,
+    #c3cad1 0%,
+    #e7ebee 22%,
+    #f6f8f9 48%,
+    #e1e6ea 72%,
+    #b8c0c7 100%
+  );
+  isolation: isolate;
+}
+
+.tank__stream {
+  position: absolute;
+  top: var(--ry);
+  bottom: 0;
+  width: 7px;
+  overflow: hidden;
+  z-index: 1;
+  clip-path: polygon(0 0, 100% 0, 78% 100%, 22% 100%);
+  background: linear-gradient(90deg, var(--water-deep), var(--water-light) 50%, var(--water-deep));
+  transform: scaleY(0);
+  transform-origin: 50% 100%;
+  transition: transform 0.7s cubic-bezier(0.55, 0, 0.75, 0.3);
+}
+
+.tank__stream::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -18px;
+  height: calc(100% + 18px);
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0) 0 5px,
+    rgba(210, 245, 255, 0.55) 9px,
+    rgba(255, 255, 255, 0) 13px 18px
+  );
+  animation: scada-stream 0.32s linear infinite;
+  will-change: transform;
+}
+
+.tank__stream.is-on {
+  transform: scaleY(1);
+  transform-origin: 50% 0;
+  transition: transform 0.9s cubic-bezier(0.3, 0.6, 0.4, 1);
+}
+
+.tank__stream:not(.is-on)::before {
+  animation-play-state: paused;
+}
+
+@keyframes scada-stream {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(0, 18px, 0); }
+}
+
+.tank__liquid {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--ry);
+  height: 100%;
+  z-index: 2;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(2, 30, 40, 0.35) 100%),
+    linear-gradient(
+      90deg,
+      var(--water-deep) 0%,
+      #0d6f85 22%,
+      #1690a9 44%,
+      #127f97 62%,
+      #0b5f72 82%,
+      var(--water-deep) 100%
+    );
+  transform: translate3d(0, var(--offset), 0);
+  transition: transform var(--level-time) var(--level-ease), opacity 0.6s ease;
+  will-change: transform;
+}
+
+.tank--empty .tank__liquid {
+  opacity: 0;
+}
+
+@starting-style {
+  .tank__liquid {
+    transform: translate3d(0, var(--hc), 0);
+  }
+}
+
+.tank__surface {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--ry) * -1);
+  height: calc(var(--ry) * 2);
+  overflow: hidden;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at 42% 38%,
+    #9fe0ec 0%,
+    var(--water-surface) 30%,
+    var(--water-light) 70%,
+    #1e8aa2 100%
+  );
+  box-shadow: inset 0 -1px 0 rgba(0, 40, 55, 0.35);
+}
+
+/* Brillo que se desplaza suavemente sobre la superficie */
+.tank__surface::before {
+  content: "";
+  position: absolute;
+  top: 18%;
+  left: 10%;
+  width: 34%;
+  height: 46%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 70%);
+  animation: scada-sheen 7s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes scada-sheen {
+  from { transform: translate3d(0, 0, 0) scaleX(1); }
+  to   { transform: translate3d(140%, 8%, 0) scaleX(0.8); }
+}
+
+.tank__ripple {
+  position: absolute;
+  top: 50%;
+  border: 1.5px solid rgba(235, 252, 255, 0.85);
+  border-radius: 50%;
+  opacity: 0;
+  animation: scada-ripple 1.8s cubic-bezier(0.2, 0.6, 0.35, 1) infinite;
+  will-change: transform, opacity;
+}
+
+.tank__ripple:nth-child(2) { animation-delay: 0.6s; }
+.tank__ripple:nth-child(3) { animation-delay: 1.2s; }
+
+@keyframes scada-ripple {
+  0%   { transform: translate(-50%, -50%) scale(0.12); opacity: 0.9; }
+  100% { transform: translate(-50%, -50%) scale(1);    opacity: 0; }
+}
+
+.tank__bubble {
+  position: absolute;
+  top: 90px;
+  border-radius: 50%;
+  border: 1px solid rgba(220, 248, 255, 0.75);
+  background: rgba(220, 248, 255, 0.18);
+  opacity: 0;
+  animation: scada-bubble var(--d, 2.4s) cubic-bezier(0.45, 0, 0.75, 1) infinite;
+  animation-delay: var(--delay, 0s);
+  will-change: transform, opacity;
+}
+
+@keyframes scada-bubble {
+  0%   { transform: translate3d(0, 0, 0); opacity: 0; }
+  15%  { opacity: 0.9; }
+  50%  { transform: translate3d(var(--sway, 3px), -42px, 0); }
+  90%  { opacity: 0.8; }
+  100% { transform: translate3d(0, -84px, 0); opacity: 0; }
+}
+
+.tank__seam {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: calc(var(--ry) * 2);
+  z-index: 3;
+  border-bottom: 1px solid rgba(30, 40, 50, 0.22);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.tank__hidden-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--ry) * 2);
+  z-index: 3;
+  border: 1px dashed rgba(230, 240, 245, 0.45);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Volumen del cilindro: sombra lateral y reflejo frontal */
+.tank__shade {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.22) 0%,
+    rgba(0, 0, 0, 0) 14%,
+    rgba(255, 255, 255, 0.16) 28%,
+    rgba(255, 255, 255, 0) 40%,
+    rgba(0, 0, 0, 0) 78%,
+    rgba(0, 0, 0, 0.24) 100%
+  );
+}
+
+.tank__outline {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border: 1.5px solid var(--ink);
+  border-radius: 50% / var(--ry);
+  pointer-events: none;
+}
+
+.tank__rim {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: calc(var(--ry) * 2);
+  z-index: 5;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(240, 243, 246, 0.25), rgba(200, 207, 213, 0.15));
+  pointer-events: none;
+}
+
+.tank__alarm-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 6;
+  border-top: 1px dashed var(--alarm);
+  pointer-events: none;
+}
+
+.tank__alarm-line span {
+  position: absolute;
+  right: 8px;
+  top: -12px;
+  font: 600 9px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--alarm);
+}
+
+/* Regla de nivel */
+.tank__scale {
+  position: absolute;
+  top: var(--ry);
+  height: var(--hc);
+  right: calc(100% + 6px);
+  width: 40px;
+  border-right: 1px solid var(--ink);
+}
+
+.tank__tick {
+  position: absolute;
+  right: 0;
+  height: 1px;
+  width: 5px;
+  background: var(--ink);
+}
+
+.tank__tick--major {
+  width: 10px;
+}
+
+.tank__tick--alarm {
+  background: var(--alarm);
+  width: 14px;
+}
+
+.tank__tick-label {
+  position: absolute;
+  right: 13px;
+  transform: translateY(-50%);
+  font: 500 10px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--muted);
+}
+
+.tank__marker {
+  position: absolute;
+  right: -1px;
+  top: -6px;
+  width: 11px;
+  height: 12px;
+  background: var(--water);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  transform: translate3d(0, var(--offset), 0);
+  transition: transform var(--level-time) var(--level-ease), background-color 0.4s;
+  will-change: transform;
+}
+
+@starting-style {
+  .tank__marker {
+    transform: translate3d(0, var(--hc), 0);
+  }
+}
+
+.tank--alarm .tank__marker {
+  background: var(--alarm);
+}
+
+.tank__info {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  white-space: nowrap;
+  line-height: 1.25;
+}
+
+.tank__name {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #212529;
+}
+
+.tank__level {
+  margin-top: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.tank__pct {
+  margin-top: 6px;
+  font-size: 1rem;
+}
+
+.tank__badge {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: #fff;
+  background: var(--alarm);
+  animation: scada-blink 1.4s ease-in-out infinite;
+}
+
+@keyframes scada-blink {
+  50% { opacity: 0.45; }
+}
+
+/* --------------------------------------------------------------------------
+   Pozo + bomba sumergible
+   -------------------------------------------------------------------------- */
+.ground {
+  position: absolute;
+  z-index: 0;
+  border-top: 2px solid var(--ink);
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(43, 49, 56, 0.22) 0 1px,
+    transparent 1px 7px
+  );
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 100%);
+}
+
+.well {
+  position: absolute;
+  z-index: 1;
+  background: #f4f6f8;
+  border-left: 4px solid #5d656d;
+  border-right: 4px solid #5d656d;
+  -webkit-mask-image: linear-gradient(180deg, #000 88%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 88%, transparent 100%);
+}
+
+.well__water {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(47, 163, 187, 0.5) 0%, rgba(8, 82, 100, 0.7) 100%);
+  border-top: 1px solid rgba(111, 202, 219, 0.9);
+}
+
+.well__particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 50%;
+  background: rgba(225, 250, 255, 0.85);
+  opacity: 0;
+  animation: scada-suction 1.6s cubic-bezier(0.5, 0, 0.9, 0.6) infinite;
+  animation-delay: var(--delay, 0s);
+  will-change: transform, opacity;
+}
+
+@keyframes scada-suction {
+  0%   { transform: translate3d(0, var(--dy, 0), 0); opacity: 0; }
+  25%  { opacity: 0.9; }
+  100% { transform: translate3d(var(--dx), 0, 0); opacity: 0; }
+}
+
+.wellhead {
+  position: absolute;
+  z-index: 2;
+  height: 8px;
+  background: var(--metal-h);
+  border: 1.2px solid var(--ink);
+  border-radius: 2px;
+}
+
+.nf-mark {
+  position: absolute;
+  z-index: 4;
+  text-align: right;
+  white-space: nowrap;
+  font: 600 10px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: #0b5f72;
+}
+
+/* Símbolo normalizado de nivel de agua: ▽ con líneas debajo */
+.nf-mark__symbol {
+  position: absolute;
+  right: -15px;
+  top: 6px;
+  width: 10px;
+  height: 8px;
+  background: #0b5f72;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.pump {
+  position: absolute;
+  z-index: 3;
+  width: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pump > div {
+  box-shadow: 0 0 0 1.2px var(--ink);
+}
+
+.pump__head {
+  width: 22px;
+  height: 12px;
+  background: var(--metal-v);
+  border-radius: 2px 2px 0 0;
+}
+
+.pump__hydraulic {
+  width: 40px;
+  height: 70px;
+  border-radius: 6px 6px 0 0;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      transparent 0 13px,
+      rgba(20, 25, 30, 0.45) 13px 14px,
+      rgba(255, 255, 255, 0.35) 14px 15px
+    ),
+    var(--metal-v);
+}
+
+.pump__intake {
+  position: relative;
+  width: 40px;
+  height: 24px;
+  overflow: hidden;
+  background: #2a3036;
+}
+
+/* Eje interno: franjas que se desplazan = ilusión de rotación */
+.pump__shaft {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -16px;
+  width: calc(100% + 16px);
+  background: repeating-linear-gradient(90deg, #262c32 0 4px, #6a737c 4px 8px);
+  animation: scada-shaft 0.18s linear infinite;
+  animation-play-state: paused;
+  will-change: transform;
+}
+
+.pump.is-on .pump__shaft {
+  animation-play-state: running;
+}
+
+@keyframes scada-shaft {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(8px, 0, 0); }
+}
+
+/* Rejilla de admisión + sombreado cilíndrico */
+.pump__intake::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.6) 0%,
+      rgba(0, 0, 0, 0) 30%,
+      rgba(255, 255, 255, 0.22) 42%,
+      rgba(0, 0, 0, 0) 58%,
+      rgba(0, 0, 0, 0.6) 100%
+    ),
+    repeating-linear-gradient(180deg, #a9b0b7 0 3px, transparent 3px 6px);
+}
+
+.pump__motor {
+  position: relative;
+  width: 48px;
+  height: 96px;
+  background: var(--metal-v-dark);
+}
+
+.pump__plate {
+  position: absolute;
+  left: 50%;
+  top: 34px;
+  width: 18px;
+  height: 46px;
+  margin-left: -9px;
+  border: 1px solid rgba(20, 25, 30, 0.6);
+  border-radius: 2px;
+  background: linear-gradient(180deg, #eef1f3, #c9cfd4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pump__plate span {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font: 700 9px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.1em;
+  color: #2b3138;
+}
+
+.pump__led {
+  position: absolute;
+  left: 50%;
+  top: 10px;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink);
+  background: radial-gradient(circle at 35% 35%, #c9cdd1, #7a8087 70%);
+}
+
+.pump__led::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  opacity: 0;
+}
+
+.pump.is-on .pump__led {
+  background: radial-gradient(circle at 35% 35%, #d9ffe6, var(--ok) 55%, #15803d);
+}
+
+.pump.is-on .pump__led::after {
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.55), rgba(34, 197, 94, 0) 70%);
+  animation: scada-glow 2.2s ease-in-out infinite;
+}
+
+.pump.is-fault .pump__led {
+  background: radial-gradient(circle at 35% 35%, #ffe1d6, var(--warn) 55%, #b45309);
+}
+
+.pump.is-fault .pump__led::after {
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.65), rgba(245, 158, 11, 0) 70%);
+  animation: scada-glow 0.9s ease-in-out infinite;
+}
+
+@keyframes scada-glow {
+  0%, 100% { opacity: 0.35; transform: scale(0.85); }
+  50%      { opacity: 1;    transform: scale(1.15); }
+}
+
+.pump__cap {
+  width: 44px;
+  height: 8px;
+  border-radius: 0 0 10px 10px;
+  background: var(--metal-v-dark);
+}
+
+.pump__cable {
+  position: absolute;
+  z-index: 2;
+  width: 3px;
+  border-radius: 2px;
+  background: #1f2429;
+}
+
+/* --------------------------------------------------------------------------
+   Instrumentos: manómetro, válvula, caudalímetro
+   -------------------------------------------------------------------------- */
+.gauge {
+  position: absolute;
+  z-index: 4;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #f7f9fa, #858d95);
+  box-shadow: 0 0 0 1.2px var(--ink), 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.gauge__face {
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #ffffff, #eef1f3);
+  box-shadow: inset 0 0 0 1px rgba(43, 49, 56, 0.5);
+}
+
+.gauge__ticks {
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background:
+    conic-gradient(from 136.5deg, #f3f5f7 0deg 87deg, transparent 87deg),
+    repeating-conic-gradient(from -135deg, var(--ink) 0deg 1.6deg, transparent 1.6deg 27deg);
+  -webkit-mask-image: radial-gradient(circle, transparent 0 58%, #000 60% 100%);
+  mask-image: radial-gradient(circle, transparent 0 58%, #000 60% 100%);
+}
+
+.gauge__zone {
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: conic-gradient(from 81deg, var(--alarm) 0deg 54deg, transparent 54deg);
+  -webkit-mask-image: radial-gradient(circle, transparent 0 80%, #000 82% 100%);
+  mask-image: radial-gradient(circle, transparent 0 80%, #000 82% 100%);
+}
+
+.gauge__unit {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 18%;
+  text-align: center;
+  font: 600 7px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--muted);
+}
+
+.gauge__needle {
+  position: absolute;
+  left: 50%;
+  bottom: 50%;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px 1px 0 0;
+  background: var(--alarm);
+  transform-origin: 50% 100%;
+  transform: rotate(var(--angle));
+  transition: transform 1.4s cubic-bezier(0.34, 1.45, 0.64, 1);
+}
+
+@starting-style {
+  .gauge__needle {
+    transform: rotate(-135deg);
+  }
+}
+
+.gauge__hub {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 50%;
+  background: var(--ink);
+}
+
+.gauge__stem {
+  position: absolute;
+  z-index: 2;
+  width: 6px;
+  background: var(--metal-v);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+
+.valve {
+  position: absolute;
+  z-index: 4;
+  filter: drop-shadow(1px 0 0 var(--ink)) drop-shadow(-1px 0 0 var(--ink))
+    drop-shadow(0 1px 0 var(--ink)) drop-shadow(0 -1px 0 var(--ink));
+}
+
+.valve__body {
+  position: absolute;
+  inset: 0;
+  background: var(--metal-h);
+  clip-path: polygon(0 0, 50% 50%, 100% 0, 100% 100%, 50% 50%, 0 100%);
+}
+
+.valve__stem {
+  position: absolute;
+  z-index: 3;
+  width: 3px;
+  background: #5d656d;
+}
+
+.valve__wheel {
+  position: absolute;
+  z-index: 4;
+  height: 7px;
+  border-radius: 50%;
+  border: 1.2px solid var(--ink);
+  background: linear-gradient(180deg, #e6eaee, #8a929a);
+}
+
+.flowmeter__spool {
+  position: absolute;
+  z-index: 4;
+  border: 1.2px solid var(--ink);
+  border-radius: 3px;
+  background: linear-gradient(
+    180deg,
+    #1f3b5c 0%,
+    #3f6f9e 30%,
+    #7fa6cc 46%,
+    #3f6f9e 64%,
+    #1a3350 100%
+  );
+}
+
+.flowmeter__neck {
+  position: absolute;
+  z-index: 3;
+  width: 10px;
+  background: var(--metal-v);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+
+.flowmeter__head {
+  position: absolute;
+  z-index: 4;
+  padding: 4px;
+  border-radius: 5px;
+  border: 1.2px solid var(--ink);
+  background: linear-gradient(180deg, #4b5560, #2a3139);
+}
+
+.flowmeter__lcd {
+  height: 100%;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: linear-gradient(180deg, #a9c79a, #8fb07f);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+  font: 700 12px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: #1b2a18;
+  transition: background 0.6s, color 0.6s;
+}
+
+.flowmeter__lcd small {
+  font-size: 8px;
+  font-weight: 600;
+}
+
+.flowmeter.is-on .flowmeter__lcd {
+  background: linear-gradient(180deg, #c4ecae, #a3d68c);
+}
+
+/* --------------------------------------------------------------------------
+   Accesibilidad: sin movimiento continuo si el usuario lo pide
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .scada *,
+  .scada *::before,
+  .scada *::after {
+    animation: none !important;
+  }
+
+  .scada {
+    --level-time: 0.3s;
+  }
+}

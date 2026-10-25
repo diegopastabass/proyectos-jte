@@ -373,7 +373,9 @@ function App() {
 
   return (
     <>
-      {isLargeScreen ? <DesktopView /> : <MobileView />}
+      {/* Se llaman como funciones (no <DesktopView />) para no remontar todo el
+          árbol en cada refresco: así las animaciones de nivel transicionan. */}
+      {isLargeScreen ? DesktopView() : MobileView()}
       <ExportModal show={isOpenExport} onClose={() => setIsOpenExport(false)} />
     </>
   );

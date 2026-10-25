@@ -2,6 +2,25 @@ interface Metric {
   value: number;
   time: string;
 }
+
+// Días que se muestran en los gráficos (hoy + los 14 anteriores). El caché en
+// localStorage conserva todo el historial; solo se recorta lo que se devuelve.
+export const CHART_DAYS = 15;
+
+const dayOf = (m: Metric) => m.time.split("T")[0];
+
+// Primer día (YYYY-MM-DD) de la ventana de CHART_DAYS que termina en endStr
+const windowStart = (endStr: string): string => {
+  const d = new Date(`${endStr}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - (CHART_DAYS - 1));
+  return d.toISOString().split("T")[0];
+};
+
+export const limitToChartDays = (data: Metric[], endStr: string): Metric[] => {
+  const start = windowStart(endStr);
+  return data.filter((d) => dayOf(d) >= start);
+};
+
 // Fetch con Caché
 export const fetchWithCache = async (
   endpoint: string,
@@ -15,11 +34,7 @@ export const fetchWithCache = async (
   if (data.length > 0) {
     startStr = data[data.length - 1].time.split("T")[0];
   } else {
-    const d = new Date();
-    d.setDate(d.getDate() - 15);
-    startStr = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "America/Santiago",
-    }).format(d);
+    startStr = windowStart(endStr);
   }
 
   const res = await fetch(
@@ -34,7 +49,7 @@ export const fetchWithCache = async (
   const toCache = merged.filter((d) => d.time.split("T")[0] !== endStr);
   localStorage.setItem(cacheKey, JSON.stringify(toCache));
 
-  return merged;
+  return limitToChartDays(merged, endStr);
 };
 
 export const fetchWithCacheMulti = async <T extends Record<string, Metric[]>>(
@@ -51,11 +66,7 @@ export const fetchWithCacheMulti = async <T extends Record<string, Metric[]>>(
   if (keys.length > 0 && data[keys[0]] && data[keys[0]].length > 0) {
     startStr = data[keys[0]][data[keys[0]].length - 1].time.split("T")[0];
   } else {
-    const d = new Date();
-    d.setDate(d.getDate() - 15);
-    startStr = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "America/Santiago",
-    }).format(d);
+    startStr = windowStart(endStr);
   }
 
   const res = await fetch(
@@ -78,7 +89,7 @@ export const fetchWithCacheMulti = async <T extends Record<string, Metric[]>>(
     );
 
     const mergedArray = [...filteredOld, ...newArray];
-    merged[k] = mergedArray;
+    merged[k] = limitToChartDays(mergedArray, endStr);
 
     const toCacheArray = mergedArray.filter(
       (d) => d.time.split("T")[0] !== endStr,

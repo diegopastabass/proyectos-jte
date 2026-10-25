@@ -19,6 +19,19 @@ export class DatabaseConfig implements TypeOrmOptionsFactory {
       ssl: {
         rejectUnauthorized: false,
       },
+      // Deja en el log (warn) toda consulta que tarde más de 10 s
+      maxQueryExecutionTime: 10_000,
+      extra: {
+        max: 10,
+        // Postgres cancela la consulta en el servidor a los 5 min (libera CPU y locks)
+        statement_timeout: 300_000,
+        // Red de seguridad del cliente por si la conexión queda colgada
+        query_timeout: 305_000,
+        // Cierra sesiones que quedan con una transacción abierta sin actividad
+        idle_in_transaction_session_timeout: 60_000,
+        // No esperar indefinidamente por una conexión del pool
+        connectionTimeoutMillis: 10_000,
+      },
     };
   }
 }

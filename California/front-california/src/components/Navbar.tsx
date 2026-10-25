@@ -74,36 +74,39 @@ function Navbar(props: NavbarProps) {
           className="navbar-brand d-flex align-items-center gap-2 mb-0 me-lg-4"
           href="/california/"
         >
-          <img src={logoJte} alt="logo" width={50} height={34} />{" "}
-          <img src={logo} alt="logo" width={60} />{" "}
+          <img src={logoJte} alt="logo" width={50} height={34} />
+          <img src={logo} alt="logo" width={60} />
           <span className="h5 mb-0">SSR California</span>
         </a>
-      </div>{" "}
-      <div className="d-flex align-items-center gap-2 flex-grow-1">
-        <div className="d-flex flex-column align-items-center text-lg-start">
+
+        {/* 2. Fecha / Frescura */}
+        <div className="d-flex align-items-center gap-2">
           <span className={`badge rounded-pill ${freshnessClass}`}>
             {formattedDate}
           </span>
         </div>
-      </div>{" "}
-      <div className="d-flex align-items-center gap-2 m-2"></div>
-      <div className="ms-auto d-none d-md-block m-4 ">{children}</div>
-      <button
-        className="btn btn-outline-secondary d-none d-md-inline-block"
-        onClick={toggleFullScreen}
-        title={
-          isFullScreen ? "Salir de Pantalla Completa" : "Pantalla Completa"
-        }
-        aria-label={
-          isFullScreen ? "Salir de Pantalla Completa" : "Pantalla Completa"
-        }
-      >
-        {isFullScreen ? (
-          <i className="bi bi-fullscreen-exit"></i>
-        ) : (
-          <i className="bi bi-fullscreen"></i>
-        )}
-      </button>
+
+        {/* 3. Botones de acción (Exportar, Historial, etc.) */}
+        <div className="ms-auto d-flex align-items-center gap-2 my-1">
+          {children}
+          <button
+            className="btn btn-outline-secondary d-none d-md-inline-block"
+            onClick={toggleFullScreen}
+            title={
+              isFullScreen ? "Salir de Pantalla Completa" : "Pantalla Completa"
+            }
+            aria-label={
+              isFullScreen ? "Salir de Pantalla Completa" : "Pantalla Completa"
+            }
+          >
+            {isFullScreen ? (
+              <i className="bi bi-fullscreen-exit"></i>
+            ) : (
+              <i className="bi bi-fullscreen"></i>
+            )}
+          </button>
+        </div>
+      </div>
     </nav>
   );
 }

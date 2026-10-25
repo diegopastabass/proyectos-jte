@@ -136,6 +136,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicle, setViewState, ad
     }
 
     setSubmitting(true);
+    let uploadedFileCount = 0;
     try {
       // Comprimir todas las fotos antes de enviar
       const compressPhoto = async (dataUrl: string): Promise<string> => {
@@ -167,11 +168,22 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicle, setViewState, ad
         interior_2: await compressPhoto(interiorPhotos.interior_2),
       };
 
+      // Limpiar fotos base64 del JSON para no exceder el límite de tamaño de campo
+      // Las fotos ya viajan como archivos binarios en el FormData
+      const cleanChecks = (checks: Record<string, ChecklistItem>) => {
+        const cleaned: Record<string, any> = {};
+        for (const [key, check] of Object.entries(checks)) {
+          const { photo, ...rest } = check;
+          cleaned[key] = { ...rest, hasPhoto: !!photo };
+        }
+        return cleaned;
+      };
+
       const checklistData = {
         vehicle_id: vehicle.id,
         kilometraje_actual: kmActual,
-        visual_checks: visualChecks,
-        mechanical_checks: mechanicalChecks,
+        visual_checks: cleanChecks(visualChecks),
+        mechanical_checks: cleanChecks(mechanicalChecks),
         observaciones_generales: obsGeneral,
         has_issues: hasIssues,
       };
@@ -213,19 +225,38 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicle, setViewState, ad
         }
       });
 
+      uploadedFileCount = formData.getAll('files').length;
+
+      // No pasar Content-Type manual: el navegador genera el boundary automáticamente
+      // Timeout de 120s para subidas con muchas fotos en conexiones lentas
       await api.post('/checklists', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 120000,
       });
 
       addToast('Checklist guardado exitosamente', 'success');
       setViewState('home');
     } catch (error: any) {
-      const msg = error?.response?.data?.message || 'Error al guardar checklist. Si hay problemas de conexión, el error se registrará para análisis.';
+      let msg: string;
+      if (error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
+        msg = 'La conexión tardó demasiado. Verifique su conexión a internet e intente nuevamente.';
+      } else if (!error?.response) {
+        msg = 'No se pudo conectar con el servidor. Verifique su conexión a internet e intente nuevamente.';
+      } else {
+        msg = error?.response?.data?.message || 'Error al guardar checklist.';
+      }
       addToast(typeof msg === 'string' ? msg : JSON.stringify(msg), 'error');
       
-      // Log the error
+      // Log the error con más contexto
       import('../errorLogger').then(({ logError }) => {
-        logError(error);
+        const errorDetail = {
+          message: error?.message,
+          code: error?.code,
+          status: error?.response?.status,
+          statusText: error?.response?.statusText,
+          url: error?.config?.url,
+          fileCount: uploadedFileCount,
+        };
+        logError(JSON.stringify(errorDetail));
       });
     } finally {
       setSubmitting(false);

@@ -14,7 +14,7 @@ export class ChecklistsController {
   constructor(private readonly checklistsService: ChecklistsService) {}
 
   @Post()
-  @UseInterceptors(FilesInterceptor('files', 10, {
+  @UseInterceptors(FilesInterceptor('files', 30, {
     storage: diskStorage({
       destination: './uploads',
       filename: (req, file, callback) => {
@@ -23,6 +23,10 @@ export class ChecklistsController {
         callback(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
       },
     }),
+    limits: {
+      fieldSize: 10 * 1024 * 1024, // 10MB para campos de texto (JSON data)
+      fileSize: 5 * 1024 * 1024,   // 5MB máximo por archivo individual
+    },
   }))
   async create(@Request() req, @Body('data') data: string, @UploadedFiles() files: Express.Multer.File[]) {
     try {

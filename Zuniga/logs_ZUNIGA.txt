@@ -1,0 +1,22 @@
+2026-10-20 12:13:38,378 [WARNING] Intento 1/2 fallido consultando la API: Read timed out
+2026-10-20 12:13:38,378 [WARNING] Intento 2/2 fallido consultando la API: Read timed out
+2026-10-20 12:13:38,378 [ERROR] Error obteniendo niveles desde la API (1 ciclo(s) seguido(s)): Read timed out
+2026-10-20 12:13:38,378 [WARNING] Intento 1/2 fallido consultando la API: Read timed out
+2026-10-20 12:13:38,379 [WARNING] Intento 2/2 fallido consultando la API: Read timed out
+2026-10-20 12:13:38,379 [ERROR] Error obteniendo niveles desde la API (2 ciclo(s) seguido(s)): Read timed out
+2026-10-20 12:13:38,379 [WARNING] Intento 1/2 fallido consultando la API: Read timed out
+2026-10-20 12:13:38,379 [WARNING] Intento 2/2 fallido consultando la API: Read timed out
+2026-10-20 12:13:38,379 [ERROR] Error obteniendo niveles desde la API (3 ciclo(s) seguido(s)): Read timed out
+2026-10-20 12:13:38,379 [WARNING] Intento 1/2 fallido consultando la API: Read timed out
+2026-10-20 12:13:38,379 [WARNING] Intento 2/2 fallido consultando la API: Read timed out
+2026-10-20 12:13:38,379 [ERROR] Error obteniendo niveles desde la API (4 ciclo(s) seguido(s)): Read timed out
+2026-10-20 12:13:38,379 [WARNING] Intento 1/2 fallido consultando la API: Read timed out
+2026-10-20 12:13:38,379 [WARNING] Intento 2/2 fallido consultando la API: Read timed out
+2026-10-20 12:13:38,379 [ERROR] Error obteniendo niveles desde la API (5 ciclo(s) seguido(s)): Read timed out
+2026-10-20 12:13:38,379 [WARNING] Intento 1/2 fallido consultando la API: Read timed out
+2026-10-20 12:13:38,379 [WARNING] Intento 2/2 fallido consultando la API: Read timed out
+2026-10-20 12:13:38,380 [ERROR] Error obteniendo niveles desde la API (6 ciclo(s) seguido(s)): Read timed out
+2026-10-20 12:13:38,380 [WARNING] Intento 1/2 fallido consultando la API: Read timed out
+2026-10-20 12:13:38,380 [WARNING] Intento 2/2 fallido consultando la API: Read timed out
+2026-10-20 12:13:38,380 [ERROR] Error obteniendo niveles desde la API (7 ciclo(s) seguido(s)): Read timed out
+2026-10-20 12:13:38,380 [INFO] Estanque Nuevo: condiciones normales.

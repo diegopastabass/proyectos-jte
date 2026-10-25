@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DatabaseModule } from './database/database.module';
 import { DatabaseConfig } from './database/database.config';
 import { SsrCaliforniaModule } from './metrics/metrics.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { SsrCaliforniaModule } from './metrics/metrics.module';
 
     DatabaseModule,
     SsrCaliforniaModule,
+    ReportsModule,
   ],
 })
 export class AppModule {}

@@ -1,162 +1,130 @@
-import { MapContainer, TileLayer, GeoJSON, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, GeoJSON } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { useState, useEffect } from "react";
-import type {
-  Feature,
-  FeatureCollection,
-  Geometry,
-  Point,
-  Polygon,
-} from "geojson";
-import type { Layer } from "leaflet";
-import InfoModal from "./InfoModal";
-import StatusLed from "./StatusLed";
+import L from "leaflet";
+import type { Feature, Geometry } from "geojson";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
+import { TOTALIZADOR_FACTOR } from "../config";
+import { formatDuration, formatNumber } from "../lib/format";
+import { geoData, type SectorProps } from "../lib/sectors";
+import type { IrrigationInterval } from "../hooks/useLiveData";
 
-interface IrrigationInterval {
-  mt_name: string;
-  is_active: number;
-  tiempo_riego_segundos: number;
-  totalizador: number;
-}
+// Con Vite, Leaflet no encuentra solo las imágenes del marcador por defecto
+const casetaIcon = L.icon({
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+});
+
+const bounds = L.geoJSON(geoData).getBounds().pad(0.05);
 
 interface ParcelaMapaProps {
-  geoData: FeatureCollection<Polygon | Point, { name: string }>;
-  irrigationIntervals: IrrigationInterval[];
+  intervals: IrrigationInterval[];
+  selected: string;
+  onSelect: (sectorId: string) => void;
 }
 
-const ParcelaMapa: React.FC<ParcelaMapaProps> = ({
-  geoData,
-  irrigationIntervals,
-}) => {
-  const [modalData, setModalData] = useState({
-    show: false,
-    title: "",
-    text1: "",
-    text2: "",
-    text3: "",
-  });
+const escapeHtml = (s: string) =>
+  s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
-  const [zoom, setZoom] = useState<number>(() =>
-    window.innerWidth < 768 ? 15 : 16
+function ParcelaMapa({ intervals, selected, onSelect }: ParcelaMapaProps) {
+  // onEachFeature solo corre al crear las capas: lo que cambia se lee desde refs
+  const intervalsRef = useRef(intervals);
+  const onSelectRef = useRef(onSelect);
+  useEffect(() => {
+    intervalsRef.current = intervals;
+    onSelectRef.current = onSelect;
+  }, [intervals, onSelect]);
+
+  const activeMap = useMemo(() => {
+    const m: Record<string, boolean> = {};
+    intervals.forEach((i) => (m[i.mt_name] = i.is_active === 1));
+    return m;
+  }, [intervals]);
+
+  // Cambiar la identidad de style hace que react-leaflet repinte los polígonos
+  const style = useCallback(
+    (feature?: Feature<Geometry, SectorProps>) => {
+      const id = feature?.properties?.identifier ?? "";
+      const active = activeMap[id];
+      const isSelected = id === selected;
+      return {
+        color: isSelected ? "#1c5cab" : active ? "#2e7d32" : "#6c757d",
+        weight: isSelected ? 4 : 2,
+        opacity: 1,
+        fillColor: active ? "#4caf50" : "#adb5bd",
+        fillOpacity: active ? 0.55 : 0.3,
+      };
+    },
+    [activeMap, selected],
   );
 
-  useEffect(() => {
-    const handleResize = () => {
-      const isMobile = window.innerWidth < 768;
-      setZoom(isMobile ? 15 : 16);
-    };
+  const onEachFeature = (feature: Feature<Geometry, SectorProps>, layer: L.Layer) => {
+    const id = feature.properties?.identifier;
+    const name = feature.properties?.name ?? "";
 
-    handleResize();
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, []);
-
-  const closeModal = () => {
-    setModalData((prev) => ({ ...prev, show: false }));
-  };
-
-  const activeMap: { [key: string]: boolean } = {};
-  irrigationIntervals.forEach((interval) => {
-    activeMap[interval.mt_name] = interval.is_active === 1;
-  });
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const style = (feature: Feature<Geometry, any> | undefined) => {
-    const isActive =
-      feature?.properties?.identifier &&
-      activeMap[feature.properties.identifier]
-        ? activeMap[feature.properties.identifier]
-        : false;
-    return {
-      color: isActive ? "#2e7d32" : "#d32f2f",
-      weight: 2,
-      opacity: 1,
-      fillColor: isActive ? "#81c784" : "#f44336",
-      fillOpacity: 0.5,
-    };
-  };
-
-  const formatIrrigationTime = (seconds: number): string => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = (seconds % 60).toFixed(1);
-
-    const parts = [];
-    if (h > 0) parts.push(`${h.toString().padStart(2, "0")} h`);
-    if (m > 0 || h > 0) parts.push(`${m.toString().padStart(2, "0")} m`);
-    parts.push(`${s.toString().padStart(2, "0")} s`);
-
-    return parts.join(" ");
-  };
-
-  const onEachFeature = (
-    feature: Feature<Geometry, { name: string; identifier: string }>,
-    layer: Layer
-  ) => {
-    if (feature.geometry.type === "Polygon") {
-      layer.on("click", () => {
-        const identifier = feature.properties?.identifier;
-        const displayName = feature.properties?.name;
-
-        const interval = irrigationIntervals.find(
-          (i) => i.mt_name === identifier
-        );
-
-        const isActive = interval?.is_active === 1;
-        const totalizador = ((interval?.totalizador ?? 0) / 10).toFixed(1);
-        const tiempoRiego = interval?.tiempo_riego_segundos ?? 0;
-
-        setModalData({
-          show: true,
-          title: displayName,
-          text1: `Estado de riego: ${isActive ? "Activo" : "Inactivo"}`,
-          text2: `Totalizador: ${totalizador} m³`,
-          text3: `Tiempo de riego: ${formatIrrigationTime(tiempoRiego)}`,
-        });
-      });
+    if (feature.geometry.type === "Point") {
+      layer.bindPopup(`<strong>${escapeHtml(name)}</strong>`);
+      return;
     }
+    if (!id) return;
+
+    layer.bindTooltip(escapeHtml(name), { sticky: true, direction: "top" });
+    layer.bindPopup(() => {
+      const live = intervalsRef.current.find((i) => i.mt_name === id);
+      const active = live?.is_active === 1;
+      const volume = (live?.totalizador ?? 0) * TOTALIZADOR_FACTOR;
+      return `
+        <strong>${escapeHtml(name)}</strong><br/>
+        Estado: <b>${active ? "Regando" : "Detenido"}</b><br/>
+        ${
+          active
+            ? `En curso: ${formatDuration(live!.tiempo_riego_segundos)}<br/>Volumen: ${formatNumber(volume, 1)} m³`
+            : ""
+        }`;
+    });
+    layer.on("click", () => onSelectRef.current(id));
   };
 
   return (
-    <div className="container mt-3">
-      <div className="border rounded" style={{ height: "500px" }}>
+    <>
+      <div className="map-frame">
         <MapContainer
-          center={[-34.4918510111111, -70.9755111111142]}
-          zoom={zoom}
+          bounds={bounds}
+          zoomSnap={0.25}
+          scrollWheelZoom={false}
           style={{ height: "100%", width: "100%" }}
         >
           <TileLayer
             attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-
-          <GeoJSON data={geoData} style={style} onEachFeature={onEachFeature} />
-
-          <Marker position={[-34.49086010692908, -70.97644209879842]}>
-            <Popup>
-              <span>CASETA DE RIEGO</span>
-            </Popup>
-          </Marker>
+          <GeoJSON
+            data={geoData}
+            style={style}
+            onEachFeature={onEachFeature}
+            pointToLayer={(_, latlng) => L.marker(latlng, { icon: casetaIcon })}
+          />
         </MapContainer>
       </div>
-
-      <InfoModal
-        show={modalData.show}
-        onClose={closeModal}
-        title={modalData.title}
-        text2={modalData.text2}
-        text3={modalData.text3}
-      >
-        <StatusLed
-          status={modalData.text1.includes("Activo") ? 1 : 0}
-          label="Estado de Riego"
-        />
-      </InfoModal>
-    </div>
+      <div className="map-legend" aria-label="Leyenda del mapa">
+        <span style={{ "--swatch": "#4caf50", "--swatch-border": "#2e7d32" } as React.CSSProperties}>
+          Regando
+        </span>
+        <span style={{ "--swatch": "#dee2e6", "--swatch-border": "#6c757d" } as React.CSSProperties}>
+          Detenido
+        </span>
+        <span style={{ "--swatch": "transparent", "--swatch-border": "#1c5cab" } as React.CSSProperties}>
+          Seleccionado
+        </span>
+      </div>
+    </>
   );
-};
+}
 
 export default ParcelaMapa;

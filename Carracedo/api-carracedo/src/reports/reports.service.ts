@@ -22,7 +22,6 @@ export class ReportsService {
       // Si no hay rango, devolvemos los últimos 100 por defecto
       return this.repo.find({
         order: { time: 'DESC' },
-        take: 100,
       });
     }
 

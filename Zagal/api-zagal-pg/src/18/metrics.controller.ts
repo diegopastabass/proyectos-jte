@@ -4,6 +4,7 @@ import {
   MetricsService,
   LatestMetricResult,
 } from "./metrics.service";
+import { assertDateRange } from "../common/db-errors";
 
 @Controller("18")
 export class MetricsController {
@@ -34,6 +35,7 @@ export class MetricsController {
     @Query("startDate") startDate: string,
     @Query("endDate") endDate: string
   ) {
+    assertDateRange(startDate, endDate);
     return this.service.getDailyIrrigationSummary(startDate, endDate);
   }
 

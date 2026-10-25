@@ -1,65 +1,88 @@
-import React from "react";
-import "bootstrap/dist/css/bootstrap.min.css";
 import StatusLed from "./StatusLed";
-
-interface SectorData {
-  mt_name: string;
-  is_active: number;
-  tiempo_riego_segundos: number;
-  totalizador: number;
-}
+import { TOTALIZADOR_FACTOR } from "../config";
+import { diffDays } from "../lib/dates";
+import { formatDuration, formatNumber, relativeDays } from "../lib/format";
+import { STALE_DAYS } from "../lib/metrics";
+import type { Sector } from "../lib/sectors";
+import type { IrrigationInterval } from "../hooks/useLiveData";
 
 interface Props {
-  data: SectorData[];
+  sectors: Sector[];
+  intervals: IrrigationInterval[];
+  /** Último día con riego por sector (YYYY-MM-DD) */
+  lastIrrigation: Record<string, string>;
+  stale: Set<string>;
+  today: string;
+  selected: string;
+  onSelect: (sectorId: string) => void;
 }
 
-const formatIrrigationTime = (seconds: number): string => {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = (seconds % 60).toFixed(2);
+// Estado actual de cada sector: si está regando, cuánto lleva y cuándo regó por última vez
+function SectorTable({ sectors, intervals, lastIrrigation, stale, today, selected, onSelect }: Props) {
+  const byId = new Map(intervals.map((i) => [i.mt_name, i]));
 
-  const parts = [];
-  if (h > 0) parts.push(`${h.toString().padStart(2, "0")} h`);
-  if (m > 0 || h > 0) parts.push(`${m.toString().padStart(2, "0")} m`);
-  parts.push(`${s.toString().padStart(2, "0")} s`);
-
-  return parts.join(" ");
-};
-
-const formatSectorName = (mt_name: string): string => {
-  const match = mt_name.match(/sector(\d+)/i);
-  return match ? `Sector ${match[1]}` : mt_name;
-};
-
-const SectorTable: React.FC<Props> = ({ data }) => {
   return (
-    <div className="container mt-4">
-      <div className="table-responsive">
-        <table className="table table-bordered table-hover text-center align-middle">
-          <thead className="table-light">
-            <tr>
-              <th>Nombre</th>
-              <th>Activo</th>
-              <th>Tiempo Riego</th>
-              <th>Totalizador m³</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((sector) => (
-              <tr key={sector.mt_name}>
-                <td>{formatSectorName(sector.mt_name)}</td>
-                <td className="d-flex justify-content-center">
-                  <StatusLed status={sector.is_active} />
+    <div className="table-scroll">
+      <table className="dash-table">
+        <thead>
+          <tr>
+            <th>Sector</th>
+            <th>Estado</th>
+            <th className="num d-none d-sm-table-cell">En curso</th>
+            <th className="num d-none d-sm-table-cell">Volumen m³</th>
+            <th>Último riego</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sectors.map((s) => {
+            const live = byId.get(s.id);
+            const active = live?.is_active === 1;
+            const last = lastIrrigation[s.id];
+            const days = last ? diffDays(last, today) : null;
+            return (
+              <tr
+                key={s.id}
+                className={selected === s.id ? "is-selected" : ""}
+                onClick={() => onSelect(s.id)}
+                title="Ver historial de este sector"
+              >
+                <td className="fw-semibold">{s.label}</td>
+                <td>
+                  <StatusLed status={active ? 1 : 0} />
                 </td>
-                <td>{formatIrrigationTime(sector.tiempo_riego_segundos)}</td>
-                <td>{(sector.totalizador / 10).toFixed(1)}</td>
+                <td className="num d-none d-sm-table-cell">
+                  {active ? formatDuration(live!.tiempo_riego_segundos) : "—"}
+                </td>
+                <td className="num d-none d-sm-table-cell">
+                  {active ? formatNumber((live!.totalizador ?? 0) * TOTALIZADOR_FACTOR, 1) : "—"}
+                </td>
+                <td>
+                  {active ? (
+                    <>
+                      Ahora
+                      <span className="d-sm-none"> · {formatDuration(live!.tiempo_riego_segundos)}</span>
+                    </>
+                  ) : stale.has(s.id) ? (
+                    <span
+                      className="warn-text"
+                      title={`Sin riego hace ${STALE_DAYS} días o más mientras otros sectores sí riegan`}
+                    >
+                      <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
+                      {days === null ? "Sin riego reciente" : relativeDays(days)}
+                    </span>
+                  ) : days === null ? (
+                    <span className="text-muted">Sin riego reciente</span>
+                  ) : (
+                    relativeDays(days)
+                  )}
+                </td>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
-};
+}
 
 export default SectorTable;

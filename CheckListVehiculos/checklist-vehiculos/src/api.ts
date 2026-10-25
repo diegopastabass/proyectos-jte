@@ -7,6 +7,7 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  timeout: 60000, // 60s timeout global (las subidas de fotos usan 120s individual)
 });
 
 api.interceptors.request.use(

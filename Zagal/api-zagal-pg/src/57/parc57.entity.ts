@@ -1,9 +1,12 @@
 // 57/entities/parc57.entity.ts
-import { Entity, Column } from 'typeorm';
+import { Entity, Column, PrimaryColumn } from 'typeorm';
 
+// La tabla no tiene PK en la base. TypeORM exige una para arrancar, así que
+// se declara (mt_name, mt_time_2) como clave solo a nivel de metadatos
+// (synchronize: false, no se crea nada en la base).
 @Entity('parc_57_zagal')
 export class Parc57Zagal {
-  @Column()
+  @PrimaryColumn()
   mt_name: string;
 
   @Column()
@@ -15,6 +18,6 @@ export class Parc57Zagal {
   @Column()
   mt_quality: string;
 
-  @Column({ name: 'mt_time_2', type: 'timestamp' })
+  @PrimaryColumn({ name: 'mt_time_2', type: 'timestamp' })
   mt_time_2: Date;
 }

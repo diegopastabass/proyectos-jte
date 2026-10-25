@@ -1,0 +1,495 @@
+/* =====================================================================
+   Tokens
+   ===================================================================== */
+:root {
+  --dash-page: #f4f5f7;
+  --dash-surface: #ffffff;
+  --dash-border: rgba(11, 11, 11, 0.1);
+  --dash-ink: #16181d;
+  --dash-ink-2: #52514e;
+  --dash-muted: #77756f;
+  --dash-accent: #0d6efd;
+  --dash-radius: 12px;
+  --dash-gap: 16px;
+
+  /* Visualización: una sola serie -> slot 1; grilla y ejes recesivos */
+  --viz-series-1: #2a78d6;
+  --viz-series-1-hover: #1c5cab;
+  --viz-series-1-soft: #cde2fb;
+  --viz-grid: #e1e0d9;
+  --viz-axis: #c3c2b7;
+
+  /* Estados (reservados: siempre con ícono + texto) */
+  --status-good: #0ca30c;
+  --status-good-ink: #006300;
+  --status-warning: #fab219;
+  --status-warning-ink: #8a5a00;
+  --status-critical: #d03b3b;
+  --status-idle: #a3a29c;
+
+  /* Calendario: una sola tonalidad, de claro a oscuro */
+  --heat-0: #eeeeee;
+  --heat-1: #c6e48b;
+  --heat-2: #7bc96f;
+  --heat-3: #239a3b;
+  --heat-4: #196127;
+}
+
+body {
+  background-color: var(--dash-page);
+  color: var(--dash-ink);
+}
+
+/* =====================================================================
+   Layout
+   ===================================================================== */
+.dash {
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: 0 16px 24px;
+}
+
+.dash-section-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 28px 0 12px;
+}
+
+.dash-section-title h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.dash-section-title small {
+  color: var(--dash-muted);
+}
+
+.dash-grid {
+  display: grid;
+  gap: var(--dash-gap);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.kpi-row {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 768px) {
+  .kpi-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 992px) {
+  .dash {
+    padding: 0 24px 32px;
+  }
+  .dash-grid--live {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .dash-grid--history {
+    grid-template-columns: minmax(0, 8fr) minmax(0, 4fr);
+  }
+  .kpi-row--4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1200px) {
+  .kpi-row--5 {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+/* =====================================================================
+   Tarjetas
+   ===================================================================== */
+.dash-card {
+  background: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius);
+  padding: 16px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.dash-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.dash-card__title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.dash-card__subtitle {
+  font-size: 0.8rem;
+  color: var(--dash-muted);
+  margin: 2px 0 0;
+}
+
+.dash-card__body {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Al refrescar se conserva lo anterior atenuado (sin saltos de layout) */
+.is-refreshing {
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+/* =====================================================================
+   KPI
+   ===================================================================== */
+.stat-tile {
+  background: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius);
+  padding: 12px 14px;
+  min-width: 0;
+}
+
+.stat-tile__label {
+  font-size: 0.78rem;
+  color: var(--dash-ink-2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stat-tile__value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stat-tile__unit {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--dash-ink-2);
+  margin-left: 4px;
+}
+
+.stat-tile__sub {
+  font-size: 0.75rem;
+  color: var(--dash-muted);
+  margin-top: 2px;
+  min-height: 1.1em;
+}
+
+.delta {
+  font-weight: 600;
+  color: var(--dash-ink-2);
+  white-space: nowrap;
+}
+
+@media (min-width: 1400px) {
+  .stat-tile__value {
+    font-size: 1.85rem;
+  }
+}
+
+/* =====================================================================
+   Estado (punto + texto, nunca solo color)
+   ===================================================================== */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--status-idle);
+  flex: none;
+}
+
+.status--on .status__dot {
+  background: var(--status-good);
+  box-shadow: 0 0 0 3px rgba(12, 163, 12, 0.18);
+}
+
+.status--on {
+  color: var(--status-good-ink);
+}
+
+.status--off {
+  color: var(--dash-ink-2);
+}
+
+.warn-text {
+  color: var(--status-warning-ink);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* =====================================================================
+   Tablas
+   ===================================================================== */
+.dash-table {
+  width: 100%;
+  font-size: 0.875rem;
+  border-collapse: collapse;
+}
+
+.dash-table th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--dash-ink-2);
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--viz-grid);
+  white-space: nowrap;
+}
+
+/* Nombres de sector: hasta dos líneas antes de forzar scroll horizontal */
+.dash-table td:first-child {
+  min-width: 110px;
+  max-width: 190px;
+}
+
+.dash-table td {
+  padding: 8px;
+  border-bottom: 1px solid var(--viz-grid);
+  vertical-align: middle;
+}
+
+.dash-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.dash-table tbody tr {
+  cursor: pointer;
+}
+
+.dash-table tbody tr:hover {
+  background: #f6f8fb;
+}
+
+.dash-table tbody tr.is-selected {
+  background: #eef4fc;
+  box-shadow: inset 3px 0 0 var(--viz-series-1);
+}
+
+.dash-table tfoot td {
+  font-weight: 700;
+  border-bottom: none;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+/* Barra dentro de la tabla (participación) */
+.inline-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+}
+
+.inline-bar__track {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: #f0efec;
+  overflow: hidden;
+}
+
+.inline-bar__fill {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--viz-series-1);
+}
+
+/* =====================================================================
+   Filtros
+   ===================================================================== */
+.filter-bar {
+  background: var(--dash-page);
+  padding: 10px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: flex-end;
+}
+
+/* En escritorio los filtros quedan fijos mientras se recorre el historial */
+@media (min-width: 992px) {
+  .filter-bar {
+    position: sticky;
+    top: 0;
+    z-index: 1001; /* por encima de los controles de Leaflet */
+  }
+}
+
+.filter-bar label {
+  font-size: 0.75rem;
+  color: var(--dash-ink-2);
+  display: block;
+  margin-bottom: 2px;
+}
+
+.filter-bar .form-select {
+  min-width: 140px;
+}
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--dash-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.segmented button {
+  border: none;
+  background: transparent;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  color: var(--dash-ink-2);
+}
+
+.segmented button[aria-pressed="true"] {
+  background: var(--viz-series-1);
+  color: #fff;
+}
+
+/* =====================================================================
+   Gráfico diario
+   ===================================================================== */
+.chart {
+  position: relative;
+  width: 100%;
+}
+
+.chart svg {
+  display: block;
+  overflow: visible;
+}
+
+.chart__tick {
+  font-size: 11px;
+  fill: var(--dash-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart__tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: #fff;
+  border: 1px solid var(--dash-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  padding: 8px 10px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  transform: translate(-50%, calc(-100% - 10px));
+  z-index: 2;
+}
+
+.chart__tooltip strong {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.chart-table summary {
+  font-size: 0.8rem;
+  color: var(--dash-accent);
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+/* =====================================================================
+   Mapa
+   ===================================================================== */
+.map-frame {
+  height: 360px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--dash-border);
+}
+
+@media (min-width: 992px) {
+  .map-frame {
+    height: 100%;
+    min-height: 460px;
+  }
+}
+
+.map-legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: var(--dash-ink-2);
+}
+
+.map-legend span::before {
+  content: "";
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  margin-right: 6px;
+  vertical-align: -2px;
+  background: var(--swatch);
+  border: 2px solid var(--swatch-border);
+}
+
+/* =====================================================================
+   Alertas / observaciones
+   ===================================================================== */
+.insight {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 0.85rem;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fff7e0;
+  color: #5c4100;
+  margin-top: 12px;
+}
+
+.insight i {
+  color: var(--status-warning-ink);
+}
+
+/* Teléfonos: tablas más compactas, el nombre del sector puede usar dos líneas */
+@media (max-width: 575.98px) {
+  .dash-card {
+    padding: 12px;
+  }
+  .dash-table td,
+  .dash-table th {
+    padding: 6px 4px;
+  }
+  .dash-table td:first-child {
+    min-width: 88px;
+  }
+}

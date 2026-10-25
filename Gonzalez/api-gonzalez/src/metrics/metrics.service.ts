@@ -14,16 +14,59 @@ export class SsrGonzalezService {
     private repo: Repository<Telemetria>,
   ) {}
 
+  /**
+   * Convierte una fecha "YYYY-MM-DD" en un Date que representa
+   * la medianoche en America/Santiago (respeta DST automáticamente).
+   *
+   * Ejemplo: '2026-10-15' → 2026-10-15T03:00:00.000Z  (UTC-3, verano)
+   */
+  private localMidnight(dateStr: string): Date {
+    const [y, m, d] = dateStr.split('-').map(Number);
+
+    // Usamos mediodía UTC como referencia: en esa fecha siempre cae en
+    // el mismo día local Santiago, sin riesgo de cruzar la medianoche.
+    const noonUTC = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+
+    // Obtener el offset del timezone en ese instante vía formatToParts
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Santiago',
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: false,
+      timeZoneName: 'shortOffset',
+    }).formatToParts(noonUTC);
+
+    const offsetStr =
+      parts.find((p) => p.type === 'timeZoneName')?.value ?? 'GMT+0';
+
+    // offsetStr es 'GMT-3', 'GMT-4', etc.
+    const match = offsetStr.match(/GMT([+-])(\d+)(?::(\d+))?/);
+    const sign = match?.[1] === '+' ? 1 : -1;
+    const hours = parseInt(match?.[2] ?? '0', 10);
+    const minutes = parseInt(match?.[3] ?? '0', 10);
+    const offsetMs = sign * (hours * 60 + minutes) * 60 * 1000;
+
+    // Medianoche Santiago en UTC = 00:00:00 local - offset
+    return new Date(Date.UTC(y, m - 1, d, 0, 0, 0) - offsetMs);
+  }
+
   private normalizeDateRange(
     dto: DateRangeDto,
   ): { start: Date; end: Date } | null {
     if (!dto.start || !dto.end) return null;
-    const startDate = new Date(`${dto.start}T00:00:00Z`);
-    const nextDay = new Date(dto.end);
-    nextDay.setDate(nextDay.getDate() + 1);
-    const endDate = new Date(`${nextDay.toISOString().slice(0, 10)}T00:00:00Z`);
+
+    const startDate = this.localMidnight(dto.start);
+
+    // El fin es medianoche del día SIGUIENTE al end pedido
+    const [ey, em, ed] = dto.end.split('-').map(Number);
+    const nextDayStr = new Date(Date.UTC(ey, em - 1, ed + 1))
+      .toISOString()
+      .slice(0, 10);
+    const endDate = this.localMidnight(nextDayStr);
+
     return { start: startDate, end: endDate };
   }
+
 
   async getSnapshot() {
     try {

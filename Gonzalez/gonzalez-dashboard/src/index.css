@@ -134,3 +134,9 @@ body {
     display: flex !important;
   }
 }
+
+@keyframes graph-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

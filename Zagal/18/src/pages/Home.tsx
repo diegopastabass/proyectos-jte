@@ -1,293 +1,385 @@
+import { useCallback, useMemo, useState } from "react";
 import Navbar from "../components/Navbar";
-import "../index.css";
-import Card, { CardBody } from "../components/Card";
+import Card from "../components/Card";
+import StatTile, { Delta } from "../components/StatTile";
 import SectorTable from "../components/SectorTable";
-import { useEffect, useState } from "react";
-import Loading from "./Loading";
-import Heatmap from "../components/RiegoHeatMap";
 import ParcelaMapa from "../components/ParcelaMapa";
-import rawGeoData from "../assets/zagal.json";
-import type { FeatureCollection, Point, Polygon } from "geojson";
-import "bootstrap/dist/css/bootstrap.min.css";
+import DailyChart, { type DailyMetric } from "../components/DailyChart";
+import HeatMap from "../components/RiegoHeatMap";
+import SectorSummaryTable, { CAUDAL_ALERT } from "../components/SectorSummaryTable";
 import ExportHistorial from "../components/ExportHistorial";
+import Loading from "./Loading";
+import lgJte from "../assets/logoJte.png";
+import { MIN_MONTH, SECTOR_IDS } from "../config";
+import { useLiveData } from "../hooks/useLiveData";
+import { useSummaryMonths } from "../hooks/useSummaryMonths";
+import {
+  addMonths,
+  daysInMonth,
+  monthEnd,
+  monthLabel,
+  monthOf,
+  monthStart,
+  MONTH_NAMES,
+  todayChile,
+} from "../lib/dates";
+import { formatDelta, formatDuration, formatHours, formatNumber } from "../lib/format";
+import {
+  ALL_SECTORS,
+  comparisonRange,
+  dailySeries,
+  filterRows,
+  lastIrrigationBySector,
+  ratioDelta,
+  sectorSummaries,
+  staleSectors,
+  totals,
+} from "../lib/metrics";
+import { SECTORS, sectorLabel } from "../lib/sectors";
 
-interface IrrigationInterval {
-  mt_name: string;
-  is_active: number;
-  tiempo_riego_segundos: number;
-  totalizador: number;
-}
-
-interface Metric {
-  caudal: number;
-  totalizador: number;
+function Spinner() {
+  return (
+    <div className="d-flex justify-content-center align-items-center py-5 text-muted">
+      <div className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+      Cargando…
+    </div>
+  );
 }
 
 function Home() {
-  const [loading, setLoading] = useState(true);
-  const [irrigationIntervals, setIrrigationIntervals] = useState<
-    IrrigationInterval[]
-  >([]);
-  const [metric, setMetrics] = useState<Metric | null>(null);
-  const [lastUpdate, setLastUpdate] = useState<string>("");
+  const today = todayChile();
+  const currentMonth = monthOf(today);
 
-  const parcelaMap: { [key: string]: string } = {
-    "SECTOR 1": "Sector 1",
-    "SECTOR 2": "Sector 2",
-    "SECTOR 3": "Sector 3",
-    "SECTOR 4": "Sector 4",
-    "SECTOR 5": "Sector 5",
-  };
+  const { data: live, error: liveError, refreshing } = useLiveData();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [metricRes, intervalRes, updateRes] = await Promise.all([
-          fetch("https://app.jteanalytics.cl/zagal/18/metrics"),
-          fetch("https://app.jteanalytics.cl/zagal/18/interval"),
-          fetch("https://app.jteanalytics.cl/zagal/18/update"),
-        ]);
+  const [month, setMonth] = useState(currentMonth);
+  const [sector, setSector] = useState(ALL_SECTORS);
+  const [chartMetric, setChartMetric] = useState<DailyMetric>("hours");
 
-        setMetrics(await metricRes.json());
+  const prevMonth = addMonths(month, -1);
+  // Mes elegido + su anterior (comparación) + los 3 últimos meses (último riego por sector)
+  const months = [month, prevMonth, currentMonth, addMonths(currentMonth, -1), addMonths(currentMonth, -2)].filter(
+    (m) => m >= MIN_MONTH,
+  );
+  const { data: summary, error: summaryError } = useSummaryMonths(months);
 
-        setIrrigationIntervals(await intervalRes.json());
-        setLastUpdate(await updateRes.json());
-      } catch (error) {
-        console.error("Error al cargar datos:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const toggleSector = useCallback(
+    (id: string) => setSector((s) => (s === id ? ALL_SECTORS : id)),
+    [],
+  );
 
-    fetchData();
-    const intervalId = setInterval(fetchData, 120000);
-    return () => clearInterval(intervalId);
-  }, []);
+  // ---------------- En vivo ----------------
+  const intervals = useMemo(() => live?.intervals ?? [], [live]);
+  const activeSectors = intervals.filter((i) => i.is_active === 1);
+  const todayTotals = totals(filterRows(summary[currentMonth] ?? [], ALL_SECTORS, today, today));
+  const sectorsToday = new Set(
+    filterRows(summary[currentMonth] ?? [], ALL_SECTORS, today, today)
+      .filter((r) => r.value >= 60)
+      .map((r) => r.mt_name),
+  ).size;
 
-  const parcelas = Array.from(new Set(Object.keys(parcelaMap)));
-  const [selectedParcela, setSelectedParcela] = useState(parcelas[0]);
+  const recentRows = [0, -1, -2].flatMap((d) => summary[addMonths(currentMonth, d)] ?? []);
+  const lastIrrigation = lastIrrigationBySector(recentRows);
+  activeSectors.forEach((i) => (lastIrrigation[i.mt_name] = today));
+  const stale = staleSectors(SECTOR_IDS, lastIrrigation, today);
 
-  const handleParcelaChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedParcela(event.target.value);
-  };
+  // ---------------- Historial ----------------
+  const isCurrent = month === currentMonth;
+  const lastDay = isCurrent ? today : monthEnd(month);
+  const monthLoaded = month in summary;
+  const allMonthRows = filterRows(summary[month] ?? [], ALL_SECTORS, monthStart(month), lastDay);
+  const monthRows = sector === ALL_SECTORS ? allMonthRows : allMonthRows.filter((r) => r.mt_name === sector);
 
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const cmp = comparisonRange(month, prevMonth, lastDay);
+  const hasPrev = prevMonth >= MIN_MONTH;
+  const allPrevRows = filterRows(summary[prevMonth] ?? [], ALL_SECTORS, cmp.from, cmp.to);
+  const prevRows = sector === ALL_SECTORS ? allPrevRows : allPrevRows.filter((r) => r.mt_name === sector);
 
-  const MIN_YEAR = 2025;
-  const MIN_MONTH = 9;
+  const cur = totals(monthRows);
+  const prev = totals(prevRows);
+  const comparisonLabel = !hasPrev
+    ? "del mes anterior"
+    : isCurrent
+      ? `vs. 1–${Number(cmp.to.slice(8, 10))} de ${MONTH_NAMES[Number(prevMonth.slice(5, 7)) - 1].toLowerCase()}`
+      : `vs. ${monthLabel(prevMonth).toLowerCase()}`;
+  const delta = (a: number, b: number) => (hasPrev && prevMonth in summary ? ratioDelta(a, b) : null);
 
-  const handleMonthChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const newMonth = Number(event.target.value);
+  const points = dailySeries(monthRows, month, lastDay);
+  const bySector = sectorSummaries(SECTOR_IDS, allMonthRows, allPrevRows);
+  const caudalAlerts = bySector.filter((r) => r.caudalDelta !== null && Math.abs(r.caudalDelta) >= CAUDAL_ALERT);
+  const scopeLabel = sector === ALL_SECTORS ? "Toda la parcela" : sectorLabel(sector);
+  const elapsedDays = isCurrent ? Number(today.slice(8, 10)) : daysInMonth(month);
 
-    if (selectedYear === MIN_YEAR && newMonth < MIN_MONTH) return;
-    setSelectedMonth(newMonth);
-  };
+  const monthOptions: string[] = [];
+  for (let m = currentMonth; m >= MIN_MONTH; m = addMonths(m, -1)) monthOptions.push(m);
 
-  const handleYearChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const newYear = Number(event.target.value);
-
-    if (newYear === MIN_YEAR && selectedMonth < MIN_MONTH) {
-      setSelectedMonth(MIN_MONTH);
-    }
-    setSelectedYear(newYear);
-  };
-
-  if (loading) return <Loading />;
+  if (!live && !liveError) return <Loading />;
 
   return (
-    <div className="container-fluid py-3 d-flex flex-column align-items-center">
-      {/* Navbar */}
-      <Navbar text={lastUpdate} />
+    <div className="dash">
+      <Navbar lastUpdate={live?.lastUpdate} refreshing={refreshing} />
 
-      {/* Tarjetas y Tabla */}
-      <div
-        className="d-flex flex-column flex-lg-row flex-wrap justify-content-center align-items-stretch gap-4 mt-4"
-        style={{ maxWidth: "1500px", width: "100%" }}
-      >
-        {/* Tabla de sectores */}
-        <div className="w-100 w-lg-50">
-          <Card>
-            <CardBody title="Sectores Activos" />
-            <SectorTable data={irrigationIntervals} />
-            <p
-              className="
-        text-body-primary mb-1 me-2 fw-bold 
-        d-flex flex-column 
-        w-50 w-lg-25 flex-shrink-0 flex-grow-0
-      "
-            >
-              <span
-                className={`
-          p-1 border rounded-1 mb-1 
-          ${
-            (metric?.caudal ?? 0) > 0
-              ? "border-success"
-              : "border-secondary-subtle"
-          }
-        `}
-              >
-                Caudal: {Number(metric?.caudal).toFixed(1) ?? 0} l/s
-              </span>
-
-              <span className="p-1 border border-secondary-subtle rounded-1">
-                Totalizador: {Number(metric?.totalizador).toFixed(1) ?? 0} m³
-              </span>
-            </p>
-          </Card>
+      {liveError && (
+        <div className="alert alert-warning mt-3 mb-0 py-2 small" role="status">
+          <i className="bi bi-wifi-off me-2" aria-hidden="true" />
+          {liveError}.{" "}
+          {live
+            ? `Se muestran los últimos datos guardados (${new Date(live.fetchedAt).toLocaleTimeString("es-CL", { timeStyle: "short" })}).`
+            : "Se reintentará automáticamente."}
         </div>
+      )}
 
-        <div className="w-100 w-lg-50">
-          <Card>
-            <CardBody title="Sectores de Riego" />
-            <ParcelaMapa
-              geoData={
-                rawGeoData as FeatureCollection<
-                  Polygon | Point,
-                  { name: string }
-                >
-              }
-              irrigationIntervals={irrigationIntervals}
-            />
-          </Card>
-        </div>
-
-        <div className="w-100 w-lg-25">
-          <Card>
-            <CardBody title="Historial de Riego" />
-
-            {/* Selector de sector */}
-            <div className="mb-3 mx-3">
-              <label htmlFor="parcela-select" className="form-label">
-                Seleccionar Parcela:
-              </label>
-              <select
-                id="parcela-select"
-                className="form-select"
-                value={selectedParcela}
-                onChange={handleParcelaChange}
-              >
-                {Object.entries(parcelaMap).map(([key, label]) => (
-                  <option key={key} value={key}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Selector de mes */}
-            <div className="mb-3 mx-3">
-              <label htmlFor="month-select" className="form-label">
-                Seleccionar Mes:
-              </label>
-              <select
-                id="month-select"
-                className="form-select"
-                value={selectedMonth}
-                onChange={handleMonthChange}
-              >
-                {[
-                  "Enero",
-                  "Febrero",
-                  "Marzo",
-                  "Abril",
-                  "Mayo",
-                  "Junio",
-                  "Julio",
-                  "Agosto",
-                  "Septiembre",
-                  "Octubre",
-                  "Noviembre",
-                  "Diciembre",
-                ].map((mes, index) => (
-                  <option
-                    key={index}
-                    value={index + 1}
-                    disabled={
-                      selectedYear === MIN_YEAR && index + 1 < MIN_MONTH
-                    }
-                  >
-                    {mes}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Selector de año */}
-            <div className="mb-3 mx-3">
-              <label htmlFor="year-select" className="form-label">
-                Seleccionar Año:
-              </label>
-              <select
-                id="year-select"
-                className="form-select"
-                value={selectedYear}
-                onChange={handleYearChange}
-              >
-                {Array.from(
-                  { length: new Date().getFullYear() - MIN_YEAR + 1 },
-                  (_, i) => MIN_YEAR + i
-                ).map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Mostrar mes y año seleccionados */}
-            <p className="text-end text-body-secondary mb-2 me-3">
-              {
-                [
-                  "Enero",
-                  "Febrero",
-                  "Marzo",
-                  "Abril",
-                  "Mayo",
-                  "Junio",
-                  "Julio",
-                  "Agosto",
-                  "Septiembre",
-                  "Octubre",
-                  "Noviembre",
-                  "Diciembre",
-                ][selectedMonth - 1]
-              }{" "}
-              - {selectedYear}
-            </p>
-
-            {/* Heatmap */}
-            <Heatmap
-              sector={selectedParcela}
-              month={selectedMonth}
-              year={selectedYear}
-            />
-          </Card>
-        </div>
-
-        <div className="w-100 w-lg-25">
-          <Card>
-            <CardBody title="Exportar Historial de Riego" />
-            <ExportHistorial />
-          </Card>
-        </div>
+      {/* ======================= EN VIVO ======================= */}
+      <div className="dash-section-title">
+        <h2>En vivo</h2>
+        <small>Se actualiza cada 2 minutos</small>
       </div>
 
-      {/* Footer */}
-      <footer
-        className="d-flex flex-wrap justify-content-between align-items-center py-3 px-4 border-top mt-4"
-        style={{ maxWidth: "1500px", width: "100%" }}
-      >
-        <p className="mb-2 mb-md-0 text-body-secondary">
-          &copy; 2025 JTE Analytics.
-        </p>
-        <img
-          src="/src/assets/logoJte.png"
-          alt="logo"
-          width={40}
-          height={24}
-          className="ms-0 ms-md-auto"
+      <div className="kpi-row kpi-row--5">
+        <StatTile
+          label="Caudal actual"
+          icon="bi-droplet-half"
+          value={live?.metric ? formatNumber(live.metric.caudal, 1) : "—"}
+          unit="l/s"
+          sub={(live?.metric?.caudal ?? 0) > 0 ? "Con flujo" : "Sin flujo"}
         />
+        <StatTile
+          label="Sectores regando"
+          icon="bi-water"
+          value={`${activeSectors.length} / ${SECTORS.length}`}
+          sub={
+            activeSectors.length
+              ? activeSectors.map((i) => sectorLabel(i.mt_name)).join(", ")
+              : "Ningún sector activo"
+          }
+        />
+        <StatTile
+          label="Riego de hoy"
+          icon="bi-clock-history"
+          value={formatDuration(todayTotals.seconds)}
+          sub={sectorsToday ? `Suma de ${sectorsToday} ${sectorsToday === 1 ? "sector" : "sectores"}` : "Sin riego registrado hoy"}
+        />
+        <StatTile
+          label="Volumen de hoy"
+          icon="bi-moisture"
+          value={todayTotals.volumeMissing ? "—" : formatNumber(todayTotals.volume, 1)}
+          unit="m³"
+          sub={todayTotals.volumeMissing ? "Sin datos del totalizador" : "Suma de todos los sectores"}
+        />
+        <StatTile
+          label="Totalizador"
+          icon="bi-speedometer2"
+          value={live?.metric ? formatNumber(live.metric.totalizador, 1) : "—"}
+          unit="m³"
+          sub="Lectura acumulada del medidor"
+          className="d-none d-md-block"
+        />
+      </div>
+
+      <div className="dash-grid dash-grid--live mt-3">
+        <Card title="Mapa de sectores" subtitle="Haz clic en un sector para ver su historial">
+          <ParcelaMapa intervals={intervals} selected={sector} onSelect={toggleSector} />
+        </Card>
+        <Card title="Estado de sectores" subtitle="Riego en curso y último riego registrado">
+          <SectorTable
+            sectors={SECTORS}
+            intervals={intervals}
+            lastIrrigation={lastIrrigation}
+            stale={stale}
+            today={today}
+            selected={sector}
+            onSelect={toggleSector}
+          />
+          {stale.size > 0 && (
+            <div className="insight" role="note">
+              <i className="bi bi-exclamation-triangle-fill" aria-hidden="true" />
+              <span>
+                {[...stale].map(sectorLabel).join(", ")} {stale.size === 1 ? "lleva" : "llevan"} 7 días o más sin
+                riego, mientras otros sectores sí han regado.
+              </span>
+            </div>
+          )}
+        </Card>
+      </div>
+
+      {/* ======================= HISTORIAL ======================= */}
+      <div className="dash-section-title">
+        <h2>Historial de riego</h2>
+        <small>
+          {monthLabel(month)} · {scopeLabel}
+        </small>
+      </div>
+
+      <div className="filter-bar" role="group" aria-label="Filtros del historial">
+        <div>
+          <label htmlFor="month-select">Mes</label>
+          <div className="input-group input-group-sm">
+            <button
+              className="btn btn-outline-secondary"
+              aria-label="Mes anterior"
+              disabled={prevMonth < MIN_MONTH}
+              onClick={() => setMonth(prevMonth)}
+            >
+              <i className="bi bi-chevron-left" aria-hidden="true" />
+            </button>
+            <select
+              id="month-select"
+              className="form-select form-select-sm"
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+            >
+              {monthOptions.map((m) => (
+                <option key={m} value={m}>
+                  {monthLabel(m)}
+                </option>
+              ))}
+            </select>
+            <button
+              className="btn btn-outline-secondary"
+              aria-label="Mes siguiente"
+              disabled={isCurrent}
+              onClick={() => setMonth(addMonths(month, 1))}
+            >
+              <i className="bi bi-chevron-right" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+        <div>
+          <label htmlFor="sector-select">Sector</label>
+          <select
+            id="sector-select"
+            className="form-select form-select-sm"
+            value={sector}
+            onChange={(e) => setSector(e.target.value)}
+          >
+            <option value={ALL_SECTORS}>Toda la parcela</option>
+            {SECTORS.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        {summaryError && (
+          <small className="text-danger align-self-center">
+            <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
+            {summaryError}
+          </small>
+        )}
+      </div>
+
+      <div className="kpi-row kpi-row--4">
+        <StatTile
+          label={isCurrent ? "Horas de riego (mes a la fecha)" : "Horas de riego"}
+          hint={sector === ALL_SECTORS ? "Suma de las horas de todos los sectores: puede superar 24 h por día" : undefined}
+          icon="bi-clock"
+          value={monthLoaded ? formatHours(cur.seconds) : "…"}
+          unit="h"
+          sub={monthLoaded && <Delta ratio={delta(cur.seconds, prev.seconds)} label={comparisonLabel} />}
+        />
+        <StatTile
+          label="Volumen aplicado"
+          icon="bi-moisture"
+          value={monthLoaded ? (cur.volumeMissing ? "—" : formatNumber(cur.volume, 0)) : "…"}
+          unit="m³"
+          sub={
+            monthLoaded &&
+            (cur.volumeMissing ? (
+              "Sin datos del totalizador"
+            ) : (
+              <Delta ratio={delta(cur.volume, prev.volume)} label={comparisonLabel} />
+            ))
+          }
+        />
+        <StatTile
+          label="Días con riego"
+          icon="bi-calendar-check"
+          value={monthLoaded ? cur.irrigationDays : "…"}
+          unit={`de ${elapsedDays}`}
+          sub={
+            monthLoaded &&
+            (cur.irrigationDays > 0
+              ? `Promedio ${formatDuration(cur.seconds / cur.irrigationDays)} por día regado`
+              : "Sin riego en el periodo")
+          }
+        />
+        <StatTile
+          label="Caudal promedio en riego"
+          icon="bi-droplet"
+          value={monthLoaded && cur.avgCaudal !== null ? formatNumber(cur.avgCaudal, 1) : monthLoaded ? "—" : "…"}
+          unit="l/s"
+          sub={
+            monthLoaded &&
+            cur.avgCaudal !== null && (
+              <Delta
+                ratio={prev.avgCaudal ? ratioDelta(cur.avgCaudal, prev.avgCaudal) : null}
+                label={comparisonLabel}
+              />
+            )
+          }
+        />
+      </div>
+
+      <div className="dash-grid dash-grid--history mt-3">
+        <Card
+          title="Riego diario"
+          subtitle={`${scopeLabel} · ${chartMetric === "hours" ? "horas" : "m³"} por día`}
+          actions={
+            <div className="segmented" role="group" aria-label="Unidad del gráfico">
+              <button aria-pressed={chartMetric === "hours"} onClick={() => setChartMetric("hours")}>
+                Horas
+              </button>
+              <button aria-pressed={chartMetric === "volume"} onClick={() => setChartMetric("volume")}>
+                m³
+              </button>
+            </div>
+          }
+        >
+          {monthLoaded ? (
+            <DailyChart points={points} metric={chartMetric} totalDays={daysInMonth(month)} />
+          ) : (
+            <Spinner />
+          )}
+        </Card>
+
+        <Card title="Calendario de riego" subtitle={`${scopeLabel} · tiempo diario`}>
+          {monthLoaded ? <HeatMap points={points} month={month} scopeLabel={scopeLabel} /> : <Spinner />}
+        </Card>
+
+        <Card title="Resumen por sector" subtitle={`${monthLabel(month)} · haz clic en una fila para filtrar`}>
+          {monthLoaded ? (
+            <>
+              <SectorSummaryTable
+                rows={bySector}
+                total={totals(allMonthRows)}
+                selected={sector}
+                onSelect={toggleSector}
+                comparisonLabel={comparisonLabel}
+              />
+              {caudalAlerts.length > 0 && (
+                <div className="insight" role="note">
+                  <i className="bi bi-exclamation-triangle-fill" aria-hidden="true" />
+                  <span>
+                    El caudal promedio de {caudalAlerts.map((r) => `${sectorLabel(r.id)} (${formatDelta(r.caudalDelta!)})`).join(", ")}{" "}
+                    cambió {Math.round(CAUDAL_ALERT * 100)}% o más {comparisonLabel}. Puede indicar filtros sucios,
+                    emisores obstruidos o fugas.
+                  </span>
+                </div>
+              )}
+            </>
+          ) : (
+            <Spinner />
+          )}
+        </Card>
+
+        <Card title="Exportar historial" subtitle="Descarga en Excel por rango de meses">
+          <ExportHistorial />
+        </Card>
+      </div>
+
+      <footer className="d-flex flex-wrap justify-content-between align-items-center pt-3 mt-4 border-top">
+        <p className="mb-0 text-body-secondary small">&copy; {today.slice(0, 4)} JTE Analytics.</p>
+        <img src={lgJte} alt="JTE Analytics" width={40} height={24} />
       </footer>
     </div>
   );

@@ -100,10 +100,10 @@ function App() {
       day: "2-digit",
     });
 
-    const now = new Date();
-    const end = formatter.format(now);
-
     const fetchData = async () => {
+      // Se recalcula en cada ciclo: si el dashboard queda abierto pasada la
+      // medianoche, la ventana de 15 días debe avanzar con el día actual.
+      const end = formatter.format(new Date());
       try {
         const [
           snapshotRes,

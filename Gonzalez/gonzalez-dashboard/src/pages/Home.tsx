@@ -6,9 +6,7 @@ import State, { StateBody } from "../components/States";
 import "../index.css";
 import Loading from "./Loading";
 import ToggleCardButton from "../components/ToggelCardButton";
-import DropdownCard from "../components/DropdownCard";
-import DropdownCardv2 from "../components/DropDownCardv2";
-import DropdownCardv3 from "../components/DropDownCardv3";
+import GraphCard from "../components/GraphCard";
 import ScadaDiagram from "../components/ScadaDiagram";
 import ExportModal from "../components/ExportModal";
 import Error from "./Error";
@@ -87,22 +85,26 @@ function App() {
 
     const fetchData = async () => {
       try {
-        const [snapshotRes, nivelRes, nivel2Res, caudalRes] = await Promise.all(
-          [
-            fetch("https://app.jteanalytics.cl/gonzalez/snapshot"),
-            fetch(`https://app.jteanalytics.cl/gonzalez/nivel`),
-            fetch(`https://app.jteanalytics.cl/gonzalez/nivel2`),
-            fetch(`https://app.jteanalytics.cl/gonzalez/caudal`),
-          ],
+        const snapshotRes = await fetch(
+          "https://app.jteanalytics.cl/gonzalez/snapshot",
         );
-
         const snapshotData: Snapshot = await snapshotRes.json();
         setData(snapshotData);
-        setTotalizadorData(await fetchWithCache("totalizador", end));
-        setHorometroData(await fetchWithCache("horometro", end));
-        setNivelData(await nivelRes.json());
-        setNivel2Data(await nivel2Res.json());
-        setCaudalData(await caudalRes.json());
+
+        const [nivelData, nivel2Data, caudalData, totalizadorData, horometroData] =
+          await Promise.all([
+            fetchWithCache("nivel", end),
+            fetchWithCache("nivel2", end),
+            fetchWithCache("caudal", end),
+            fetchWithCache("totalizador", end),
+            fetchWithCache("horometro", end),
+          ]);
+
+        setNivelData(nivelData);
+        setNivel2Data(nivel2Data);
+        setCaudalData(caudalData);
+        setTotalizadorData(totalizadorData);
+        setHorometroData(horometroData);
       } catch (error) {
         console.error("Error al cargar datos:", error);
       } finally {
@@ -143,7 +145,7 @@ function App() {
   // =====================
   // VISTA MÓVIL
   // =====================
-  const VistaMovil = () => (
+  const renderVistaMovil = () => (
     <>
       {/* Estanque 1 */}
       <div className="col-12 col-lg-4 mb-1">
@@ -166,14 +168,16 @@ function App() {
             onToggle={() => setIsOpenEstanque(!isOpenEstanque)}
           />
         </Card>
-        <DropdownCard
-          className="mb-4 d-below-1500-none d-1500-block"
+        <GraphCard
+          className="mb-4"
           isOpen={isOpenEstanque}
           title="Estanque Viejo 75 m³"
           chartLabel="Nivel del Estanque (m)"
-          data={nivelChartData}
+          initialData={nivelChartData}
+          type="nivel"
           nivelMax={3}
           nivelAlarma={1}
+          fetchEndpoint="https://app.jteanalytics.cl/gonzalez/nivel"
         />
       </div>
 
@@ -198,14 +202,16 @@ function App() {
             onToggle={() => setIsOpenEstanque2(!isOpenEstanque2)}
           />
         </Card>
-        <DropdownCard
-          className="mb-4 d-below-1500-none d-1500-block"
+        <GraphCard
+          className="mb-4"
           isOpen={isOpenEstanque2}
           title="Estanque Nuevo"
           chartLabel="Nivel del Estanque (m)"
-          data={nivel2ChartData}
+          initialData={nivel2ChartData}
+          type="nivel"
           nivelMax={3}
           nivelAlarma={1}
+          fetchEndpoint="https://app.jteanalytics.cl/gonzalez/nivel2"
         />
       </div>
 
@@ -242,25 +248,29 @@ function App() {
             onToggle={() => setIsOpenBomba(!isOpenBomba)}
           />
         </Card>
-        <DropdownCard
+        <GraphCard
           isOpen={isOpenBomba}
           title="Caudal"
           chartLabel="Caudal de Impulsión (L/s)"
-          data={caudalChartData}
+          initialData={caudalChartData}
+          type="caudal"
           nivelMax={20}
+          fetchEndpoint="https://app.jteanalytics.cl/gonzalez/caudal"
         />
-        <DropdownCardv2
+        <GraphCard
           isOpen={isOpenBomba}
           title="Horómetro Diario"
           chartLabel="Horómetro"
-          data={horometroChartData}
+          initialData={horometroChartData}
+          type="horometro"
         />
-        <DropdownCardv3
+        <GraphCard
           isOpen={isOpenBomba}
           title="Totalizador Diario"
           chartLabel="Totalizador en m³"
-          data={totalizadorChartData}
-        />{" "}
+          initialData={totalizadorChartData}
+          type="totalizador"
+        />
       </div>
 
       {/* Panel de Estados */}
@@ -278,7 +288,7 @@ function App() {
   // =====================
   // VISTA DESKTOP
   // =====================
-  const VistaDesktop = () => (
+  const renderVistaDesktop = () => (
     <div
       className="desktop-grid w-100"
       style={{
@@ -304,56 +314,64 @@ function App() {
 
       {/* Horómetro (0,2) */}
       <div style={{ gridColumn: "1", gridRow: "3" }}>
-        <DropdownCardv2
+        <GraphCard
           isOpen={true}
           title="Horómetro Diario"
           chartLabel="Horómetro"
-          data={horometroChartData}
+          initialData={horometroChartData}
+          type="horometro"
         />
       </div>
 
       {/* Totalizador (1,2) */}
       <div style={{ gridColumn: "2", gridRow: "3" }}>
-        <DropdownCardv3
+        <GraphCard
           isOpen={true}
           title="Totalizador Diario"
           chartLabel="Totalizador en m³"
-          data={totalizadorChartData}
+          initialData={totalizadorChartData}
+          type="totalizador"
         />
       </div>
 
       {/* Estanque 1 (2,0) */}
       <div style={{ gridColumn: "3", gridRow: "1" }}>
-        <DropdownCard
+        <GraphCard
           isOpen={true}
           title="Estanque Viejo"
           chartLabel="Nivel del Estanque (m)"
-          data={nivelChartData}
+          initialData={nivelChartData}
+          type="nivel"
           nivelMax={3}
           nivelAlarma={1}
+          fetchEndpoint="https://app.jteanalytics.cl/gonzalez/nivel"
         />
       </div>
 
       {/* Estanque 2 (2,1) */}
       <div style={{ gridColumn: "3", gridRow: "2" }}>
-        <DropdownCard
+        <GraphCard
           isOpen={true}
           title="Estanque Nuevo"
           chartLabel="Nivel del Estanque (m)"
-          data={nivel2ChartData}
+          initialData={nivel2ChartData}
+          type="nivel"
           nivelMax={3}
           nivelAlarma={1}
+          fetchEndpoint="https://app.jteanalytics.cl/gonzalez/nivel2"
         />
       </div>
 
       {/* Caudal (2,2) */}
       <div style={{ gridColumn: "3", gridRow: "3" }}>
-        <DropdownCard
+        <GraphCard
           isOpen={true}
           title="Caudal"
           chartLabel="Caudal de Impulsión (L/s)"
-          data={caudalChartData}
+          initialData={caudalChartData}
+          type="caudal"
           nivelMax={20}
+          fetchEndpoint="https://app.jteanalytics.cl/gonzalez/caudal"
         />
       </div>
     </div>
@@ -371,7 +389,7 @@ function App() {
           </Navbar>
         </div>
         <div className="flex-grow-1 w-100 d-flex flex-column align-items-center px-3">
-          {isLargeScreen ? <VistaDesktop /> : <VistaMovil />}
+          {isLargeScreen ? renderVistaDesktop() : renderVistaMovil()}
         </div>
         <footer className="mt-4 w-75 d-flex flex-wrap justify-content-between align-items-center py-3 px-4 border-top">
           <p className="text-body-secondary">&copy; 2025 JTE Analytics.</p>

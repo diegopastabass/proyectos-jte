@@ -1,0 +1,229 @@
+body {
+  background-color: #f8f9fa;
+  color: #212529;
+  --ok: #198754;
+  --warn: #e0a800;
+  --bad: #dc3545;
+  --accent: #0d6efd;
+  --track: rgba(0, 0, 0, 0.1);
+  --svg-line: #6c757d;
+  --svg-fill: #ffffff;
+}
+
+.navbar {
+  background-color: #f8f9fa !important;
+  color: #212529 !important;
+  margin-top: 1vh;
+}
+
+.navbar-brand {
+  color: #212529 !important;
+}
+
+.card {
+  background-color: #ffffff;
+  color: #212529;
+  border-color: #dee2e6;
+}
+
+/* Dark theme */
+body.dark-theme {
+  background-color: #121212;
+  color: #f8f9fa;
+  --ok: #3ddc84;
+  --warn: #ffc83d;
+  --bad: #ff6b6b;
+  --accent: #6ea8fe;
+  --track: rgba(255, 255, 255, 0.14);
+  --svg-line: #adb5bd;
+  --svg-fill: #2b2b2b;
+  /* El tema se activa por clase (no data-bs-theme): se ajustan las variables de Bootstrap usadas */
+  --bs-secondary-color: rgba(222, 226, 230, 0.75);
+  --bs-border-color: #495057;
+  color-scheme: dark;
+}
+
+body.dark-theme .navbar {
+  background-color: #222222 !important;
+  color: #f8f9fa !important;
+}
+
+body.dark-theme .navbar-brand {
+  color: #f8f9fa !important;
+}
+
+body.dark-theme .card {
+  background-color: #383838;
+  color: #f8f9fa;
+  border-color: #333333;
+}
+
+body.dark-theme .modal-content {
+  background-color: #383838;
+  color: #f8f9fa;
+}
+
+body.dark-theme .table {
+  --bs-table-bg: transparent;
+  --bs-table-color: #f8f9fa;
+  --bs-table-border-color: #4a4a4a;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+/* ---------- Componentes del panel eléctrico ---------- */
+.card.panel {
+  max-height: none;
+  height: 100%;
+}
+
+.panel-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.75;
+  margin-bottom: 0.5rem;
+}
+
+.kpi-value {
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.kpi-unit {
+  font-size: 0.9rem;
+  font-weight: 500;
+  opacity: 0.7;
+  margin-left: 4px;
+}
+
+.kpi-trend {
+  white-space: nowrap;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.kpi-trend.up-good,
+.kpi-trend.down-good {
+  color: var(--ok);
+}
+
+.kpi-trend.up-bad,
+.kpi-trend.down-bad {
+  color: var(--bad);
+}
+
+.kpi-trend.flat {
+  opacity: 0.6;
+}
+
+.sev-ok {
+  color: var(--ok);
+}
+.sev-warn {
+  color: var(--warn);
+}
+.sev-bad {
+  color: var(--bad);
+}
+
+.finding {
+  border-left: 4px solid var(--track);
+  padding: 4px 10px;
+  margin-bottom: 8px;
+}
+.finding.ok {
+  border-left-color: var(--ok);
+}
+.finding.warn {
+  border-left-color: var(--warn);
+}
+.finding.bad {
+  border-left-color: var(--bad);
+}
+
+.mini-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--track);
+  overflow: hidden;
+}
+.mini-bar > div {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease;
+}
+
+/* Mapa de calor */
+.heatmap {
+  display: grid;
+  grid-template-columns: 54px repeat(24, minmax(0, 1fr));
+  gap: 2px;
+  font-size: 0.68rem;
+}
+.heatmap .cell {
+  height: 18px;
+  border-radius: 3px;
+  background: var(--track);
+}
+.heatmap .lbl {
+  display: flex;
+  align-items: center;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+.heatmap .hlbl {
+  text-align: center;
+  opacity: 0.75;
+}
+
+/* Unifilar animado */
+@keyframes flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+.flow-line {
+  stroke-dasharray: 8 6;
+  animation: flow 0.8s linear infinite;
+}
+.rotor {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: spin 1.2s linear infinite;
+}
+.pulse {
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+.translate-transition {
+  transition: transform 0.3s ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flow-line,
+  .rotor,
+  .pulse {
+    animation: none;
+  }
+}

@@ -40,7 +40,14 @@ export const fetchWithCache = async (
   const res = await fetch(
     `https://app.jteanalytics.cl/gonzalez/${endpoint}?start=${startStr}&end=${endStr}`,
   );
-  const newData: Metric[] = await res.json();
+
+  if (!res.ok) {
+    console.warn(`fetchWithCache: respuesta no exitosa para ${endpoint} (${res.status})`);
+    return data;
+  }
+
+  const json: unknown = await res.json();
+  const newData: Metric[] = Array.isArray(json) ? json : [];
 
   const newDates = new Set(newData.map((d) => d.time.split("T")[0]));
   data = data.filter((d) => !newDates.has(d.time.split("T")[0]));
@@ -90,7 +97,17 @@ export const fetchWithCacheMulti = async <T extends Record<string, Metric[]>>(
   const res = await fetch(
     `https://app.jteanalytics.cl/gonzalez/${endpoint}?start=${startStr}&end=${endStr}`,
   );
-  const newData: Record<string, Metric[]> = await res.json();
+
+  if (!res.ok) {
+    console.warn(`fetchWithCacheMulti: respuesta no exitosa para ${endpoint} (${res.status})`);
+    return data as T;
+  }
+
+  const json: unknown = await res.json();
+  const newData: Record<string, Metric[]> =
+    json !== null && typeof json === "object" && !Array.isArray(json)
+      ? (json as Record<string, Metric[]>)
+      : {};
 
   const merged: Record<string, Metric[]> = {};
   const toCache: Record<string, Metric[]> = {};

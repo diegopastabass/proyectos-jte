@@ -9,6 +9,7 @@ import ToggleCardButton from "../components/ToggelCardButton";
 import GraphCard from "../components/GraphCard";
 import ScadaDiagram from "../components/ScadaDiagram";
 import ExportModal from "../components/ExportModal";
+import ReportsHistoryModal from "../components/ReportsHistoryModal";
 import Error from "./Error";
 import logoJte from "../assets/logoJte.png";
 
@@ -74,6 +75,7 @@ function App() {
 
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1500);
   const [isOpenExport, setIsOpenExport] = useState(false);
+  const [isOpenHistory, setIsOpenHistory] = useState(false);
 
   const [isOpenEstanque, setIsOpenEstanque] = useState(isLargeScreen);
   const [isOpenEstanque2, setIsOpenEstanque2] = useState(isLargeScreen);
@@ -412,10 +414,18 @@ function App() {
       <div className="container-fluid min-vh-100 p-0 d-flex flex-column align-items-center">
         <div className="mb-3 w-100" style={{ maxWidth: "5000px" }}>
           <Navbar text={data.snapshot.CAUDAL?.time ?? ""}>
-            <button
-              className="btn btn-outline-primary bi bi-save"
-              onClick={() => setIsOpenExport(true)}
-            ></button>
+            <div className="d-flex gap-2">
+              <button
+                className="btn btn-outline-info bi bi-clock-history"
+                title="Historial de Reportes DGA"
+                onClick={() => setIsOpenHistory(true)}
+              ></button>
+              <button
+                className="btn btn-outline-primary bi bi-save"
+                title="Exportar a Excel"
+                onClick={() => setIsOpenExport(true)}
+              ></button>
+            </div>
           </Navbar>
         </div>
         <div className="flex-grow-1 w-100 d-flex flex-column align-items-center px-3">
@@ -428,6 +438,7 @@ function App() {
       </div>
 
       <ExportModal show={isOpenExport} onClose={() => setIsOpenExport(false)} />
+      <ReportsHistoryModal show={isOpenHistory} onClose={() => setIsOpenHistory(false)} />
     </>
   );
 }

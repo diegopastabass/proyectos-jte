@@ -1,0 +1,374 @@
+/* ============================================
+   ReportsHistoryModal — Estilos dedicados
+   ============================================ */
+
+/* ---- Animaciones de transición ---- */
+@keyframes rhm-fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes rhm-slideInRight {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes rhm-slideInLeft {
+  from { opacity: 0; transform: translateX(-24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes rhm-scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.rhm-fade-in {
+  animation: rhm-fadeIn 0.3s ease-out both;
+}
+
+.rhm-slide-right {
+  animation: rhm-slideInRight 0.3s ease-out both;
+}
+
+.rhm-slide-left {
+  animation: rhm-slideInLeft 0.3s ease-out both;
+}
+
+.rhm-scale-in {
+  animation: rhm-scaleIn 0.25s ease-out both;
+}
+
+/* Stagger heatmap month cards */
+.rhm-month-card {
+  animation: rhm-fadeIn 0.35s ease-out both;
+}
+
+/* ---- Selector de vista ---- */
+.rhm-view-toggle {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.rhm-view-toggle .btn {
+  border-radius: 6px;
+  font-size: 0.82rem;
+  padding: 4px 14px;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.rhm-view-toggle .btn.active {
+  background-color: #0d6efd;
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(13, 110, 253, 0.3);
+}
+
+.rhm-view-toggle .btn:not(.active) {
+  background: transparent;
+  color: #6c757d;
+}
+
+.rhm-view-toggle .btn:not(.active):hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: #495057;
+}
+
+/* ---- Selector de año ---- */
+.rhm-year-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rhm-year-selector .btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.rhm-year-label {
+  font-size: 1.05rem;
+  font-weight: 600;
+  min-width: 52px;
+  text-align: center;
+  color: #343a40;
+}
+
+/* ---- Grilla de meses (heatmap year view) ---- */
+.rhm-months-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  padding: 16px;
+}
+
+@media (max-width: 576px) {
+  .rhm-months-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 12px;
+  }
+}
+
+/* ---- Card de cada mes ---- */
+.rhm-month-card {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  cursor: pointer;
+  background: #fff;
+}
+
+.rhm-month-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.rhm-month-card-header {
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: capitalize;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rhm-month-card-header .rhm-month-stats {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: #6c757d;
+}
+
+/* ---- Grilla del heatmap dentro de cada mes ---- */
+.rhm-heatmap-container {
+  padding: 10px 14px 14px;
+}
+
+.rhm-heatmap-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  margin-bottom: 4px;
+}
+
+.rhm-heatmap-weekday {
+  text-align: center;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #adb5bd;
+  text-transform: uppercase;
+  line-height: 1;
+  padding: 2px 0;
+}
+
+.rhm-heatmap-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.rhm-heatmap-cell {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 500;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  position: relative;
+}
+
+.rhm-heatmap-cell:not(.rhm-cell-empty):hover {
+  transform: scale(1.25);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 2;
+}
+
+/* Colores de estado */
+.rhm-cell-empty {
+  background: transparent;
+}
+
+.rhm-cell-none {
+  background: #f1f3f5;
+  color: #adb5bd;
+}
+
+.rhm-cell-success {
+  background: #40c057;
+  color: #fff;
+}
+
+.rhm-cell-error {
+  background: #fa5252;
+  color: #fff;
+}
+
+.rhm-cell-warning {
+  background: #fab005;
+  color: #fff;
+}
+
+/* ---- Leyenda ---- */
+.rhm-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  justify-content: center;
+}
+
+.rhm-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  color: #6c757d;
+}
+
+.rhm-legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* ---- Lista de reportes del mes ---- */
+.rhm-report-list-item {
+  transition: background-color 0.15s ease;
+  animation: rhm-fadeIn 0.25s ease-out both;
+}
+
+.rhm-report-list-item:hover {
+  background-color: rgba(13, 110, 253, 0.04) !important;
+}
+
+/* ---- Breadcrumb de navegación ---- */
+.rhm-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  font-size: 0.85rem;
+}
+
+.rhm-breadcrumb-link {
+  color: #0d6efd;
+  cursor: pointer;
+  font-weight: 500;
+  transition: color 0.15s ease;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+.rhm-breadcrumb-link:hover {
+  color: #0a58ca;
+  text-decoration: underline;
+}
+
+.rhm-breadcrumb-sep {
+  color: #adb5bd;
+}
+
+.rhm-breadcrumb-current {
+  color: #495057;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+/* ---- Toolbar superior ---- */
+.rhm-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
+}
+
+/* ---- Tooltip para celdas del heatmap ---- */
+.rhm-heatmap-cell[data-tooltip] {
+  position: relative;
+}
+
+.rhm-heatmap-cell[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #212529;
+  color: #fff;
+  font-size: 0.68rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 10;
+}
+
+.rhm-heatmap-cell[data-tooltip]:hover::after {
+  opacity: 1;
+}
+
+/* ---- Modal más ancho para la vista de año ---- */
+.rhm-modal-wide .modal-dialog {
+  max-width: 780px;
+}
+
+@media (max-width: 576px) {
+  .rhm-modal-wide .modal-dialog {
+    max-width: 100%;
+    margin: 8px;
+  }
+}
+
+/* ---- Badge de conteo en el header del mes ---- */
+.rhm-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.rhm-count-badge.success {
+  background: rgba(64, 192, 87, 0.15);
+  color: #2b8a3e;
+}
+
+.rhm-count-badge.error {
+  background: rgba(250, 82, 82, 0.15);
+  color: #c92a2a;
+}
+
+.rhm-count-badge.warning {
+  background: rgba(250, 176, 5, 0.15);
+  color: #e67700;
+}

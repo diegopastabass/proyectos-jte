@@ -10,9 +10,18 @@ load_dotenv()
 
 # --- Configuración desde .env ---
 API_URL = os.getenv("API_URL")
-TOKEN = os.getenv("TOKEN")
-TO = os.getenv("TO")
+TOKEN = os.getenv("API_TOKEN") or os.getenv("TOKEN")
+TO = os.getenv("API_TO") or os.getenv("TO")
 TO_ADMIN = os.getenv("API_TO_ADMIN")
+
+# Consulta a la API de niveles
+NIVEL_URL = "https://app.jteanalytics.cl/zuniga/nivel?limit=2"
+API_TIMEOUT = 20          # segundos; mayor al statement_timeout (10 s) de la API
+API_INTENTOS = 2          # reintentos dentro de un mismo ciclo
+UMBRAL_FALLOS_API = 5     # ciclos consecutivos fallidos antes de avisar al admin
+
+# Estado entre ciclos para la falla de la API
+estado_api = {"fallos": 0, "alertado": False}
 
 # Estos valores se recargarán en cada ciclo
 def get_dynamic_config():
@@ -36,40 +45,59 @@ logging.basicConfig(
 
 
 # --- Funciones ---
+class ApiError(Exception):
+    """La API no pudo entregar los niveles (timeout, HTTP 5xx, respuesta inválida)."""
+
+
 def obtener_niveles(nombre_sensor):
-    """Obtiene los dos últimos registros desde la API."""
-    url = "https://app.jteanalytics.cl/zuniga/nivel?limit=2"
+    """Obtiene los dos últimos registros desde la API.
+
+    Devuelve (nivel_actual, nivel_anterior, time_actual, time_anterior), o cuatro
+    None si la API respondió pero hay menos de 2 registros. Lanza ApiError si la
+    API no responde correctamente, para no confundirlo con "sin datos".
+    """
+    data = None
+    ultimo_error = None
+    for intento in range(1, API_INTENTOS + 1):
+        try:
+            response = requests.get(NIVEL_URL, timeout=API_TIMEOUT)
+            response.raise_for_status()
+            data = response.json()
+            break
+        except (requests.RequestException, ValueError) as e:
+            ultimo_error = e
+            logging.warning(f"Intento {intento}/{API_INTENTOS} fallido consultando la API: {e}")
+            if intento < API_INTENTOS:
+                time.sleep(2)
+
+    if data is None:
+        raise ApiError(str(ultimo_error))
+
     try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-        
         if len(data) < 2:
             logging.warning(f"No hay suficientes datos desde la API para {nombre_sensor}.")
             return None, None, None, None
-            
+
         # Ordenar por time ascendente para tener el anterior y luego el actual
         data_sorted = sorted(data, key=lambda x: x["time"])
-        
+
         registro_anterior = data_sorted[0]
         registro_actual = data_sorted[1]
-        
+
         def parse_time(t_str):
             if t_str.endswith("Z"):
                 t_str = t_str[:-1] + "+00:00"
             return datetime.fromisoformat(t_str).replace(tzinfo=None)
-            
+
         time_anterior = parse_time(registro_anterior["time"])
         time_actual = parse_time(registro_actual["time"])
-        
+
         nivel_anterior = float(registro_anterior["value"])
         nivel_actual = float(registro_actual["value"])
-        
-        return nivel_actual, nivel_anterior, time_actual, time_anterior
-        
-    except Exception as e:
-        logging.error(f"Error obteniendo niveles desde la API: {e}")
-        return None, None, None, None
+    except (KeyError, TypeError, ValueError, AttributeError) as e:
+        raise ApiError(f"Respuesta inesperada de la API: {e}")
+
+    return nivel_actual, nivel_anterior, time_actual, time_anterior
 
 
 def calcular_tiempo_vaciado(nivel_actual, nivel_anterior, time_actual, time_anterior):
@@ -116,7 +144,26 @@ def enviar_alerta_admin(mensaje: str):
         logging.error(f"❌ Error enviando mensaje a UltaMsg (Admin): {e}")
 
 def procesar_estanque(sensor, nombre_publico, nivel_alerta):
-    nivel_actual, nivel_anterior, time_actual, time_anterior = obtener_niveles(sensor)
+    try:
+        nivel_actual, nivel_anterior, time_actual, time_anterior = obtener_niveles(sensor)
+    except ApiError as e:
+        estado_api["fallos"] += 1
+        logging.error(f"Error obteniendo niveles desde la API ({estado_api['fallos']} ciclo(s) seguido(s)): {e}")
+        if estado_api["fallos"] >= UMBRAL_FALLOS_API and not estado_api["alertado"]:
+            enviar_alerta_admin(
+                f"⚠️ ALERTA API ⚠️\n"
+                f"Estanque: {nombre_publico}\n"
+                f"La API de niveles falla desde hace {estado_api['fallos']} ciclos seguidos, "
+                f"por lo que no se puede verificar el nivel ni la desconexión del equipo.\n"
+                f"Último error: {e}"
+            )
+            estado_api["alertado"] = True
+        return False
+
+    if estado_api["alertado"]:
+        enviar_alerta_admin(f"✅ La API de niveles se recuperó ({nombre_publico}).")
+    estado_api["fallos"] = 0
+    estado_api["alertado"] = False
 
     # Verificar si el equipo está desconectado (más de 30 minutos sin datos)
     if time_actual is not None:

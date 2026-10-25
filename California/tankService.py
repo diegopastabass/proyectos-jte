@@ -116,7 +116,7 @@ def procesar_estanque(endpoint_path, nombre_publico, nivel_alerta):
             mensaje = (
                 f"🚨 ALERTA NIVEL CRÍTICO 🚨\n"
                 f"Estanque: {nombre_publico}\n"
-                f"Nivel Actual: {nivel_actual:.2f} m\n"
+                f"Nivel Actual: {nivel_actual:.2f} %\n"
                 f"Tiempo Estimado de Vaciado: {tiempo_vaciado if tiempo_vaciado else 'N/A'}"
             )
             enviar_alerta(mensaje)

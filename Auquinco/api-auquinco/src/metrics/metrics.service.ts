@@ -273,6 +273,21 @@ export class SsrAuquincoService {
       }));
     }
 
+    // Con ?limit= se devuelven los N registros más recientes (orden ascendente)
+    const limit = Number(dto.limit);
+    if (dto.limit && Number.isFinite(limit) && limit > 0) {
+      const recientes = await this.repo.find({
+        where: { mt_name: 'SSR_AUQUINCO--slave.estanque' },
+        order: { mt_time_2: 'DESC' },
+        take: Math.min(Math.floor(limit), 5000),
+      });
+
+      return recientes.reverse().map((row) => ({
+        time: row.mt_time_2.toISOString(),
+        value: Number(row.mt_value),
+      }));
+    }
+
     // Ultimas 6 horas
     const start = new Date(Date.now() - 6 * 60 * 60 * 1000);
     const results = await this.repo.find({

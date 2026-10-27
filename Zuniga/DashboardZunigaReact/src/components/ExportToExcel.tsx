@@ -19,15 +19,23 @@ const EXPORT_OPTIONS = {
 };
 
 const ENDPOINT_MAP: Record<ExportDataType, string> = {
-  nivelEstanque1: "nivelestanque1",
-  nivelEstanque2: "nivelestanque2",
+  nivelEstanque1: "nivel",
+  nivelEstanque2: "nivel2",
   caudal: "caudal",
   horometro: "horometro",
   totalizador: "totalizador",
 };
 
+const todayInChile = () =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Santiago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
 function Export() {
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayInChile();
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(today);
   const [loading, setLoading] = useState(false);
@@ -46,7 +54,7 @@ function Export() {
       const endpoint = ENDPOINT_MAP[exportType];
       const sheetName = EXPORT_OPTIONS[exportType];
 
-      const apiUrl = `https://app.jteanalytics.cl/zuniga/${endpoint}?fechaInicio=${startDate}&fechaFin=${endDate}`;
+      const apiUrl = `https://app.jteanalytics.cl/zuniga/${endpoint}?start=${startDate}&end=${endDate}`;
 
       const res = await fetch(apiUrl);
 

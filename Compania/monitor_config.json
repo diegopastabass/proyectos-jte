@@ -1,0 +1,18 @@
+{
+  "sitio": "Compañía",
+  "api_base": "https://app.jteanalytics.cl/compania",
+  "estanques": [
+    {
+      "id": "estanque",
+      "nombre": "Estanque",
+      "endpoint": "/nivel",
+      "divisor": 1,
+      "unidad": "m",
+      "nivel_alerta": 3.5,
+      "nivel_rebalse": null
+    }
+  ],
+  "parametros": {
+    "REPETIR_ALERTA_MINUTOS": 30
+  }
+}

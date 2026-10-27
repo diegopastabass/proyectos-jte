@@ -472,6 +472,61 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     return `${d.getFullYear()}-${pad(d.getDate())}-${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
+  // ── Series de nivel por estanque ────────────────────────────────────
+  // Casuto se registra en centímetros; se convierte a metros igual que en el snapshot.
+  private static readonly ESTANQUES_NIVEL: Record<
+    string,
+    { mtName: string; divisor: number }
+  > = {
+    nilahue: { mtName: 'ssr_nilahue_nivel', divisor: 1 },
+    casuto: { mtName: 'CASUTO--slave.AI12', divisor: 100 },
+    bucalemu_bajo: { mtName: 'ssr_bucalemu_bajo_nivel', divisor: 1 },
+    bucalemu_alto: { mtName: 'BBAJO_NUEVO--slave.nivel_balto', divisor: 1 },
+  };
+
+  async getNivelEstanque(
+    estanque: string,
+    dto: DateRangeDto,
+  ): Promise<{ time: string; value: number }[]> {
+    const def = MetricsService.ESTANQUES_NIVEL[estanque];
+    if (!def) throw new InternalServerErrorException(`Estanque desconocido: ${estanque}`);
+
+    const { start, end, limit } = dto || {};
+    let results: Metric[];
+
+    if (start && end) {
+      // Rango por días completos (UTC): end es inclusivo, igual que en el resto de las APIs
+      const desde = new Date(start);
+      desde.setUTCHours(0, 0, 0, 0);
+      const hasta = new Date(end);
+      hasta.setUTCHours(0, 0, 0, 0);
+      hasta.setUTCDate(hasta.getUTCDate() + 1);
+
+      results = await this.metricRepository.find({
+        where: {
+          mt_name: def.mtName,
+          mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
+            start: desde,
+            end: hasta,
+          }),
+        },
+        order: { mt_time_2: 'ASC' },
+      });
+    } else {
+      results = await this.metricRepository.find({
+        where: { mt_name: def.mtName },
+        order: { mt_time_2: 'DESC' },
+        take: Math.min(limit ?? 100, 5000),
+      });
+      results.reverse();
+    }
+
+    return results.map((row) => ({
+      time: new Date(row.mt_time_2).toISOString(),
+      value: Number(row.mt_value) / def.divisor,
+    }));
+  }
+
   async getCaudal(
     dto: DateRangeDto,
   ): Promise<{ time: string; value: number }[]> {

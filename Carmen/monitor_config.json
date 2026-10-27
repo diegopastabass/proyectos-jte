@@ -1,0 +1,24 @@
+{
+  "sitio": "Carmen Bajo",
+  "api_base": "https://app.jteanalytics.cl/carmen",
+  "estanques": [
+    {
+      "id": "pozo",
+      "nombre": "Pozo",
+      "endpoint": "/nivel_bajo",
+      "divisor": 1,
+      "unidad": "m",
+      "nivel_alerta": 1.5,
+      "nivel_rebalse": 3.4
+    },
+    {
+      "id": "sentina",
+      "nombre": "Sentina",
+      "endpoint": "/nivel_sentina",
+      "divisor": 100,
+      "unidad": "m",
+      "nivel_alerta": 1,
+      "nivel_rebalse": 2.2
+    }
+  ]
+}

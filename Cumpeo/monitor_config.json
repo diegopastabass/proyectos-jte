@@ -1,0 +1,19 @@
+{
+  "sitio": "Cumpeo",
+  "api_base": "https://app.jteanalytics.cl/cumpeo",
+  "estanques": [
+    {
+      "id": "estanque",
+      "nombre": "Estanque 200 m³",
+      "endpoint": "/nivel",
+      "divisor": 1,
+      "unidad": "m",
+      "nivel_alerta": 2,
+      "nivel_rebalse": null
+    }
+  ],
+  "parametros": {
+    "ALERTAR_NIVEL_ESTABLE": true
+  },
+  "zona_horaria_api": "America/Santiago"
+}

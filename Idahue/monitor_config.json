@@ -1,0 +1,24 @@
+{
+  "sitio": "Idahue",
+  "api_base": "https://app.jteanalytics.cl/idahue",
+  "estanques": [
+    {
+      "id": "planta1",
+      "nombre": "Planta 1",
+      "endpoint": "/nivel_planta1",
+      "divisor": 100,
+      "unidad": "m",
+      "nivel_alerta": 1.5,
+      "nivel_rebalse": 5
+    },
+    {
+      "id": "planta2",
+      "nombre": "Planta 2",
+      "endpoint": "/nivel_planta2",
+      "divisor": 100,
+      "unidad": "m",
+      "nivel_alerta": 1.5,
+      "nivel_rebalse": 5
+    }
+  ]
+}

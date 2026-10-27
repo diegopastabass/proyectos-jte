@@ -5,6 +5,7 @@ import json
 import os
 import logging
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 
 # Determinar el directorio donde se encuentra este script
@@ -22,6 +23,9 @@ logging.basicConfig(
 )
 
 load_dotenv()
+
+# La API entrega los tiempos en UTC (ISO con 'Z'); la DGA espera hora local de Chile
+TZ_CHILE = ZoneInfo('America/Santiago')
 
 def get_snapshot():
     try:
@@ -51,7 +55,7 @@ def format_payload_dga(snapshot):
         totalizador_raw = data['TOTALIZADOR']['value'] / DIVISOR_TOTALIZADOR
         
         iso_time = data['FREATICO']['time'] 
-        dt_obj = datetime.fromisoformat(iso_time.replace('Z', '+00:00'))
+        dt_obj = datetime.fromisoformat(iso_time.replace('Z', '+00:00')).astimezone(TZ_CHILE)
         
         fecha_medicion = dt_obj.strftime('%Y-%m-%d')
         hora_medicion = dt_obj.strftime('%H:%M:%S')
@@ -95,7 +99,7 @@ def send_report():
         headers = {
             "Content-Type": "application/json",
             "codigoObra": os.getenv('DGA_CODIGO_OBRA'),
-            "timeStampOrigen": datetime.now().strftime("%Y-%m-%dT%H:%M:%S-03:00")
+            "timeStampOrigen": datetime.now(TZ_CHILE).isoformat(timespec='seconds')
         }
         
         logging.info("Enviando datos a DGA...")

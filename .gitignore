@@ -40,3 +40,8 @@ Thumbs.db
 __pycache__/
 *.pyc
 .venv/
+
+# Servicio unificado de monitoreo de estanques (MonitorEstanques)
+logs_monitor.txt*
+estado_monitor.json
+estado_monitor.json.tmp

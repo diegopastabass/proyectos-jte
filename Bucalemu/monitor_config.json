@@ -1,0 +1,45 @@
+{
+  "sitio": "Bucalemu",
+  "api_base": "https://app.jteanalytics.cl/bucalemu/metrics",
+  "estanques": [
+    {
+      "id": "bucalemu_bajo",
+      "nombre": "Bucalemu Bajo",
+      "endpoint": "/nivel_bucalemu_bajo",
+      "divisor": 1,
+      "unidad": "m",
+      "nivel_alerta": 1,
+      "nivel_rebalse": 4.3
+    },
+    {
+      "id": "nilahue",
+      "nombre": "Nilahue",
+      "endpoint": "/nivel_nilahue",
+      "divisor": 1,
+      "unidad": "m",
+      "nivel_alerta": 1,
+      "nivel_rebalse": 4.25
+    },
+    {
+      "id": "bucalemu_alto",
+      "nombre": "Bucalemu Alto",
+      "endpoint": "/nivel_bucalemu_alto",
+      "divisor": 1,
+      "unidad": "m",
+      "nivel_alerta": 2,
+      "nivel_rebalse": 4.25
+    },
+    {
+      "id": "casuto",
+      "nombre": "Casuto",
+      "endpoint": "/nivel_casuto",
+      "divisor": 1,
+      "unidad": "m",
+      "nivel_alerta": 2,
+      "nivel_rebalse": 4.3
+    }
+  ],
+  "parametros": {
+    "REPETIR_ALERTA_MINUTOS": 30
+  }
+}

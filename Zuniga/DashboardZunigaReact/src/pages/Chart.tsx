@@ -51,8 +51,8 @@ const Chart = () => {
         const today = getChileDate();
 
         const caudalURL = new URL("https://app.jteanalytics.cl/zuniga/caudal");
-        caudalURL.searchParams.append("fechaInicio", today);
-        caudalURL.searchParams.append("fechaFin", today);
+        caudalURL.searchParams.append("start", today);
+        caudalURL.searchParams.append("end", today);
 
         const [dataRes, caudalRes] = await Promise.all([
           fetch("https://app.jteanalytics.cl/zuniga/snapshot"),

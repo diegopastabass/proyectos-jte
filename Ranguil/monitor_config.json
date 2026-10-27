@@ -1,0 +1,29 @@
+{
+  "sitio": "Ranguil",
+  "api_base": "https://app.jteanalytics.cl/ranguil",
+  "estanques": [
+    {
+      "id": "nuevo",
+      "nombre": "Estanque Nuevo",
+      "endpoint": "/nivel",
+      "divisor": 100,
+      "unidad": "m",
+      "nivel_alerta": 2,
+      "nivel_rebalse": null
+    },
+    {
+      "id": "viejo",
+      "nombre": "Estanque Viejo",
+      "endpoint": "/nivel2",
+      "divisor": 1,
+      "unidad": "m",
+      "nivel_alerta": 2,
+      "nivel_rebalse": null
+    }
+  ],
+  "conexion": {
+    "endpoint": "/snapshot",
+    "modo": "equipo",
+    "nombre": "Equipo Ranguil"
+  }
+}

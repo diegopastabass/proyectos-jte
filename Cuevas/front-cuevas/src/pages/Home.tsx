@@ -44,6 +44,7 @@ interface Datos {
   snapshot: Snapshot;
   tiempo_vaciado_est_1: number;
   tiempo_vaciado_est_1_formatted: string;
+  nivel_alerta: number;
 }
 
 function App() {
@@ -117,6 +118,8 @@ function App() {
   if (loading) return <Loading />;
   if (!data) return <Error />;
 
+  const nivelAlarma = data.nivel_alerta ?? 2;
+
   const cleanDate = data?.snapshot
     ? new Date(
         Math.max(
@@ -170,7 +173,7 @@ function App() {
             type="nivel"
             fetchEndpoint="https://app.jteanalytics.cl/cuevas/nivel"
             nivelMax={5}
-            nivelAlarma={2}
+            nivelAlarma={nivelAlarma}
           />
           <GraphCard
             isOpen
@@ -279,7 +282,7 @@ function App() {
             type="nivel"
             fetchEndpoint="https://app.jteanalytics.cl/cuevas/nivel"
             nivelMax={5}
-            nivelAlarma={2}
+            nivelAlarma={nivelAlarma}
           />
         </div>
 

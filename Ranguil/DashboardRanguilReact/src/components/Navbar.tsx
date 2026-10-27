@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import BurgerMenu, { type NavAction } from "./BurgerMenu";
 import logoInacap from "../assets/logo_inacap.png";
 import logoProOhiggins from "../assets/logo_A.png";
 import logoSecundarioB from "../assets/logo_B.png";
@@ -7,11 +9,12 @@ import logoRng from "../assets/logoRng.png";
 
 interface NavbarProps {
   text?: string;
-  children?: React.ReactNode;
+  /** Acciones de la barra: botones en escritorio, menú hamburguesa en móvil. */
+  actions?: NavAction[];
 }
 
 function Navbar(props: NavbarProps) {
-  const { text, children } = props;
+  const { text, actions = [] } = props;
 
   const [isFullScreen, setIsFullScreen] = useState(false);
 
@@ -108,7 +111,33 @@ function Navbar(props: NavbarProps) {
           className="d-none d-md-block"
         />
       </div>
-      <div className="ms-auto d-none d-md-block m-4 ">{children}</div>
+      <div className="ms-auto d-none d-md-flex align-items-center gap-2 m-4">
+        {actions.map((a) => {
+          // En escritorio sólo icono (el nombre queda en el tooltip); en móvil, el menú los rotula
+          const content = <i className={`bi ${a.icon}`}></i>;
+          return a.to ? (
+            <Link
+              key={a.key}
+              to={a.to}
+              className="btn btn-outline-primary"
+              title={a.label}
+              aria-label={a.label}
+            >
+              {content}
+            </Link>
+          ) : (
+            <button
+              key={a.key}
+              className="btn btn-outline-primary"
+              onClick={a.onClick}
+              title={a.label}
+              aria-label={a.label}
+            >
+              {content}
+            </button>
+          );
+        })}
+      </div>
       <button
         className="btn btn-outline-secondary d-none d-md-inline-block"
         onClick={toggleFullScreen}
@@ -125,6 +154,7 @@ function Navbar(props: NavbarProps) {
           <i className="bi bi-fullscreen"></i>
         )}
       </button>
+      <BurgerMenu items={actions} />
     </nav>
   );
 }

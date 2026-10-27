@@ -1,0 +1,10 @@
+{
+  "sitio": "Araucarias",
+  "api_base": "https://app.jteanalytics.cl/araucarias",
+  "estanques": [],
+  "conexion": {
+    "endpoint": "/snapshot",
+    "modo": "equipo",
+    "nombre": "Equipo Araucarias"
+  }
+}

@@ -58,18 +58,6 @@
   );
 }
 
-/* Tema oscuro del sitio: sólo cambian textos y placas, el dibujo conserva su contorno */
-body.dark-theme .scada {
-  --ink: #aab3bc;
-  --hatch: rgba(170, 179, 188, 0.28);
-  --nf: #7fd3e6;
-  --text: #f1f3f5;
-  --muted: #aab2ba;
-  --plate-bg: #2b2f33;
-  --plate-border: #4a5158;
-  --plate-value: #f1f3f5;
-}
-
 /* --------------------------------------------------------------------------
    Escenario: 1200×630 unidades de diseño, escalado al ancho disponible
    -------------------------------------------------------------------------- */

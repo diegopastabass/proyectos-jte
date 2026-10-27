@@ -5,8 +5,10 @@ from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
 
-# --- Cargar variables desde .env ---
-load_dotenv()
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# --- Cargar variables desde .env (ruta absoluta: no depende del directorio de ejecución) ---
+load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 # --- Configuración desde .env ---
 API_URL = os.getenv("API_URL")
@@ -15,7 +17,6 @@ TOKEN = os.getenv("API_TOKEN") or os.getenv("TOKEN")
 TO = os.getenv("API_TO") or os.getenv("TO")
 
 # --- Logging ---
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_FILE = os.path.join(BASE_DIR, "logs_health_check.txt")
 
 logging.basicConfig(

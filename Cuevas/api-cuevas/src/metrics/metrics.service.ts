@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Raw } from 'typeorm';
+import * as fs from 'fs';
 import { Telemetria } from './models/metrics.entity';
 import { DateRangeDto } from './models/dto/date-range.dto';
 import { MetricSnapshot, Metric } from './models/types';
@@ -31,6 +32,23 @@ export class SsrCuevasService {
     return { start: startDate, end: endDate };
   }
 
+  private async getAlarmLevel(): Promise<number> {
+    try {
+      const envPath = 'C:\\AutomatizationServices\\cuevas\\.env';
+      const content = await fs.promises.readFile(envPath, 'utf8');
+      const match = content.match(/^NIVEL_ALERTA=(.+)$/m);
+      if (match && match[1]) {
+        const val = parseFloat(match[1].trim());
+        if (!isNaN(val)) return val;
+      }
+    } catch (error: any) {
+      if (error.code !== 'ENOENT') {
+        this.logger.error('Error al leer NIVEL_ALERTA desde .env', error);
+      }
+    }
+    return 2; // Valor por defecto
+  }
+
   // Snapshot
   async getSnapshot(): Promise<{
     snapshot: MetricSnapshot;
@@ -38,7 +56,10 @@ export class SsrCuevasService {
     tiempo_vaciado_est_1_formatted: string;
     tiempo_vaciado_est_2: number;
     tiempo_vaciado_est_2_formatted: string;
+    nivel_alerta: number;
   }> {
+    const nivel_alerta = await this.getAlarmLevel();
+
     try {
       const results = await this.repo.query(`
     SELECT t.mt_name, t.mt_value, t.mt_time_2
@@ -112,6 +133,7 @@ export class SsrCuevasService {
         tiempo_vaciado_est_1_formatted: est_1.formatted,
         tiempo_vaciado_est_2: est_2.tiempo,
         tiempo_vaciado_est_2_formatted: est_2.formatted,
+        nivel_alerta,
       };
     } catch (error) {
       console.error('Error al obtener datos:' + error);
@@ -121,6 +143,7 @@ export class SsrCuevasService {
         tiempo_vaciado_est_1_formatted: 'Error al calcular tiempo de vaciado',
         tiempo_vaciado_est_2: 0,
         tiempo_vaciado_est_2_formatted: 'Error al calcular tiempo de vaciado',
+        nivel_alerta,
       };
     }
   }

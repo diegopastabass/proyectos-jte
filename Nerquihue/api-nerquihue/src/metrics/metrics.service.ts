@@ -186,13 +186,21 @@ export class SsrNerquihueService {
   /**
    * Nivel de estanques
    */
+  // Lee ?limit= de la query; si no viene o no es válido usa el valor por defecto.
+  // Tope de 5000 filas para no sobrecargar la BD.
+  private parseLimit(limit: unknown, porDefecto: number): number {
+    const n = Number(limit);
+    if (!limit || !Number.isFinite(n) || n <= 0) return porDefecto;
+    return Math.min(Math.floor(n), 5000);
+  }
+
   async getNivel(dto: DateRangeDto): Promise<Metric[]> {
     const range = this.normalizeDateRange(dto);
     if (!range) {
       const results = await this.repo.find({
         where: { mt_name: 'SSR_NERQUIHUE--slave.estanque' },
         order: { mt_time_2: 'DESC' },
-        take: 100,
+        take: this.parseLimit(dto.limit, 100),
       });
 
       return results.reverse().map((row) => ({

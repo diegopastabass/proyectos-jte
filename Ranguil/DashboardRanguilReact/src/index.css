@@ -19,33 +19,6 @@ body {
   border-color: #dee2e6;
 }
 
-/* Dark theme */
-body.dark-theme {
-  background-color: #121212;
-  color: #f8f9fa;
-}
-
-body.dark-theme .navbar {
-  background-color: #222222 !important;
-  color: #f8f9fa !important;
-}
-
-body.dark-theme .navbar-brand {
-  color: #f8f9fa !important;
-}
-
-body.dark-theme .card {
-  background-color: #383838;
-  color: #f8f9fa;
-  border-color: #333333;
-}
-
-body.dark-theme .alert-success {
-  color: #f8f9fa;
-  background-color: #383838;
-  border-color: #333333;
-}
-
 .translate-transition {
   transition: transform 0.3s ease-in-out;
 }

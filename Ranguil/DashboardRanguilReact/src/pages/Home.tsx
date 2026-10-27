@@ -15,6 +15,13 @@ import ExportModal from "../components/ExportModal";
 import Error from "./Error";
 import logoJte from "../assets/logoJte.png";
 import { fetchWithCache } from "../components/fetchWithcache";
+import {
+  DIVISOR_NIVEL_NUEVO,
+  M3_POR_M,
+  NIVEL_ALARMA_M,
+  NIVEL_EJE_GRAFICO_M,
+  NIVEL_MAX_M,
+} from "../config/estanques";
 
 interface Snapshot {
   snapshot: Datos;
@@ -162,6 +169,10 @@ function App() {
       ? totalizadorChartData[totalizadorChartData.length - 1].value
       : 0;
 
+  // Niveles en metros (el estanque nuevo llega en cm)
+  const nivelNuevo = data.snapshot.estanque.value / DIVISOR_NIVEL_NUEVO;
+  const nivelViejo = data.snapshot.estanque_2.value;
+
   const minutesToHHMM = (mins: number): string => {
     const hours = Math.floor(mins / 60);
     const minutes = mins % 60;
@@ -183,20 +194,18 @@ function App() {
             title="Estanque Nuevo"
             text1={[
               "Nivel",
-              `${(data.snapshot.estanque.value / 100).toFixed(2)} m`,
+              `${nivelNuevo.toFixed(2)} m`,
             ]}
             text2={[
               "Volumen Actual",
-              `${(((60 / 7) * data.snapshot.estanque.value) / 100).toFixed(
-                2,
-              )} m³`,
+              `${(M3_POR_M * nivelNuevo).toFixed(2)} m³`,
             ]}
             text3={["Tiempo Vaciado", data.tiempo_vaciado_est_1_formatted]}
             text4={["☼", `${(data.snapshot.solar.value / 1000).toFixed(2)} V`]}
           />
           <TankLevelCircular
-            nivelActual={data.snapshot.estanque.value / 100}
-            nivelMaximo={3.2}
+            nivelActual={nivelNuevo}
+            nivelMaximo={NIVEL_MAX_M}
           />
           <ToggleCardButton
             isOpen={isOpenEstanque}
@@ -209,9 +218,9 @@ function App() {
           title="Estanque Nuevo"
           chartLabel="Nivel del Estanque (m)"
           data={nivelChartData}
-          nivelMax={350}
-          nivelAlarma={50}
-          divisor={100}
+          nivelMax={NIVEL_EJE_GRAFICO_M * DIVISOR_NIVEL_NUEVO}
+          nivelAlarma={NIVEL_ALARMA_M * DIVISOR_NIVEL_NUEVO}
+          divisor={DIVISOR_NIVEL_NUEVO}
         />
       </div>
       {/* Estanque 2 */}
@@ -219,17 +228,17 @@ function App() {
         <Card>
           <CardBody
             title="Estanque Antiguo"
-            text1={["Nivel", `${data.snapshot.estanque_2.value.toFixed(2)} m`]}
+            text1={["Nivel", `${nivelViejo.toFixed(2)} m`]}
             text2={[
               "Volumen Actual",
-              `${((60 / 7) * data.snapshot.estanque_2.value).toFixed(2)} m³`,
+              `${(M3_POR_M * nivelViejo).toFixed(2)} m³`,
             ]}
             text3={["Tiempo Vaciado", data.tiempo_vaciado_est_2_formatted]}
             date={data.snapshot.estanque_2.time}
           />
           <TankLevelCircular
-            nivelActual={data.snapshot.estanque_2.value}
-            nivelMaximo={3.2}
+            nivelActual={nivelViejo}
+            nivelMaximo={NIVEL_MAX_M}
           />
           <ToggleCardButton
             isOpen={isOpenEstanque2}
@@ -242,8 +251,8 @@ function App() {
           title="Estanque Antiguo"
           chartLabel="Nivel del Estanque (m)"
           data={nivel2ChartData}
-          nivelMax={3.5}
-          nivelAlarma={0.5}
+          nivelMax={NIVEL_EJE_GRAFICO_M}
+          nivelAlarma={NIVEL_ALARMA_M}
         />
       </div>
       {/* Bomba */}
@@ -386,9 +395,9 @@ function App() {
           title="Estanque Nuevo"
           chartLabel="Nivel del Estanque (m)"
           data={nivelChartData}
-          nivelMax={350}
-          nivelAlarma={50}
-          divisor={100}
+          nivelMax={NIVEL_EJE_GRAFICO_M * DIVISOR_NIVEL_NUEVO}
+          nivelAlarma={NIVEL_ALARMA_M * DIVISOR_NIVEL_NUEVO}
+          divisor={DIVISOR_NIVEL_NUEVO}
         />
       </div>
 
@@ -399,8 +408,8 @@ function App() {
           title="Estanque Antiguo"
           chartLabel="Nivel del Estanque (m)"
           data={nivel2ChartData}
-          nivelMax={3.5}
-          nivelAlarma={0.5}
+          nivelMax={NIVEL_EJE_GRAFICO_M}
+          nivelAlarma={NIVEL_ALARMA_M}
         />
       </div>
 
@@ -481,12 +490,23 @@ function App() {
     <>
       <div className="container-fluid min-vh-100 p-0 d-flex flex-column align-items-center">
         <div className="mb-3 w-100" style={{ maxWidth: "5000px" }}>
-          <Navbar text={data.snapshot.caudal.time}>
-            <button
-              className="btn btn-outline-primary bi bi-save"
-              onClick={() => setIsOpenExport(true)}
-            ></button>
-          </Navbar>
+          <Navbar
+            text={data.snapshot.caudal.time}
+            actions={[
+              {
+                key: "electrico",
+                label: "Monitoreo eléctrico",
+                icon: "bi-lightning-charge",
+                to: "/ranguil/electrico",
+              },
+              {
+                key: "exportar",
+                label: "Exportar a Excel",
+                icon: "bi-save",
+                onClick: () => setIsOpenExport(true),
+              },
+            ]}
+          />
         </div>
         <div className="flex-grow-1 w-100 d-flex flex-column align-items-center px-3">
           {/* Se llaman como funciones (no <VistaDesktop />) para no remontar todo

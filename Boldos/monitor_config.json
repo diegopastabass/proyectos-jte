@@ -1,0 +1,33 @@
+{
+  "sitio": "Los Boldos",
+  "api_base": "https://app.jteanalytics.cl/boldos",
+  "estanques": [
+    {
+      "id": "1",
+      "nombre": "Estanque 1",
+      "endpoint": "/nivel",
+      "divisor": 1,
+      "unidad": "m",
+      "nivel_alerta": 1.5,
+      "nivel_rebalse": null
+    },
+    {
+      "id": "2",
+      "nombre": "Estanque 2",
+      "endpoint": "/nivel2",
+      "divisor": 1,
+      "unidad": "m",
+      "nivel_alerta": 1.5,
+      "nivel_rebalse": null
+    }
+  ],
+  "conexion": {
+    "endpoint": "/snapshot",
+    "modo": "sensor",
+    "nombre": "Equipo Los Boldos",
+    "ignorar_sensores": []
+  },
+  "parametros": {
+    "UMBRAL_DESCONEXION_MINUTOS": 10
+  }
+}

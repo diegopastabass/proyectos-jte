@@ -1,0 +1,18 @@
+{
+  "sitio": "Manzano",
+  "api_base": "https://app.jteanalytics.cl/manzano",
+  "estanques": [
+    {
+      "id": "estanque",
+      "nombre": "Estanque",
+      "endpoint": "/nivel",
+      "divisor": 100,
+      "unidad": "m",
+      "nivel_alerta": 2,
+      "nivel_rebalse": null
+    }
+  ],
+  "parametros": {
+    "ALERTAR_NIVEL_ESTABLE": true
+  }
+}

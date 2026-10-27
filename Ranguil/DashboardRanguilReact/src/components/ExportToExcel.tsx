@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { DIVISOR_NIVEL_NUEVO } from "../config/estanques";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
@@ -111,7 +112,7 @@ function Export() {
             return {
               Fecha: fecha,
               Hora: hora!,
-              "Valor (m)": (d.value / 100).toFixed(2),
+              "Valor (m)": (d.value / DIVISOR_NIVEL_NUEVO).toFixed(2),
             };
           case "nivel2":
             return {

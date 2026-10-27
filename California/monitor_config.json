@@ -1,0 +1,26 @@
+{
+  "sitio": "California",
+  "api_base": "https://app.jteanalytics.cl/california",
+  "estanques": [
+    {
+      "id": "cerro",
+      "nombre": "Estanque Cerro",
+      "endpoint": "/cerro",
+      "divisor": 1,
+      "unidad": "%",
+      "nivel_alerta": 50,
+      "nivel_rebalse": null,
+      "banda_muerta_por_min": 0.05
+    },
+    {
+      "id": "metalico",
+      "nombre": "Estanque Metálico",
+      "endpoint": "/metalico",
+      "divisor": 1,
+      "unidad": "%",
+      "nivel_alerta": 30,
+      "nivel_rebalse": null,
+      "banda_muerta_por_min": 0.05
+    }
+  ]
+}

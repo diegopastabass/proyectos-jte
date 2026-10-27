@@ -4,6 +4,7 @@ import Pipe from "./Pipe";
 import Pump from "./Pump";
 import { FlowMeter, GateValve, PressureGauge } from "./Instruments";
 import States from "./States";
+import { DIVISOR_NIVEL_NUEVO, M3_POR_M, NIVEL_ALARMA_M, NIVEL_MAX_M } from "../config/estanques";
 import "./scada/scada.css";
 
 interface Snapshot {
@@ -69,14 +70,8 @@ const TANK_INLET_X = 60;
 const TANK1 = { x: 680, y: TANK_Y, w: TANK_W, h: TANK_H, inletX: TANK_INLET_X };
 const TANK2 = { x: 975, y: TANK_Y, w: TANK_W, h: TANK_H, inletX: TANK_INLET_X };
 
-/* Capacidad de ambos estanques tal como la usaba el diagrama con sprites (m). */
-const MAX_LEVEL = 3.2;
-/* Nivel de alarma baja: el mismo que usan los gráficos de nivel (0,5 m). */
-const ALARM_LEVEL = 0.5;
 /* Cota (m) a la que sale la tubería del estanque 1 hacia el estanque 2. */
 const OUTLET_LEVEL = 0.2;
-/* Volumen del estanque por metro de nivel, igual que en la vista móvil. */
-const M3_PER_M = 60 / 7;
 
 const formatMinutes = (total: number) => {
   const minutes = Math.max(0, Math.floor(total));
@@ -117,7 +112,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
   // Unidades del snapshot: freático en cm, presión en décimas de bar, estanque 1 en cm
   const freatico = (snapshot.freatico.value ?? 0) / 100;
   const presion = (snapshot.presion.value ?? 0) / 10;
-  const nivel1 = (snapshot.estanque.value ?? 0) / 100;
+  const nivel1 = (snapshot.estanque.value ?? 0) / DIVISOR_NIVEL_NUEVO;
   const nivel2 = snapshot.estanque_2.value ?? 0;
   const solar = (snapshot.solar?.value ?? 0) / 1000;
 
@@ -197,8 +192,8 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           width={TANK1.w}
           height={TANK1.h}
           level={nivel1}
-          maxLevel={MAX_LEVEL}
-          alarmLevel={ALARM_LEVEL}
+          maxLevel={NIVEL_MAX_M}
+          alarmLevel={NIVEL_ALARMA_M}
           name="Estanque Nuevo"
           tag="LIT-01"
           inletX={TANK1.inletX}
@@ -207,7 +202,7 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           labelStep={0.4}
         >
           {solar > 0 && <div className="tank__extra">☼ {solar.toFixed(2)} V</div>}
-          <div className="tank__extra">{(nivel1 * M3_PER_M).toFixed(2)} m³</div>
+          <div className="tank__extra">{(nivel1 * M3_POR_M).toFixed(2)} m³</div>
           <div className="scada-plate scada-plate--info scada-plate--static">
             <span className="scada-plate__label">T. Vaciado</span>
             <span className="scada-plate__value">{data.tiempo_vaciado_est_1_formatted}</span>
@@ -220,14 +215,14 @@ const ScadaDiagram: React.FC<ScadaDiagramProps> = ({ data, hor, tot }) => {
           width={TANK2.w}
           height={TANK2.h}
           level={nivel2}
-          maxLevel={MAX_LEVEL}
-          alarmLevel={ALARM_LEVEL}
+          maxLevel={NIVEL_MAX_M}
+          alarmLevel={NIVEL_ALARMA_M}
           name="Estanque Viejo"
           tag="LIT-02"
           scaleStep={0.2}
           labelStep={0.4}
         >
-          <div className="tank__extra">{(nivel2 * M3_PER_M).toFixed(2)} m³</div>
+          <div className="tank__extra">{(nivel2 * M3_POR_M).toFixed(2)} m³</div>
           <div className="scada-plate scada-plate--info scada-plate--static">
             <span className="scada-plate__label">T. Vaciado</span>
             <span className="scada-plate__value">{data.tiempo_vaciado_est_2_formatted}</span>

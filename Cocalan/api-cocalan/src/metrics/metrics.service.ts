@@ -275,6 +275,22 @@ export class SsrCocalanService {
         }));
       }
 
+      // Con ?limit= se devuelven los N registros más recientes (orden ascendente).
+      // Antes se aplicaba take sobre el orden ASC de las últimas 6 h, lo que
+      // devolvía los registros MÁS ANTIGUOS de esa ventana.
+      if (take !== undefined && Number.isFinite(take) && take > 0) {
+        const recientes = await this.repo.find({
+          where: { mt_name: 'SSR_COCALAN--slave.nivel' },
+          order: { mt_time_2: 'DESC' },
+          take: Math.min(Math.floor(take), 5000),
+        });
+
+        return recientes.reverse().map((row) => ({
+          time: row.mt_time_2.toISOString(),
+          value: Number(row.mt_value),
+        }));
+      }
+
       // Ultimas 6 horas
       const start = new Date(Date.now() - 6 * 60 * 60 * 1000);
       const results = await this.repo.find({
@@ -283,7 +299,6 @@ export class SsrCocalanService {
           mt_time_2: Raw((alias) => `${alias} >= :start`, { start }),
         },
         order: { mt_time_2: 'ASC' },
-        ...(take !== undefined && { take }),
       });
 
       return results.map((row) => ({

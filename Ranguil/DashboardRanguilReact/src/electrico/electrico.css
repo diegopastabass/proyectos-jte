@@ -1,0 +1,163 @@
+/* ==========================================================================
+   Monitoreo eléctrico — estilos acotados a .electrico para no alterar
+   el diagrama de agua. Las variables de color se pueden ajustar aquí.
+   ========================================================================== */
+
+.electrico {
+  --ok: #198754;
+  --warn: #e0a800;
+  --bad: #dc3545;
+  --accent: #0d6efd;
+  --track: rgba(0, 0, 0, 0.1);
+  --svg-line: #6c757d;
+  --svg-fill: #ffffff;
+}
+
+/* ---------- Componentes del panel eléctrico ---------- */
+.electrico .card.panel {
+  max-height: none;
+  height: 100%;
+}
+
+.electrico .panel-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.75;
+  margin-bottom: 0.5rem;
+}
+
+.electrico .kpi-value {
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.electrico .kpi-unit {
+  font-size: 0.9rem;
+  font-weight: 500;
+  opacity: 0.7;
+  margin-left: 4px;
+}
+
+.electrico .kpi-trend {
+  white-space: nowrap;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.electrico .kpi-trend.up-good,
+.electrico .kpi-trend.down-good {
+  color: var(--ok);
+}
+
+.electrico .kpi-trend.up-bad,
+.electrico .kpi-trend.down-bad {
+  color: var(--bad);
+}
+
+.electrico .kpi-trend.flat {
+  opacity: 0.6;
+}
+
+.electrico .sev-ok {
+  color: var(--ok);
+}
+.electrico .sev-warn {
+  color: var(--warn);
+}
+.electrico .sev-bad {
+  color: var(--bad);
+}
+
+.electrico .finding {
+  border-left: 4px solid var(--track);
+  padding: 4px 10px;
+  margin-bottom: 8px;
+}
+.electrico .finding.ok {
+  border-left-color: var(--ok);
+}
+.electrico .finding.warn {
+  border-left-color: var(--warn);
+}
+.electrico .finding.bad {
+  border-left-color: var(--bad);
+}
+
+.electrico .mini-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--track);
+  overflow: hidden;
+}
+.electrico .mini-bar > div {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease;
+}
+
+/* Mapa de calor */
+.electrico .heatmap {
+  display: grid;
+  grid-template-columns: 54px repeat(24, minmax(0, 1fr));
+  gap: 2px;
+  font-size: 0.68rem;
+}
+.electrico .heatmap .cell {
+  height: 18px;
+  border-radius: 3px;
+  background: var(--track);
+}
+.electrico .heatmap .lbl {
+  display: flex;
+  align-items: center;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+.electrico .heatmap .hlbl {
+  text-align: center;
+  opacity: 0.75;
+}
+
+/* Unifilar animado */
+@keyframes electrico-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+@keyframes electrico-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes electrico-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+.electrico .flow-line {
+  stroke-dasharray: 8 6;
+  animation: electrico-flow 0.8s linear infinite;
+}
+.electrico .rotor {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: electrico-spin 1.2s linear infinite;
+}
+.electrico .pulse {
+  animation: electrico-pulse 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .electrico .flow-line,
+  .electrico .rotor,
+  .electrico .pulse {
+    animation: none;
+  }
+}

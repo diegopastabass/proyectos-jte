@@ -1,4 +1,4 @@
-import { IsDateString } from 'class-validator';
+import { IsDateString, IsOptional } from 'class-validator';
 
 export class DateRangeDto {
   @IsDateString()
@@ -6,4 +6,7 @@ export class DateRangeDto {
 
   @IsDateString()
   end: string;
+
+  @IsOptional()
+  limit?: number | string;
 }

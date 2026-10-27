@@ -60,6 +60,27 @@ export class MetricsController {
     return this.metricsService.getCaudal(dto);
   }
 
+  // Series de nivel por estanque (metros). Sin rango: ?limit=N registros más recientes (100 por defecto)
+  @Get('nivel_nilahue')
+  getNivelNilahue(@Query() dto: DateRangeDto) {
+    return this.metricsService.getNivelEstanque('nilahue', dto);
+  }
+
+  @Get('nivel_casuto')
+  getNivelCasuto(@Query() dto: DateRangeDto) {
+    return this.metricsService.getNivelEstanque('casuto', dto);
+  }
+
+  @Get('nivel_bucalemu_bajo')
+  getNivelBucalemuBajo(@Query() dto: DateRangeDto) {
+    return this.metricsService.getNivelEstanque('bucalemu_bajo', dto);
+  }
+
+  @Get('nivel_bucalemu_alto')
+  getNivelBucalemuAlto(@Query() dto: DateRangeDto) {
+    return this.metricsService.getNivelEstanque('bucalemu_alto', dto);
+  }
+
   // Endpoint consolidado: devuelve latest + levels + emptying + caudal en 1 sola llamada
   @Get('snapshot')
   async snapshot() {

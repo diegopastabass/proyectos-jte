@@ -1,12 +1,18 @@
 import React, { useState } from "react";
-import { ToggleThemeButton } from "./ToggleThemeButton";
-interface MenuItem {
+import { Link } from "react-router-dom";
+
+/** Acción de la barra de navegación: enlace a otra pantalla o botón con callback. */
+export interface NavAction {
+  key: string;
   label: string;
-  href: string;
+  /** Clase de bootstrap-icons, p. ej. "bi-gear". */
+  icon: string;
+  to?: string;
+  onClick?: () => void;
 }
 
 interface BurgerMenuProps {
-  items: MenuItem[];
+  items: NavAction[];
 }
 
 const BurgerMenu: React.FC<BurgerMenuProps> = ({ items }) => {
@@ -18,32 +24,54 @@ const BurgerMenu: React.FC<BurgerMenuProps> = ({ items }) => {
   return (
     <>
       <button
-        className="btn d-lg-none"
+        className="btn btn-outline-secondary d-md-none ms-auto"
         onClick={toggleMenu}
         aria-label="Abrir menú"
+        aria-expanded={isOpen}
       >
-        <img src="/src/assets/menu.png" alt="menu" height={16} width={16} />
+        <i className="bi bi-list"></i>
       </button>
 
       {isOpen && <div className="menu-overlay" onClick={closeMenu}></div>}
 
-      <div className={`burger-menu ${isOpen ? "open" : ""}`}>
+      <div className={`burger-menu ${isOpen ? "open" : ""}`} aria-hidden={!isOpen}>
+        <div className="d-flex justify-content-between align-items-center px-3 pt-3">
+          <strong>Menú</strong>
+          <button
+            className="btn btn-sm btn-outline-secondary"
+            onClick={closeMenu}
+            aria-label="Cerrar menú"
+          >
+            <i className="bi bi-x-lg"></i>
+          </button>
+        </div>
         <ul className="list-unstyled m-0 p-3">
-          {items.map((item, index) => (
-            <li key={index} className="mb-2">
-              <a
-                href={item.href}
-                className="text-white text-decoration-none"
-                onClick={closeMenu}
-              >
-                {item.label}
-              </a>
+          {items.map((item) => (
+            <li key={item.key} className="mb-2">
+              {item.to ? (
+                <Link
+                  to={item.to}
+                  className="btn btn-outline-primary w-100 text-start"
+                  onClick={closeMenu}
+                >
+                  <i className={`bi ${item.icon} me-2`}></i>
+                  {item.label}
+                </Link>
+              ) : (
+                <button
+                  className="btn btn-outline-primary w-100 text-start"
+                  onClick={() => {
+                    closeMenu();
+                    item.onClick?.();
+                  }}
+                >
+                  <i className={`bi ${item.icon} me-2`}></i>
+                  {item.label}
+                </button>
+              )}
             </li>
           ))}
         </ul>
-        <div className="text-center mt-5">
-          <ToggleThemeButton />
-        </div>
       </div>
 
       {/* Estilos en línea */}
@@ -52,17 +80,21 @@ const BurgerMenu: React.FC<BurgerMenuProps> = ({ items }) => {
           position: fixed;
           top: 0;
           right: 0;
-          width: 250px;
+          width: 260px;
           height: 100vh;
-          background-color: #007bff; 
-          box-shadow: -2px 0 5px rgba(0, 0, 0, 0.5);
+          background-color: #ffffff;
+          color: #212529;
+          box-shadow: -2px 0 5px rgba(0, 0, 0, 0.3);
           transform: translateX(100%);
-          transition: transform 0.3s ease-in-out;
+          transition: transform 0.3s ease-in-out, visibility 0s linear 0.3s;
           z-index: 1051;
+          visibility: hidden;
         }
 
         .burger-menu.open {
           transform: translateX(0);
+          visibility: visible;
+          transition: transform 0.3s ease-in-out, visibility 0s;
         }
 
         .menu-overlay {

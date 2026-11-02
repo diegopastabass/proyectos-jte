@@ -45,3 +45,5 @@ __pycache__/
 logs_monitor.txt*
 estado_monitor.json
 estado_monitor.json.tmp
+logs_provider.txt*
+pendientes_tambo.jsonl

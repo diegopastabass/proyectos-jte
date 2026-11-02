@@ -1,0 +1,42 @@
+{
+  "sitio": "APR El Tambo",
+  "api_base": "https://app.jteanalytics.cl/tambo",
+  "estanques": [
+    {
+      "id": "superior",
+      "nombre": "Estanque Superior",
+      "endpoint": "/nivel?estanque=estanque_superior",
+      "divisor": 10,
+      "unidad": "%",
+      "nivel_alerta": 50,
+      "nivel_rebalse": null,
+      "banda_muerta_por_min": 0.05
+    },
+    {
+      "id": "intermedio",
+      "nombre": "Estanque Intermedio",
+      "endpoint": "/nivel?estanque=estanque_intermedio",
+      "divisor": 10,
+      "unidad": "%",
+      "nivel_alerta": 50,
+      "nivel_rebalse": null,
+      "banda_muerta_por_min": 0.05
+    },
+    {
+      "id": "bajo",
+      "nombre": "Estanque Bajo",
+      "endpoint": "/nivel?estanque=estanque_inferior",
+      "divisor": 10,
+      "unidad": "%",
+      "nivel_alerta": 50,
+      "nivel_rebalse": null,
+      "banda_muerta_por_min": 0.05
+    }
+  ],
+  "conexion": {
+    "endpoint": "/snapshot",
+    "modo": "sensor",
+    "nombre": "Equipo COPSET El Tambo",
+    "ignorar_sensores": ["estanque_superior", "estanque_intermedio", "estanque_inferior"]
+  }
+}

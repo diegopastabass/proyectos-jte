@@ -38,6 +38,7 @@ DESTINOS = {
     "Marchigue": "tankService.py",
     "Bucalemu": "tankServiceBucalemu.py",
     "Araucarias": "connectionService.py",
+    "Tambo": "tankService.py",
 }
 
 

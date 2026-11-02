@@ -356,14 +356,15 @@ def obtener_serie(estanque, cfg):
     data = consultar_api(url, {"limit": cfg["params"]["MUESTRAS_MAX"]}, cfg)
     if not isinstance(data, list):
         raise ApiError(f"Respuesta inesperada (se esperaba una lista): {str(data)[:200]}")
-    serie = []
+    # Un valor por timestamp: algunas tablas tienen la misma lectura repetida (p. ej. Marchigüe)
+    por_tiempo = {}
     for registro in data:
         try:
-            serie.append((parse_time(registro["time"], cfg["tz_api"]), float(registro["value"]) / estanque["divisor"]))
+            por_tiempo[parse_time(registro["time"], cfg["tz_api"])] = float(registro["value"]) / estanque["divisor"]
         except (KeyError, TypeError, ValueError) as e:
             raise ApiError(f"Registro inválido {registro!r}: {e}")
     # No se asume que la API respete limit ni el orden
-    serie.sort(key=lambda x: x[0])
+    serie = sorted(por_tiempo.items())
     return serie[-cfg["params"]["MUESTRAS_MAX"]:]
 
 

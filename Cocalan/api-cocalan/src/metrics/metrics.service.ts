@@ -275,18 +275,23 @@ export class SsrCocalanService {
         }));
       }
 
-      // Con ?limit= se devuelven los N registros más recientes (orden ascendente).
-      // Antes se aplicaba take sobre el orden ASC de las últimas 6 h, lo que
-      // devolvía los registros MÁS ANTIGUOS de esa ventana.
+      // Con ?limit= se devuelven las N lecturas más recientes (orden ascendente).
+      // Se usa SQL con DISTINCT ON porque la tabla tiene filas repetidas con el mismo
+      // mt_time_2 (la PK de la entidad): con find()+take el LIMIT se aplica a las filas
+      // crudas y TypeORM luego las fusiona por PK, así limit=3 devolvía 1 registro.
       if (take !== undefined && Number.isFinite(take) && take > 0) {
-        const recientes = await this.repo.find({
-          where: { mt_name: 'SSR_COCALAN--slave.nivel' },
-          order: { mt_time_2: 'DESC' },
-          take: Math.min(Math.floor(take), 5000),
-        });
+        const recientes: { mt_time_2: Date; mt_value: string }[] =
+          await this.repo.query(
+            `SELECT DISTINCT ON (mt_time_2) mt_time_2, mt_value
+               FROM ssr_cocalan
+              WHERE mt_name = $1
+              ORDER BY mt_time_2 DESC
+              LIMIT $2`,
+            ['SSR_COCALAN--slave.nivel', Math.min(Math.floor(take), 5000)],
+          );
 
         return recientes.reverse().map((row) => ({
-          time: row.mt_time_2.toISOString(),
+          time: new Date(row.mt_time_2).toISOString(),
           value: Number(row.mt_value),
         }));
       }

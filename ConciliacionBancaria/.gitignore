@@ -1,0 +1,27 @@
+# Datos financieros reales (cartolas, RCV): nunca al repositorio.
+# Los tests usan fixtures anonimizados en api-conciliacion/test/fixtures.
+/*.xlsx
+/*.xls
+/*.csv
+/*.txt
+/datos/
+
+# Artefactos de compilación (el /dist del .gitignore raíz solo cubre la raíz del repo)
+dist/
+coverage/
+*.tsbuildinfo
+
+# Configuración local del preview de Claude Code
+.claude/
+
+# Paquetes de despliegue
+*.zip
+
+# Archivos auxiliares de LaTeX (el .tex y el .pdf sí se versionan)
+*.aux
+*.log
+*.out
+*.toc
+*.xdv
+*.fls
+*.fdb_latexmk

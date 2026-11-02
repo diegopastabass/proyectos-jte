@@ -19,7 +19,7 @@ Contexto y análisis completo en [HOMOGENEIZACION_MONITOREO.md](HOMOGENEIZACION_
 
 1. Instalar dependencias en el servidor: `pip install -r requirements.txt` (copiar [`MonitorEstanques/requirements.txt`](MonitorEstanques/requirements.txt)). En Windows instala `tzdata` para mostrar la hora de Chile.
 2. Copiar el script y `monitor_config.json` a la carpeta del servicio en el servidor.
-3. Revisar que el `.env **del servidor**` tenga `API_URL`, `API_TOKEN`/`TOKEN`, `API_TO`/`TO` y `API_TO_ADMIN`. Los `.env` locales ya se actualizaron, pero no están en git, así que hay que replicarlos a mano.
+3. Revisar que el `.env` **del servidor** tenga (plantilla en [`MonitorEstanques/env.example`](MonitorEstanques/env.example)) `API_URL`, `API_TOKEN`/`TOKEN`, `API_TO`/`TO` y `API_TO_ADMIN`. Los `.env` locales ya se actualizaron, pero no están en git, así que hay que replicarlos a mano.
 4. Ejecutar `python <script>.py --una-vez --sin-enviar` en el servidor y revisar la salida.
 5. Reiniciar el servicio y revisar `logs_monitor.txt` en los primeros minutos.
 6. Desde el servidor puedes borrar el log antiguo (`logs_*.txt`, `logs.txt`), que ya no se escribe.
@@ -28,23 +28,24 @@ Contexto y análisis completo en [HOMOGENEIZACION_MONITOREO.md](HOMOGENEIZACION_
 
 ## Fase 0: tareas manuales de seguridad
 
-- [ ] **Cambiar la contraseña de MySQL** (usuario `INFORMATICO`, host `3.235.75.8`). Estaba escrita en `Marchigue/tankService.py` y sigue en el historial de git.
-- [ ] **Cambiar la contraseña de PostgreSQL RDS** (usuario `JTEanalytics`). Estaba en `Bucalemu/tankServiceBucalemu copy.py` (eliminado, pero sigue en el historial). Después hay que actualizar todos los `.env` y APIs que la usan.
-- [ ] **Regenerar el token de UltraMsg** (`instance79783`), que estaba en los dos archivos anteriores, y actualizar todos los `.env`.
+- [x] **Cambiar la contraseña de MySQL** (usuario `INFORMATICO`, host `3.235.75.8`). Estaba escrita en `Marchigue/tankService.py` y sigue en el historial de git.
+- [x] **Cambiar la contraseña de PostgreSQL RDS** (usuario `JTEanalytics`). Estaba en `Bucalemu/tankServiceBucalemu copy.py` (eliminado, pero sigue en el historial). Después hay que actualizar todos los `.env` y APIs que la usan.
+- [x] **Regenerar el token de UltraMsg** (`instance79783`), que estaba en los dos archivos anteriores, y actualizar todos los `.env`.
 
 ## Fase 1: APIs (desplegar antes que los monitores que dependen de ellas)
 
 Ninguno de estos cambios altera lo que reciben los dashboards cuando no se envía `?limit=`.
 
-- [ ] **Auquinco** (`Auquinco/api-auquinco`): `/nivel?limit=N` devuelve los N registros más recientes. Antes ignoraba `limit` y el monitor tomaba los 2 más antiguos de las últimas 6 h.
+- [x] **Auquinco** (`Auquinco/api-auquinco`): `/nivel?limit=N` devuelve los N registros más recientes. Antes ignoraba `limit` y el monitor tomaba los 2 más antiguos de las últimas 6 h.
   - Verificar: `curl "https://app.jteanalytics.cl/auquinco/nivel?limit=3"` → 3 registros con la hora actual.
-- [ ] **Cocalan** (`Cocalan/api-cocalan`): `/nivel?limit=N` devuelve los más recientes. Antes devolvía los más antiguos de las últimas 6 h.
-  - Verificar: `curl "https://app.jteanalytics.cl/cocalan/nivel?limit=3"` → 3 registros recientes.
-- [ ] **Carmen** (`Carmen/api-carmen`): `/nivel_bajo` y `/nivel_sentina` aceptan `?limit=` (100 por defecto).
-- [ ] **González** (`Gonzalez/api-gonzalez`): `/nivel` y `/nivel2` aceptan `?limit=` (100 por defecto).
-- [ ] **Aromos** (`Aromos/api-aromos`): `/nivel` y `/nivel2` aceptan `?limit=` (300 por defecto).
-- [ ] **Nerquihue** (`Nerquihue/api-nerquihue`, versión no `-pg`): `/nivel` acepta `?limit=`. Solo hay que desplegarla si es la que está en producción. La `-pg` ya lo soportaba.
-- [ ] **Bucalemu** (`Bucalemu/api-bucalemu-postgres`): endpoints nuevos `/metrics/nivel_nilahue`, `/nivel_casuto`, `/nivel_bucalemu_bajo` y `/nivel_bucalemu_alto`.
+- [x] **Cocalan** (`Cocalan/api-cocalan`): `/nivel?limit=N` devuelve las N lecturas más recientes. Antes devolvía las más antiguas de las últimas 6 h.
+  - **Corrección del 2026-10-27:** con `limit=3` llegaba 1 solo registro. La tabla repite cada lectura unas 10 veces con el mismo `mt_time_2`, que es la PK de la entidad, y TypeORM fusionaba esas filas después del `LIMIT`. Ahora usa SQL con `DISTINCT ON (mt_time_2)`. **Hay que volver a desplegarla.**
+  - Verificar: `curl "https://app.jteanalytics.cl/cocalan/nivel?limit=3"` → 3 registros recientes con horas distintas.
+- [x] **Carmen** (`Carmen/api-carmen`): `/nivel_bajo` y `/nivel_sentina` aceptan `?limit=` (100 por defecto).
+- [x] **González** (`Gonzalez/api-gonzalez`): `/nivel` y `/nivel2` aceptan `?limit=` (100 por defecto).
+- [x] **Aromos** (`Aromos/api-aromos`): `/nivel` y `/nivel2` aceptan `?limit=` (300 por defecto).
+- [x] **Nerquihue** (`Nerquihue/api-nerquihue-pg`): ya respetaba `?limit=` (verificado en vivo: `limit=50` devuelve 50). Solo se agregó validación y el tope de 5000 filas, igual que en las demás APIs. **Desplegarla es opcional.** La versión antigua `api-nerquihue` se eliminó por estar en desuso.
+- [x] **Bucalemu** (`Bucalemu/api-bucalemu-postgres`): endpoints nuevos `/metrics/nivel_nilahue`, `/nivel_casuto`, `/nivel_bucalemu_bajo` y `/nivel_bucalemu_alto`.
   - Aceptan `?limit=N` o `?start=YYYY-MM-DD&end=YYYY-MM-DD` (días completos, `end` inclusivo). Casuto se entrega en metros (÷100).
   - Son las mismas URLs que **ya usa el dashboard** (`DashboardBucalemuNuevo`), que hoy reciben 404, así que el filtro por fecha de esos gráficos también queda arreglado.
   - Verificar: `curl "https://app.jteanalytics.cl/bucalemu/metrics/nivel_casuto?limit=3"` → valores en metros.
@@ -163,7 +164,7 @@ En estos sitios ya no se necesitan `mysql-connector-python` ni `psycopg2`.
 | Bug | Estado |
 |-----|--------|
 | B1 Auquinco con datos de 6 h | ✅ API (Fase 1) + el monitor toma siempre los más recientes |
-| B2 Cocalan con datos de 6 h | ✅ API (Fase 1) |
+| B2 Cocalan con datos de 6 h | ✅ API (Fase 1), incluye la corrección por filas duplicadas |
 | B3 Sensor de Cocalan | ⏳ Confirmar (ver Cocalán) |
 | B4 Vaciado vuelve a 0 a las 24 h | ✅ Formato `1 d HH:MM:SS`, con tope "más de 7 días" |
 | B5 `.env` y código con nombres distintos | ✅ El monitor acepta ambos nombres |
@@ -179,3 +180,14 @@ En estos sitios ya no se necesitan `mysql-connector-python` ni `psycopg2`.
 | Nuevo: endpoints de nivel de Bucalemu con 404 en el dashboard | ✅ Creados |
 | Nuevo: `sensor_id = 1` en Olivar | ✅ |
 | S1 Credenciales en git | ✅ Movidas a `.env` y copia eliminada · ⏳ Cambiar claves (Fase 0) |
+| Nuevo: lecturas duplicadas por timestamp | ✅ El monitor guarda un valor por timestamp · ✅ Cocalan con `DISTINCT ON` · ⏳ Ver nota abajo |
+
+### Nota: lecturas duplicadas en las tablas
+
+Medido el 2026-10-27, pidiendo `?limit=50`:
+
+- **Cocalan:** llegaban 5 registros, es decir, unas 10 filas por lectura. Ya corregido en la API.
+- **Trinidad/Marchigüe:** llegan 50 filas con solo 30 timestamps distintos.
+- **Cuevas (45), Hornillas (46), Idahue Planta 2 (43) y Puquillay (28):** se pierden algunas filas por el mismo efecto.
+
+El monitor ya tolera los duplicados. El problema de fondo está en los proveedores de datos, que insertan la misma lectura varias veces y hacen crecer las tablas: conviene revisarlos, empezando por el de Cocalan.

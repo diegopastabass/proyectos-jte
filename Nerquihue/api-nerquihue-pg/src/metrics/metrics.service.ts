@@ -257,8 +257,12 @@ export class SsrNerquihueService {
       }));
     }
 
+    // ?limit= válido y positivo, con tope de 5000 filas (100 por defecto)
+    const limit = Number(dto.limit);
     const takeLimit =
-      dto.limit && !isNaN(Number(dto.limit)) ? Number(dto.limit) : 100;
+      dto.limit && Number.isFinite(limit) && limit > 0
+        ? Math.min(Math.floor(limit), 5000)
+        : 100;
 
     const results = await this.repo.find({
       where: { mt_name: 'SSR_NERQUIHUE--slave.estanque' },

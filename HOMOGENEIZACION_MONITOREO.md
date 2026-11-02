@@ -245,7 +245,7 @@ Antes de migrar algunos scripts hay que tocar estas APIs:
 |-----|--------|
 | `Auquinco/api-auquinco` `getNivel` | Sin rango ignora `limit` y devuelve las últimas 6 h en orden ASC. Debe aceptar `limit` (DESC + `reverse`, como Ranguil y Cuevas). |
 | `Cocalan/api-cocalan` `getNivel` | Sin rango hace `ASC` + `take: limit` dentro de las últimas 6 h, o sea **los 2 registros más antiguos**. Usar `DESC` + `reverse`. |
-| `Nerquihue/api-nerquihue` (versión no `-pg`) | Ignora `limit` (100 fijos). Si es la desplegada, corregirla o confirmar que corre `api-nerquihue-pg`. |
+| `Nerquihue/api-nerquihue` (versión no `-pg`) | ~~Ignora `limit`~~ Eliminada (en desuso). La desplegada es `api-nerquihue-pg`, que ya respeta `limit`. |
 | `Aromos/api-aromos` `getNivel2` | Consulta el **mismo** sensor que `getNivel` (`SSR_AROMOS--slave.estanque`): error de copiar y pegar. |
 | `Bucalemu/api-bucalemu-postgres` | Crear un endpoint de serie histórica por sensor. |
 | Guindo / Llaveria | No tienen API; crear endpoints de nivel (MySQL), por ejemplo en la API de Trinidad, que ya se conecta a la MySQL `apr_*`. |

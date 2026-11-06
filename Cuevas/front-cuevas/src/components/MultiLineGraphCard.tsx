@@ -1,23 +1,25 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Card, { CardBody } from "./Card";
 import {
   Chart as ChartJS,
-  CategoryScale,
   LinearScale,
+  TimeScale,
   PointElement,
   LineElement,
   Tooltip,
   Legend,
   Title,
 } from "chart.js";
+import type { ChartOptions } from "chart.js";
+import "chartjs-adapter-date-fns";
 import { Line } from "react-chartjs-2";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { format } from "date-fns";
 
 ChartJS.register(
-  CategoryScale,
   LinearScale,
+  TimeScale,
   PointElement,
   LineElement,
   Tooltip,
@@ -30,15 +32,29 @@ interface Metric {
   time: string;
 }
 
+type MultiSeries = Record<string, Metric[]>;
+
 export interface MultiLineGraphCardProps {
   isOpen: boolean;
   title: string;
   chartLabel: string;
-  initialData: Record<string, Metric[]>;
+  initialData: MultiSeries;
   date?: string;
   fetchEndpoint?: string;
   divisor?: number;
 }
+
+const BORDER_COLORS = [
+  "rgba(255, 0, 0, 1)", // Rojo
+  "rgba(0, 180, 0, 1)", // Verde
+  "rgba(0, 0, 255, 1)", // Azul
+];
+
+const BG_COLORS = [
+  "rgba(255, 0, 0, 0.6)",
+  "rgba(0, 180, 0, 0.6)",
+  "rgba(0, 0, 255, 0.6)",
+];
 
 function MultiLineGraphCard({
   isOpen,
@@ -49,122 +65,84 @@ function MultiLineGraphCard({
   fetchEndpoint,
   divisor = 1,
 }: MultiLineGraphCardProps) {
-  const [currentData, setCurrentData] = useState<Record<string, Metric[]>>(initialData);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [dateData, setDateData] = useState<MultiSeries>({});
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
+  // Con una fecha elegida se consulta ese día; si no, se muestran los datos de hoy
   useEffect(() => {
-    if (!selectedDate) {
-      setCurrentData(initialData);
-    }
-  }, [initialData, selectedDate]);
+    if (!selectedDate || !fetchEndpoint) return;
 
-  useEffect(() => {
+    const controller = new AbortController();
+    const formattedDate = format(selectedDate, "yyyy-MM-dd");
+
     const fetchDataByDate = async () => {
-      if (selectedDate && fetchEndpoint) {
-        setIsLoading(true);
-        try {
-          const formattedDate = format(selectedDate, "yyyy-MM-dd");
-          const response = await fetch(
-            `${fetchEndpoint}?start=${formattedDate}&end=${formattedDate}`
-          );
-          if (response.ok) {
-            const data = await response.json();
-            setCurrentData(data);
-          } else {
-            console.error("Error al obtener datos por fecha");
-          }
-        } catch (error) {
-          console.error("Excepción al hacer fetch:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      } else if (!selectedDate) {
-        setCurrentData(initialData);
+      setIsLoading(true);
+      try {
+        const response = await fetch(
+          `${fetchEndpoint}?start=${formattedDate}&end=${formattedDate}`,
+          { signal: controller.signal }
+        );
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        setDateData(await response.json());
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        console.error("Error al obtener datos por fecha:", error);
+        setDateData({});
+      } finally {
+        if (!controller.signal.aborted) setIsLoading(false);
       }
     };
 
     fetchDataByDate();
-  }, [selectedDate, fetchEndpoint, initialData]);
+    return () => controller.abort();
+  }, [selectedDate, fetchEndpoint]);
 
-  const keys = Object.keys(currentData);
-  const firstKey = keys.find((key) => currentData[key] && currentData[key].length > 0);
+  const currentData = selectedDate ? dateData : initialData;
 
-  const labels = firstKey
-    ? currentData[firstKey].map((d) =>
-        new Date(d.time).toLocaleTimeString("es-CL", {
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      )
-    : [];
+  // Cada fase tiene sus propias marcas de tiempo, por eso se grafica con {x, y}
+  // sobre un eje temporal en vez de compartir las etiquetas de la primera serie.
+  const datasets = useMemo(
+    () =>
+      Object.keys(currentData).map((key, index) => ({
+        label: key.toUpperCase(),
+        data: currentData[key].map((d) => ({
+          x: new Date(d.time).getTime(),
+          y: d.value / divisor,
+        })),
+        backgroundColor: BG_COLORS[index % BG_COLORS.length],
+        borderColor: BORDER_COLORS[index % BORDER_COLORS.length],
+        borderWidth: 2,
+        tension: 0.2,
+        pointRadius: 0,
+        pointHitRadius: 10,
+      })),
+    [currentData, divisor]
+  );
 
-  const borderColors = [
-    "rgba(255, 0, 0, 1)", // Rojo
-    "rgba(0, 180, 0, 1)", // Verde
-    "rgba(0, 0, 255, 1)", // Azul
-  ];
-
-  const bgColors = [
-    "rgba(255, 0, 0, 0.6)",
-    "rgba(0, 180, 0, 0.6)",
-    "rgba(0, 0, 255, 0.6)",
-  ];
-
-  const datasets = keys.map((key, index) => {
-    return {
-      label: key.toUpperCase(),
-      data: currentData[key].map((d) => d.value / divisor),
-      backgroundColor: bgColors[index % bgColors.length],
-      borderColor: borderColors[index % borderColors.length],
-      borderWidth: 2,
-      tension: 0.5,
-      pointRadius: 0,
-      pointHitRadius: 10,
-      pointBackgroundColor: "transparent",
-      pointBorderColor: "transparent",
-    };
-  });
-
-  const chartData = {
-    labels,
-    datasets,
-  };
-
-  const options: any = {
+  const options: ChartOptions<"line"> = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: false,
+    parsing: false,
     plugins: {
-      legend: {
-        display: true,
-        labels: {
-          color: "#333",
-        },
-      },
-      title: {
-        display: true,
-        text: chartLabel,
-      },
-      tooltip: {
-        mode: "index" as const,
-        intersect: false,
-      },
+      legend: { display: true, labels: { color: "#333" } },
+      title: { display: true, text: chartLabel },
+      tooltip: { mode: "index", intersect: false },
     },
-    hover: {
-      mode: "index" as const,
-      intersect: false,
-    },
+    interaction: { mode: "index", intersect: false },
     scales: {
       x: {
-        ticks: {
-          color: "#555",
+        type: "time",
+        time: {
+          tooltipFormat: "dd-MM HH:mm",
+          displayFormats: { minute: "HH:mm", hour: "HH:mm" },
         },
+        ticks: { color: "#555", maxRotation: 0, autoSkipPadding: 20 },
       },
       y: {
         beginAtZero: true,
-        ticks: {
-          color: "#555",
-        },
+        ticks: { color: "#555" },
       },
     },
   };
@@ -192,7 +170,7 @@ function MultiLineGraphCard({
               <span>Cargando...</span>
             </div>
           )}
-          <Line data={chartData as any} options={options} />
+          <Line data={{ datasets }} options={options} />
         </div>
         <div className="d-flex justify-content-center align-items-center p-2 border-top">
           <span className="me-2 text-muted" style={{ fontSize: "0.9rem" }}>Consultar fecha:</span>

@@ -19,6 +19,12 @@ describe('rut', () => {
     expect(normalizarRut('222222222')).toBe('22222222-2');
   });
 
+  it('acepta ceros a la izquierda, como los escribe Banco de Chile', () => {
+    expect(normalizarRut('022222222-2')).toBe('22222222-2'); // cabecera de la cartola
+    expect(normalizarRut('0333333333')).toBe('33333333-3'); // "PAGO:PROVEEDORES 0…", sin guion
+    expect(normalizarRut('0333333331')).toBeNull();
+  });
+
   it('rechaza DV incorrecto y números cortos', () => {
     expect(normalizarRut('22222222-1')).toBeNull();
     expect(normalizarRut('12345')).toBeNull();
@@ -50,6 +56,10 @@ describe('texto', () => {
     expect(parsearMonto('$0')).toBe(0);
     expect(parsearMonto('-$5.000')).toBe(-5000);
     expect(parsearMonto('$-5.000')).toBe(-5000);
+    // Banco de Chile: signo explícito y ceros a la izquierda
+    expect(parsearMonto('+0000500000')).toBe(500000);
+    expect(parsearMonto('-0000000500000')).toBe(-500000);
+    expect(parsearMonto('00000000000')).toBe(0);
     expect(parsearMonto(null)).toBe(0);
     expect(() => parsearMonto('$12,50')).toThrow();
   });

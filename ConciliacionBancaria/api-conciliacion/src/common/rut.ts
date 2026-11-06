@@ -13,11 +13,12 @@ export function calcularDv(cuerpo: number): string {
 /**
  * Normaliza un RUT a "12345678-K" (sin puntos, DV en mayúscula).
  * Devuelve null si no tiene formato de RUT o si el dígito verificador no cuadra.
+ * Acepta ceros a la izquierda, como los escribe Banco de Chile: "076907914-9", "0765177979".
  */
 export function normalizarRut(texto: string | null | undefined): string | null {
   if (!texto) return null;
   const limpio = texto.replace(/[.\s]/g, '').toUpperCase();
-  const m = /^(\d{1,8})-?([\dK])$/.exec(limpio);
+  const m = /^0*(\d{1,8})-?([\dK])$/.exec(limpio);
   if (!m) return null;
   const cuerpo = Number(m[1]);
   if (cuerpo < 1_000_000) return null;

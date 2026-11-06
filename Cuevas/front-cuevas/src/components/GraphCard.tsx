@@ -40,7 +40,8 @@ export interface GraphCardProps {
   type: "nivel" | "caudal" | "horometro" | "totalizador";
   date?: string;
   nivelMax?: number; // Opcional, por defecto 3 en la lógica
-  nivelAlarma?: number; // Opcional
+  nivelAlarma?: number; // Opcional: nivel crítico bajo (valor crudo, antes de divisor)
+  nivelRebalse?: number; // Opcional: nivel máximo, posible rebalse (valor crudo)
   fetchEndpoint?: string; // Para consultas por fecha
   divisor?: number; // Para transformar valores de entrada
 }
@@ -63,47 +64,44 @@ function GraphCard({
   date,
   nivelMax = 3,
   nivelAlarma,
+  nivelRebalse,
   fetchEndpoint,
   divisor = 1,
 }: GraphCardProps) {
-  const [currentData, setCurrentData] = useState<Metric[]>(initialData);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [dateData, setDateData] = useState<Metric[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // Sincronizar initialData con currentData si no hay una fecha seleccionada
+  // Con una fecha elegida se consulta ese día; si no, se muestran los datos de hoy
   useEffect(() => {
-    if (!selectedDate) {
-      setCurrentData(initialData);
-    }
-  }, [initialData, selectedDate]);
+    if (!selectedDate || !fetchEndpoint) return;
 
-  useEffect(() => {
+    const controller = new AbortController();
+    const formattedDate = format(selectedDate, "yyyy-MM-dd");
+
     const fetchDataByDate = async () => {
-      if (selectedDate && fetchEndpoint) {
-        setIsLoading(true);
-        try {
-          const formattedDate = format(selectedDate, "yyyy-MM-dd");
-          const response = await fetch(
-            `${fetchEndpoint}?start=${formattedDate}&end=${formattedDate}`
-          );
-          if (response.ok) {
-            const data = await response.json();
-            setCurrentData(data);
-          } else {
-            console.error("Error al obtener datos por fecha");
-          }
-        } catch (error) {
-          console.error("Excepción al hacer fetch:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      } else if (!selectedDate) {
-        setCurrentData(initialData);
+      setIsLoading(true);
+      try {
+        const response = await fetch(
+          `${fetchEndpoint}?start=${formattedDate}&end=${formattedDate}`,
+          { signal: controller.signal }
+        );
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        setDateData(await response.json());
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        console.error("Error al obtener datos por fecha:", error);
+        setDateData([]);
+      } finally {
+        if (!controller.signal.aborted) setIsLoading(false);
       }
     };
 
     fetchDataByDate();
-  }, [selectedDate, fetchEndpoint, initialData]);
+    return () => controller.abort();
+  }, [selectedDate, fetchEndpoint]);
+
+  const currentData = selectedDate ? dateData : initialData;
 
   // Procesamiento de datos y etiquetas según el tipo
   const labels = currentData.map((d) => {
@@ -133,6 +131,20 @@ function GraphCard({
         }
       : null;
 
+  // Línea de nivel máximo (posible rebalse), misma lógica que la de alarma baja
+  const rebalseDataset =
+    nivelRebalse !== undefined
+      ? {
+          label: "Nivel máximo",
+          data: Array(values.length).fill(nivelRebalse / divisor),
+          borderColor: "rgba(245, 158, 11, 0.9)",
+          borderWidth: 1.5,
+          pointRadius: 0,
+          borderDash: [4, 4],
+          type: "line" as const,
+        }
+      : null;
+
   const mainDataset = {
     label: chartLabel,
     data: values,
@@ -147,7 +159,11 @@ function GraphCard({
 
   const chartData = {
     labels,
-    datasets: [mainDataset, ...(alarmaDataset ? [alarmaDataset] : [])],
+    datasets: [
+      mainDataset,
+      ...(alarmaDataset ? [alarmaDataset] : []),
+      ...(rebalseDataset ? [rebalseDataset] : []),
+    ],
   };
 
   const isBarChart = type === "horometro" || type === "totalizador";

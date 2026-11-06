@@ -9,7 +9,16 @@
       "divisor": 1,
       "unidad": "m",
       "nivel_alerta": 2,
-      "nivel_rebalse": null
+      "nivel_rebalse": 4.8
+    },
+    {
+      "id": "estanque_2",
+      "nombre": "Estanque 20 m³",
+      "endpoint": "/nivel2",
+      "divisor": 100,
+      "unidad": "m",
+      "nivel_alerta": 1.2,
+      "nivel_rebalse": 2.2
     }
   ]
 }

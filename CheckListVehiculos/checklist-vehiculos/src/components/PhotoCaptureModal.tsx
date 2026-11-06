@@ -11,6 +11,7 @@ const PhotoCaptureModal: React.FC<PhotoCaptureModalProps> = ({ show, onClose, on
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [photoData, setPhotoData] = useState<string | null>(null);
+  const [videoReady, setVideoReady] = useState(false);
 
   useEffect(() => {
     if (show && !photoData) {
@@ -22,6 +23,7 @@ const PhotoCaptureModal: React.FC<PhotoCaptureModalProps> = ({ show, onClose, on
   }, [show, photoData]);
 
   const startCamera = async () => {
+    setVideoReady(false);
     try {
       const ms = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
       setStream(ms);
@@ -44,6 +46,8 @@ const PhotoCaptureModal: React.FC<PhotoCaptureModalProps> = ({ show, onClose, on
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
+      // Sin dimensiones el canvas genera "data:," (foto vacía)
+      if (!video.videoWidth || !video.videoHeight) return;
       const ctx = canvas.getContext('2d');
       if (ctx) {
         canvas.width = video.videoWidth;
@@ -84,7 +88,7 @@ const PhotoCaptureModal: React.FC<PhotoCaptureModalProps> = ({ show, onClose, on
           </div>
           <div className="modal-body p-0 text-center position-relative bg-black">
             {!photoData ? (
-              <video ref={videoRef} autoPlay playsInline className="w-100" style={{ maxHeight: '60vh', objectFit: 'contain' }}></video>
+              <video ref={videoRef} autoPlay playsInline onLoadedMetadata={() => setVideoReady(true)} className="w-100" style={{ maxHeight: '60vh', objectFit: 'contain' }}></video>
             ) : (
               <img src={photoData} alt="Captured" className="w-100" style={{ maxHeight: '60vh', objectFit: 'contain' }} />
             )}
@@ -92,7 +96,7 @@ const PhotoCaptureModal: React.FC<PhotoCaptureModalProps> = ({ show, onClose, on
           </div>
           <div className="modal-footer border-secondary justify-content-center">
             {!photoData ? (
-              <button className="btn btn-primary rounded-circle" style={{ width: '60px', height: '60px' }} onClick={capturePhoto}>
+              <button className="btn btn-primary rounded-circle" style={{ width: '60px', height: '60px' }} onClick={capturePhoto} disabled={!videoReady}>
                 <i className="bi bi-camera fs-3"></i>
               </button>
             ) : (

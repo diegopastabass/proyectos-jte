@@ -36,7 +36,7 @@ export interface EstanqueConfig {
 }
 
 export const POZOS: PozoConfig[] = [
-  { id: "pozo_1", nombre: "Pozo 1", tagBomba: "B-01", tagCaudal: "FIT-01", divisorCaudal: 10, conDatos: true },
+  { id: "pozo_1", nombre: "Pozo 1", tagBomba: "B-01", tagCaudal: "FIT-01", divisorCaudal: 1, conDatos: true },
   { id: "pozo_3", nombre: "Pozo 3", tagBomba: "B-03", tagCaudal: "FIT-03", divisorCaudal: 10, conDatos: true },
 ];
 

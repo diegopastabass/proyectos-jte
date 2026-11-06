@@ -25,7 +25,9 @@ const MECHANICAL_CONFIG = [
   { id: 'deposito_agua', label: 'Depósito de Agua' }, { id: 'otros_mecanico', label: 'Otros (Mecánico)' }
 ];
 
-const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicle, setViewState, addToast }) => {
+const INVALID_PHOTO_MSG = 'Una de las fotos está vacía o dañada. Vuelva a tomarla e intente nuevamente.';
+
+const ChecklistForm: React.FC<ChecklistFormProps> =({ vehicle, setViewState, addToast }) => {
   const initChecks = (config: any[]) => config.reduce((acc, curr) => ({ ...acc, [curr.id]: { id: curr.id, label: curr.label, isGood: true, observation: '', photo: '' } }), {});
 
   const [visualChecks, setVisualChecks] = useState<Record<string, ChecklistItem>>(initChecks(VISUAL_CONFIG));
@@ -77,7 +79,9 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicle, setViewState, ad
 
   const dataURLtoBlob = (dataUrl: string): Blob => {
     const arr = dataUrl.split(',');
-    const mime = arr[0].match(/:(.*?);/)![1];
+    const mimeMatch = arr[0].match(/:(.*?);/);
+    if (!mimeMatch || !arr[1]) throw new Error(INVALID_PHOTO_MSG);
+    const mime = mimeMatch[1];
     const bstr = atob(arr[1]);
     let n = bstr.length;
     const u8arr = new Uint8Array(n);
@@ -86,12 +90,17 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicle, setViewState, ad
   };
 
   const compressImage = (dataUrl: string, maxWidth = 1024, quality = 0.6): Promise<string> => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const img = new Image();
+      img.onerror = () => reject(new Error(INVALID_PHOTO_MSG));
       img.onload = () => {
         const canvas = document.createElement('canvas');
         let width = img.width;
         let height = img.height;
+        if (!width || !height) {
+          reject(new Error(INVALID_PHOTO_MSG));
+          return;
+        }
         if (width > maxWidth) {
           height = Math.round((height * maxWidth) / width);
           width = maxWidth;
@@ -237,7 +246,9 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicle, setViewState, ad
       setViewState('home');
     } catch (error: any) {
       let msg: string;
-      if (error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
+      if (!error?.isAxiosError) {
+        msg = error?.message || 'Error al preparar las fotos.';
+      } else if (error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
         msg = 'La conexión tardó demasiado. Verifique su conexión a internet e intente nuevamente.';
       } else if (!error?.response) {
         msg = 'No se pudo conectar con el servidor. Verifique su conexión a internet e intente nuevamente.';

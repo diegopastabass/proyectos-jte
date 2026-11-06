@@ -1,6 +1,6 @@
 # api-conciliacion
 
-API de conciliación bancaria: importa cartolas de BancoEstado y el RCV del SII, y permite conciliar movimientos con documentos. Contexto y fases en [../PLAN_IMPLEMENTACION.md](../PLAN_IMPLEMENTACION.md).
+API de conciliación bancaria: importa cartolas de BancoEstado y de Banco de Chile y el RCV del SII, y permite conciliar movimientos con documentos. Contexto y fases en [../PLAN_IMPLEMENTACION.md](../PLAN_IMPLEMENTACION.md).
 
 ## Puesta en marcha
 

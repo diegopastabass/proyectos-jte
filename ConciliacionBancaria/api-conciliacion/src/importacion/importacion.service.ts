@@ -6,7 +6,12 @@ import {
 } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { createHash } from 'crypto';
-import { DataSource, EntityManager } from 'typeorm';
+import {
+  DataSource,
+  EntityManager,
+  LessThanOrEqual,
+  MoreThanOrEqual,
+} from 'typeorm';
 import { auditar, recalcular } from '../common/auditoria';
 import { horaChileADate, normalizarTexto } from '../common/texto';
 import {
@@ -257,13 +262,38 @@ export class ImportacionService {
       }
       return [];
     }
-    if (
-      cartola.saldoInicial !== null &&
-      !previas.some((p) => p.saldoFinal === cartola.saldoInicial)
-    ) {
-      return [
-        'El saldo inicial no coincide con el saldo final de ninguna cartola importada: puede faltar una',
-      ];
+    // Sin N° de cartola (Banco de Chile) la cadena se comprueba por saldos Y fechas (un mes puede
+    // empezar y terminar en el mismo saldo, ej. $0, y los saldos solos darían falsos enlaces).
+    // Está completa si la cartola continúa a una importada, la antecede, o se traslapa con ellas.
+    if (cartola.saldoInicial !== null) {
+      const saldoInicial = cartola.saldoInicial;
+      const enlaza =
+        previas.some(
+          (p) =>
+            (p.saldoFinal === saldoInicial &&
+              cartola.desde >= (p.periodoHasta ?? '')) ||
+            (cartola.saldoFinal !== null &&
+              p.saldoInicial === cartola.saldoFinal &&
+              cartola.hasta <= (p.periodoDesde ?? '')),
+        ) ||
+        // Traslape con lo posterior: empieza en un saldo que la cuenta ya tenía en esa fecha o antes.
+        (await em.existsBy(Movimiento, {
+          cuentaId,
+          saldo: saldoInicial,
+          fecha: LessThanOrEqual(cartola.desde),
+        })) ||
+        // Traslape con lo anterior: termina en un saldo que la cuenta ya tiene desde esa fecha.
+        (cartola.saldoFinal !== null &&
+          (await em.existsBy(Movimiento, {
+            cuentaId,
+            saldo: cartola.saldoFinal,
+            fecha: MoreThanOrEqual(cartola.hasta),
+          })));
+      if (!enlaza) {
+        return [
+          'El saldo inicial no coincide con el de ninguna cartola importada: puede faltar una',
+        ];
+      }
     }
     return [];
   }

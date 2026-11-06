@@ -1,0 +1,139 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SsrCuevasController = void 0;
+const common_1 = require("@nestjs/common");
+const metrics_service_1 = require("./metrics.service");
+const date_range_dto_1 = require("./models/dto/date-range.dto");
+let SsrCuevasController = class SsrCuevasController {
+    service;
+    constructor(service) {
+        this.service = service;
+    }
+    getSnapshot() {
+        return this.service.getSnapshot();
+    }
+    getTotalizador(dto) {
+        return this.service.getTotalizador(dto);
+    }
+    getHorometro(dto) {
+        return this.service.getHorometro(dto);
+    }
+    getNivel(dto) {
+        return this.service.getNivel(dto);
+    }
+    getNivel2(dto) {
+        return this.service.getNivel2(dto);
+    }
+    getVoltaje2(dto) {
+        return this.service.getVoltaje2(dto);
+    }
+    getCaudal(dto) {
+        return this.service.getCaudal(dto);
+    }
+    getFreatico(dto) {
+        return this.service.getFreatico(dto);
+    }
+    getKwh(dto) {
+        return this.service.getKwh(dto);
+    }
+    getVoltaje(dto) {
+        return this.service.getVoltaje(dto);
+    }
+    getCorriente(dto) {
+        return this.service.getCorriente(dto);
+    }
+};
+exports.SsrCuevasController = SsrCuevasController;
+__decorate([
+    (0, common_1.Get)('snapshot'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], SsrCuevasController.prototype, "getSnapshot", null);
+__decorate([
+    (0, common_1.Get)('totalizador'),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [date_range_dto_1.DateRangeDto]),
+    __metadata("design:returntype", void 0)
+], SsrCuevasController.prototype, "getTotalizador", null);
+__decorate([
+    (0, common_1.Get)('horometro'),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [date_range_dto_1.DateRangeDto]),
+    __metadata("design:returntype", void 0)
+], SsrCuevasController.prototype, "getHorometro", null);
+__decorate([
+    (0, common_1.Get)('nivel'),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [date_range_dto_1.DateRangeDto]),
+    __metadata("design:returntype", void 0)
+], SsrCuevasController.prototype, "getNivel", null);
+__decorate([
+    (0, common_1.Get)('nivel2'),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [date_range_dto_1.DateRangeDto]),
+    __metadata("design:returntype", void 0)
+], SsrCuevasController.prototype, "getNivel2", null);
+__decorate([
+    (0, common_1.Get)('voltaje2'),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [date_range_dto_1.DateRangeDto]),
+    __metadata("design:returntype", void 0)
+], SsrCuevasController.prototype, "getVoltaje2", null);
+__decorate([
+    (0, common_1.Get)('caudal'),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [date_range_dto_1.DateRangeDto]),
+    __metadata("design:returntype", void 0)
+], SsrCuevasController.prototype, "getCaudal", null);
+__decorate([
+    (0, common_1.Get)('freatico'),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [date_range_dto_1.DateRangeDto]),
+    __metadata("design:returntype", void 0)
+], SsrCuevasController.prototype, "getFreatico", null);
+__decorate([
+    (0, common_1.Get)('kwh'),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [date_range_dto_1.DateRangeDto]),
+    __metadata("design:returntype", void 0)
+], SsrCuevasController.prototype, "getKwh", null);
+__decorate([
+    (0, common_1.Get)('voltaje'),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [date_range_dto_1.DateRangeDto]),
+    __metadata("design:returntype", void 0)
+], SsrCuevasController.prototype, "getVoltaje", null);
+__decorate([
+    (0, common_1.Get)('corriente'),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [date_range_dto_1.DateRangeDto]),
+    __metadata("design:returntype", void 0)
+], SsrCuevasController.prototype, "getCorriente", null);
+exports.SsrCuevasController = SsrCuevasController = __decorate([
+    (0, common_1.Controller)(''),
+    __metadata("design:paramtypes", [metrics_service_1.SsrCuevasService])
+], SsrCuevasController);
+//# sourceMappingURL=metrics.controller.js.map

@@ -83,7 +83,7 @@ export default function Importar() {
     <div className="container py-4">
       <Encabezado
         titulo="Importar"
-        subtitulo="Cartolas de BancoEstado (Excel) y Registro de Compras y Ventas del SII (CSV)"
+        subtitulo="Cartolas de BancoEstado (Excel) y de Banco de Chile (cartola emitida), y Registro de Compras y Ventas del SII (CSV)"
       />
 
       <div
@@ -104,7 +104,7 @@ export default function Importar() {
           ref={input}
           type="file"
           multiple
-          accept=".xlsx,.csv"
+          accept=".xlsx,.xls,.csv,.txt"
           className="d-none"
           onChange={(e) => {
             void procesar(Array.from(e.target.files ?? []));

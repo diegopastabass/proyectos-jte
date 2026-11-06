@@ -6,6 +6,7 @@ import {
   parsearMonto,
 } from '../../common/texto';
 import { filas, ValorCelda } from './excel.util';
+import { validarSaldos } from './saldo.util';
 import {
   ArchivoEntrada,
   CartolaLeida,
@@ -215,29 +216,6 @@ export function extraerContraparte(glosa: string): {
   if (!m) return { texto: null, rut };
   const texto = m[1].startsWith('DE RUT ') ? null : m[1];
   return { texto, rut };
-}
-
-function validarSaldos(
-  movs: MovimientoLeido[],
-  saldoInicial: number | null,
-  saldoFinal: number | null,
-) {
-  if (saldoInicial === null) return;
-  let saldo = saldoInicial;
-  for (const m of movs) {
-    saldo += m.monto;
-    if (m.saldo !== null && m.saldo !== saldo) {
-      throw new ErrorLectura(
-        `El saldo no cuadra en el movimiento ${m.orden} (${m.fecha} "${m.glosa}"): ` +
-          `se esperaba ${saldo} y la cartola dice ${m.saldo}. ¿El archivo fue editado?`,
-      );
-    }
-  }
-  if (saldoFinal !== null && saldo !== saldoFinal) {
-    throw new ErrorLectura(
-      `El saldo final calculado (${saldo}) no coincide con el del resumen (${saldoFinal})`,
-    );
-  }
 }
 
 function textoONulo(v: ValorCelda): string | null {

@@ -7,6 +7,8 @@ export interface ArchivoEntrada {
   buffer: Buffer;
   /** Libro ya abierto si el archivo es xlsx (se abre una sola vez para todos los lectores). */
   libro?: Workbook;
+  /** Contenido ya decodificado si el archivo es texto plano (ej. la cartola emitida de Banco de Chile). */
+  texto?: string;
 }
 
 export interface MovimientoLeido {

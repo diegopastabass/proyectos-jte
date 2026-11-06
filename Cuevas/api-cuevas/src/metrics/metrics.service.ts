@@ -1,10 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Raw } from 'typeorm';
 import * as fs from 'fs';
 import { Telemetria } from './models/metrics.entity';
 import { DateRangeDto } from './models/dto/date-range.dto';
 import { MetricSnapshot, Metric } from './models/types';
+import { SENSOR_NAMES, cleanSensorName, pozoSensor } from './models/sensors';
 
 interface DailyQueryResult {
   day: Date;
@@ -72,12 +73,9 @@ export class SsrCuevasService {
     ON t.mt_name = latest.mt_name AND t.mt_time_2 = latest.last_time
   `);
 
-      const PREFIX_POZO = 'SSR_CUEVAS--slave.';
-
       const snapshot: MetricSnapshot = results.reduce(
         (acc: MetricSnapshot, row: any) => {
-          const key = row.mt_name.replace(PREFIX_POZO, '');
-          acc[key] = {
+          acc[cleanSensorName(row.mt_name)] = {
             value: Number(row.mt_value),
             time: new Date(row.mt_time_2).toISOString(),
           };
@@ -124,8 +122,8 @@ export class SsrCuevasService {
         return { tiempo, formatted };
       };
 
-      const est_1 = await calcularTiempoVaciado('SSR_CUEVAS--slave.estanque');
-      const est_2 = await calcularTiempoVaciado('SSR_CUEVAS--slave.estanque_2');
+      const est_1 = await calcularTiempoVaciado(SENSOR_NAMES.estanque);
+      const est_2 = await calcularTiempoVaciado(SENSOR_NAMES.nivel_2);
 
       return {
         snapshot,
@@ -245,9 +243,9 @@ export class SsrCuevasService {
   // Totalizador
   async getTotalizador(dto: DateRangeDto): Promise<Metric[]> {
     if (!dto || !dto.start || !dto.end)
-      throw new Error('Se requiere rango de fechas válido.');
+      throw new BadRequestException('Se requiere rango de fechas válido.');
     return this.calculateAndCacheDaily(
-      'SSR_CUEVAS--slave.totalizador',
+      SENSOR_NAMES.totalizador,
       dto.start,
       dto.end,
     );
@@ -256,9 +254,9 @@ export class SsrCuevasService {
   // Horometro
   async getHorometro(dto: DateRangeDto): Promise<Metric[]> {
     if (!dto || !dto.start || !dto.end)
-      throw new Error('Se requiere rango de fechas válido.');
+      throw new BadRequestException('Se requiere rango de fechas válido.');
     return this.calculateAndCacheDaily(
-      'SSR_CUEVAS--slave.horometro',
+      SENSOR_NAMES.horometro,
       dto.start,
       dto.end,
     );
@@ -267,23 +265,27 @@ export class SsrCuevasService {
   // Kwh
   async getKwh(dto: DateRangeDto): Promise<Metric[]> {
     if (!dto || !dto.start || !dto.end)
-      throw new Error('Se requiere rango de fechas válido.');
-    return this.calculateAndCacheDaily(
-      'SSR_CUEVAS--slave.kwh',
-      dto.start,
-      dto.end,
-    );
+      throw new BadRequestException('Se requiere rango de fechas válido.');
+    return this.calculateAndCacheDaily(SENSOR_NAMES.kwh, dto.start, dto.end);
   }
 
-  // Nivel (estanque 1)
-  async getNivel(dto: DateRangeDto): Promise<Metric[]> {
+  // Serie cruda de un sensor. Con start/end devuelve el rango completo (días
+  // inclusivos); sin rango devuelve las últimas `limit` muestras (100 por defecto).
+  private async getSeries(
+    mtName: string,
+    dto: DateRangeDto,
+  ): Promise<Metric[]> {
     const range = this.normalizeDateRange(dto);
+    const toMetric = (row: Telemetria): Metric => ({
+      time: row.mt_time_2.toISOString(),
+      value: Number(row.mt_value),
+    });
 
     if (range) {
       const { start, end } = range;
       const results = await this.repo.find({
         where: {
-          mt_name: 'SSR_CUEVAS--slave.estanque',
+          mt_name: mtName,
           mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
             start,
             end,
@@ -291,243 +293,84 @@ export class SsrCuevasService {
         },
         order: { mt_time_2: 'ASC' },
       });
-
-      return results.map((row) => ({
-        time: row.mt_time_2.toISOString(),
-        value: Number(row.mt_value),
-      }));
+      return results.map(toMetric);
     }
 
     const takeLimit =
       dto.limit && !isNaN(Number(dto.limit)) ? Number(dto.limit) : 100;
 
     const results = await this.repo.find({
-      where: { mt_name: 'SSR_CUEVAS--slave.estanque' },
+      where: { mt_name: mtName },
       order: { mt_time_2: 'DESC' },
       take: takeLimit,
     });
-
-    return results.reverse().map((row) => ({
-      time: row.mt_time_2.toISOString(),
-      value: Number(row.mt_value),
-    }));
+    return results.reverse().map(toMetric);
   }
 
-  // Nivel 2 (estanque_2)
-  async getNivel2(dto: DateRangeDto): Promise<Metric[]> {
+  // Series de varias variables del pozo. Sin rango: últimas 6 horas.
+  private async getPozoSeries<K extends string>(
+    variables: readonly K[],
+    dto: DateRangeDto,
+  ): Promise<Record<K, Metric[]>> {
     const range = this.normalizeDateRange(dto);
 
-    if (range) {
-      const { start, end } = range;
+    const fetchVariable = async (variable: K): Promise<Metric[]> => {
+      const mtName = pozoSensor(variable);
       const results = await this.repo.find({
         where: {
-          mt_name: 'SSR_CUEVAS--slave.estanque_2',
-          mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
-            start,
-            end,
-          }),
+          mt_name: mtName,
+          mt_time_2: range
+            ? Raw((alias) => `${alias} >= :start AND ${alias} < :end`, range)
+            : Raw((alias) => `${alias} >= :start`, {
+                start: new Date(Date.now() - 6 * 60 * 60 * 1000),
+              }),
         },
         order: { mt_time_2: 'ASC' },
       });
-
       return results.map((row) => ({
         time: row.mt_time_2.toISOString(),
         value: Number(row.mt_value),
       }));
-    }
+    };
 
-    const takeLimit =
-      dto.limit && !isNaN(Number(dto.limit)) ? Number(dto.limit) : 100;
+    const series = await Promise.all(variables.map(fetchVariable));
+    return Object.fromEntries(
+      variables.map((variable, i) => [variable, series[i]]),
+    ) as Record<K, Metric[]>;
+  }
 
-    const results = await this.repo.find({
-      where: { mt_name: 'SSR_CUEVAS--slave.estanque_2' },
-      order: { mt_time_2: 'DESC' },
-      take: takeLimit,
-    });
+  // Nivel estanque 1
+  getNivel(dto: DateRangeDto): Promise<Metric[]> {
+    return this.getSeries(SENSOR_NAMES.estanque, dto);
+  }
 
-    return results.reverse().map((row) => ({
-      time: row.mt_time_2.toISOString(),
-      value: Number(row.mt_value),
-    }));
+  // Nivel estanque 2 (ESTANQUE_20M3--slave.AI12 -> nivel_2)
+  getNivel2(dto: DateRangeDto): Promise<Metric[]> {
+    return this.getSeries(SENSOR_NAMES.nivel_2, dto);
+  }
+
+  // Voltaje del panel solar del estanque 2 (ESTANQUE_20M3--slave.AI32 -> voltaje_2)
+  getVoltaje2(dto: DateRangeDto): Promise<Metric[]> {
+    return this.getSeries(SENSOR_NAMES.voltaje_2, dto);
   }
 
   // Freático
-  async getFreatico(dto: DateRangeDto): Promise<Metric[]> {
-    const range = this.normalizeDateRange(dto);
-
-    if (range) {
-      const { start, end } = range;
-      const results = await this.repo.find({
-        where: {
-          mt_name: 'SSR_CUEVAS--slave.freatico',
-          mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
-            start,
-            end,
-          }),
-        },
-        order: { mt_time_2: 'ASC' },
-      });
-
-      return results.map((row) => ({
-        time: row.mt_time_2.toISOString(),
-        value: Number(row.mt_value),
-      }));
-    }
-
-    const takeLimit =
-      dto.limit && !isNaN(Number(dto.limit)) ? Number(dto.limit) : 100;
-
-    const results = await this.repo.find({
-      where: { mt_name: 'SSR_CUEVAS--slave.freatico' },
-      order: { mt_time_2: 'DESC' },
-      take: takeLimit,
-    });
-
-    return results.reverse().map((row) => ({
-      time: row.mt_time_2.toISOString(),
-      value: Number(row.mt_value),
-    }));
+  getFreatico(dto: DateRangeDto): Promise<Metric[]> {
+    return this.getSeries(SENSOR_NAMES.freatico, dto);
   }
 
   // Caudal
-  async getCaudal(dto: DateRangeDto): Promise<Metric[]> {
-    const range = this.normalizeDateRange(dto);
-
-    if (range) {
-      const { start, end } = range;
-      const results = await this.repo.find({
-        where: {
-          mt_name: 'SSR_CUEVAS--slave.caudal',
-          mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
-            start,
-            end,
-          }),
-        },
-        order: { mt_time_2: 'ASC' },
-      });
-
-      return results.map((row) => ({
-        time: row.mt_time_2.toISOString(),
-        value: Number(row.mt_value),
-      }));
-    }
-
-    const takeLimit =
-      dto.limit && !isNaN(Number(dto.limit)) ? Number(dto.limit) : 100;
-
-    const results = await this.repo.find({
-      where: { mt_name: 'SSR_CUEVAS--slave.caudal' },
-      order: { mt_time_2: 'DESC' },
-      take: takeLimit,
-    });
-
-    return results.reverse().map((row) => ({
-      time: row.mt_time_2.toISOString(),
-      value: Number(row.mt_value),
-    }));
+  getCaudal(dto: DateRangeDto): Promise<Metric[]> {
+    return this.getSeries(SENSOR_NAMES.caudal, dto);
   }
 
   // Corriente (I1, I2, I3)
-  async getCorriente(
-    dto: DateRangeDto,
-  ): Promise<{ I1: Metric[]; I2: Metric[]; I3: Metric[] }> {
-    const range = this.normalizeDateRange(dto);
-
-    const fetchVariable = async (variable: string) => {
-      const mtName = `SSR_CUEVAS--slave.${variable}`;
-      if (!range) {
-        const start = new Date(Date.now() - 6 * 60 * 60 * 1000);
-        const results = await this.repo.find({
-          where: {
-            mt_name: mtName,
-            mt_time_2: Raw((alias) => `${alias} >= :start`, { start }),
-          },
-          order: { mt_time_2: 'ASC' },
-        });
-
-        return results.map((row) => ({
-          time: row.mt_time_2.toISOString(),
-          value: Number(row.mt_value),
-        }));
-      }
-
-      const { start, end } = range;
-
-      const results = await this.repo.find({
-        where: {
-          mt_name: mtName,
-          mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
-            start,
-            end,
-          }),
-        },
-        order: { mt_time_2: 'ASC' },
-      });
-
-      return results.map((row) => ({
-        time: row.mt_time_2.toISOString(),
-        value: Number(row.mt_value),
-      }));
-    };
-
-    const [I1, I2, I3] = await Promise.all([
-      fetchVariable('I1'),
-      fetchVariable('I2'),
-      fetchVariable('I3'),
-    ]);
-
-    return { I1, I2, I3 };
+  getCorriente(dto: DateRangeDto) {
+    return this.getPozoSeries(['I1', 'I2', 'I3'] as const, dto);
   }
 
   // Voltaje (L1, L2, L3)
-  async getVoltaje(
-    dto: DateRangeDto,
-  ): Promise<{ L1: Metric[]; L2: Metric[]; L3: Metric[] }> {
-    const range = this.normalizeDateRange(dto);
-
-    const fetchVariable = async (variable: string) => {
-      const mtName = `SSR_CUEVAS--slave.${variable}`;
-      if (!range) {
-        const start = new Date(Date.now() - 6 * 60 * 60 * 1000);
-        const results = await this.repo.find({
-          where: {
-            mt_name: mtName,
-            mt_time_2: Raw((alias) => `${alias} >= :start`, { start }),
-          },
-          order: { mt_time_2: 'ASC' },
-        });
-
-        return results.map((row) => ({
-          time: row.mt_time_2.toISOString(),
-          value: Number(row.mt_value),
-        }));
-      }
-
-      const { start, end } = range;
-
-      const results = await this.repo.find({
-        where: {
-          mt_name: mtName,
-          mt_time_2: Raw((alias) => `${alias} >= :start AND ${alias} < :end`, {
-            start,
-            end,
-          }),
-        },
-        order: { mt_time_2: 'ASC' },
-      });
-
-      return results.map((row) => ({
-        time: row.mt_time_2.toISOString(),
-        value: Number(row.mt_value),
-      }));
-    };
-
-    const [L1, L2, L3] = await Promise.all([
-      fetchVariable('L1'),
-      fetchVariable('L2'),
-      fetchVariable('L3'),
-    ]);
-
-    return { L1, L2, L3 };
+  getVoltaje(dto: DateRangeDto) {
+    return this.getPozoSeries(['L1', 'L2', 'L3'] as const, dto);
   }
 }

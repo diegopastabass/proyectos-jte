@@ -37,7 +37,8 @@ Entra a **Importar** y arrastra los archivos (o usa «Elegir archivos»). Puedes
 
 | Archivo | Cómo obtenerlo | Formato |
 |---|---|---|
-| **Cartola** | Portal empresas de BancoEstado, «Cartola Histórica de Chequera Electrónica» | Excel (`.xlsx`) |
+| **Cartola de BancoEstado** | Portal empresas de BancoEstado, «Cartola Histórica de Chequera Electrónica» | Excel (`.xlsx`) |
+| **Cartola de Banco de Chile** | Portal empresas de Banco de Chile, «Cartola emitida» de la cuenta corriente | Texto (aunque se llame `.xls`) o Excel |
 | **RCV de ventas y de compras** | Portal del SII, Registro de Compras y Ventas, detalle del período | CSV |
 
 **No les cambies el nombre.** Los CSV del SII (`RCV_COMPRA_REGISTRO_<rut>_<aaaamm>.csv`) traen el RUT y el período en el nombre y la app los usa para validar.
@@ -47,7 +48,7 @@ Qué verifica la importación:
 - **RUT distinto al de la empresa:** se rechaza.
 - **Cartola alterada:** si el saldo no cuadra al peso en alguna fila, se rechaza.
 - **Movimientos o documentos repetidos** (por ejemplo, dos cartolas que se traslapan): se descartan solos y el resultado dice cuántos eran nuevos.
-- **Falta una cartola:** si te saltas el N° 32 entre la 31 y la 33, lo avisa con una advertencia amarilla.
+- **Falta una cartola:** si te saltas el N° 32 entre la 31 y la 33, lo avisa con una advertencia amarilla. Banco de Chile no numera las cartolas: ahí lo detecta comparando saldos y fechas, y también acepta exportaciones parciales que se traslapan.
 - **RCV de compras «Reclamado» o «No incluir»:** se rechaza. El «Pendiente» se acepta con una advertencia.
 
 La cuenta bancaria se crea sola con la primera cartola. Las notas de crédito de **ventas** se descuentan solas de su factura.
@@ -136,7 +137,7 @@ La sesión dura 8 horas.
 
 ## 9. Limitaciones actuales
 
-- Solo **BancoEstado** (cartola Excel). Banco de Chile requiere un lector nuevo y las cartolas de ejemplo.
+- Hay lectores para **BancoEstado** (Excel) y **Banco de Chile** (texto o Excel). Un Excel antiguo (`.xls` binario), un PDF o una página web guardada como `.xls` no se pueden leer: la aplicación avisa y pide descargarla de otra forma.
 - Los depósitos en efectivo y con documentos no traen el nombre de quien paga: solo se pueden proponer por monto, así que quedan para revisión.
 - Las boletas de honorarios y la liquidación de Transbank aún no se importan.
 - La descarga del banco y del SII es manual: no hay conexión automática todavía.

@@ -11,7 +11,7 @@ import Error from "./Error";
 import ScadaDiagram from "../components/ScadaDiagram";
 import ExportModal from "../components/ExportModal";
 import lgoJte from "../assets/logoJte.png";
-import { fetchWithCache, fetchWithCacheMulti } from "../components/fetchWithcache";
+import { API_BASE, fetchApi, fetchWithCache } from "../components/fetchWithcache";
 import MultiLineGraphCard from "../components/MultiLineGraphCard";
 
 interface Metric {
@@ -29,8 +29,10 @@ interface Snapshot {
   horometro: Metric; //
   totalizador: Metric; //
 
-  estanque_2: Metric;
   freatico: Metric;
+  // Estanque 20 m³ (ESTANQUE_20M3--slave.AI12 / AI32); pueden faltar si el equipo no reporta
+  nivel_2?: Metric;
+  voltaje_2?: Metric;
   L1: Metric;
   L2: Metric;
   L3: Metric;
@@ -44,6 +46,8 @@ interface Datos {
   snapshot: Snapshot;
   tiempo_vaciado_est_1: number;
   tiempo_vaciado_est_1_formatted: string;
+  tiempo_vaciado_est_2: number;
+  tiempo_vaciado_est_2_formatted: string;
   nivel_alerta: number;
 }
 
@@ -52,6 +56,7 @@ function App() {
   const [data, setData] = useState<Datos | null>(null);
 
   const [nivelEstanque1, setNivelEstanque1] = useState<Metric[]>([]);
+  const [nivelEstanque2, setNivelEstanque2] = useState<Metric[]>([]);
   const [caudal, setCaudal] = useState<Metric[]>([]);
   const [horometro, setHorometro] = useState<Metric[]>([]);
   const [totalizador, setTotalizador] = useState<Metric[]>([]);
@@ -78,32 +83,34 @@ function App() {
     const now = new Date();
     const date = formatter.format(now);
 
+    // Cada recurso se pide por separado: si uno falla, el resto igual se actualiza
     const fetchData = async () => {
-      try {
-        const [snapshotRes, nivelEstanque1Res, caudalRes] = await Promise.all([
-          fetch("https://app.jteanalytics.cl/cuevas/snapshot"),
-          fetch(
-            `https://app.jteanalytics.cl/cuevas/nivel?start=${date}&end=${date}`,
-          ),
-          fetch(
-            `https://app.jteanalytics.cl/cuevas/caudal?start=${date}&end=${date}`,
-          ),
+      const [snapshot, nivel1, nivel2, caudalRes, totalizadorRes, horometroRes, voltaje, corriente] =
+        await Promise.allSettled([
+          fetchApi<Datos>("snapshot"),
+          fetchApi<Metric[]>("nivel", date),
+          fetchApi<Metric[]>("nivel2", date),
+          fetchApi<Metric[]>("caudal", date),
+          fetchWithCache("totalizador", date),
+          fetchWithCache("horometro", date),
+          fetchApi<Record<string, Metric[]>>("voltaje", date),
+          fetchApi<Record<string, Metric[]>>("corriente", date),
         ]);
 
-        const snapshotData: Datos = await snapshotRes.json();
+      const apply = <T,>(result: PromiseSettledResult<T>, set: (v: T) => void) => {
+        if (result.status === "fulfilled") set(result.value);
+        else console.error("Error al cargar datos:", result.reason);
+      };
 
-        setData(snapshotData);
-        setNivelEstanque1(await nivelEstanque1Res.json());
-        setCaudal(await caudalRes.json());
-        setTotalizador(await fetchWithCache("totalizador", date));
-        setHorometro(await fetchWithCache("horometro", date));
-        setVoltajeData(await fetchWithCacheMulti("voltaje", date));
-        setCorrienteData(await fetchWithCacheMulti("corriente", date));
-      } catch (error) {
-        console.error("Error al cargar datos:", error);
-      } finally {
-        setLoading(false);
-      }
+      apply(snapshot, setData);
+      apply(nivel1, setNivelEstanque1);
+      apply(nivel2, setNivelEstanque2);
+      apply(caudalRes, setCaudal);
+      apply(totalizadorRes, setTotalizador);
+      apply(horometroRes, setHorometro);
+      apply(voltaje, setVoltajeData);
+      apply(corriente, setCorrienteData);
+      setLoading(false);
     };
 
     fetchData();
@@ -119,6 +126,10 @@ function App() {
   if (!data) return <Error />;
 
   const nivelAlarma = data.nivel_alerta ?? 2;
+  // Umbrales del estanque 20 m³ en la unidad cruda del API (cm). Mismos valores que monitor_config.json
+  const ALARMA_ESTANQUE_2_CM = 120; // 1.2 m: nivel crítico bajo
+  const REBALSE_ESTANQUE_2_CM = 220; // 2.2 m: nivel máximo
+  const REBALSE_ESTANQUE_1_M = 4.8; // 4.8 m: nivel máximo
 
   const cleanDate = data?.snapshot
     ? new Date(
@@ -129,14 +140,21 @@ function App() {
         ),
       ).toISOString()
     : "";
-  console.log(cleanDate);
   const latestHorometro =
     horometro.length > 0 ? horometro[horometro.length - 1].value : 0;
   const horHoras = Math.floor(latestHorometro / 60);
   const horMinutos = Math.floor(latestHorometro % 60);
 
+  // nivel_2 llega en cm y voltaje_2 en mV
+  const nivel2 = (data.snapshot.nivel_2?.value ?? 0) / 100;
+  const voltaje2 = (data.snapshot.voltaje_2?.value ?? 0) / 1000;
+
   const latestTotalizador =
     totalizador.length > 0 ? totalizador[totalizador.length - 1].value : 0;
+
+  // Las vistas se invocan como funciones (no como <Vista />): definidas dentro de
+  // Home, cada refresh crearía un tipo de componente nuevo y desmontaría todo el
+  // árbol, perdiendo la fecha elegida en los gráficos y las transiciones.
 
   /** --- VISTA DESKTOP --- **/
   const DesktopView = () => (
@@ -171,9 +189,22 @@ function App() {
             chartLabel="Nivel del Estanque (m)"
             initialData={nivelEstanque1}
             type="nivel"
-            fetchEndpoint="https://app.jteanalytics.cl/cuevas/nivel"
+            fetchEndpoint={`${API_BASE}/nivel`}
             nivelMax={5}
             nivelAlarma={nivelAlarma}
+            nivelRebalse={REBALSE_ESTANQUE_1_M}
+          />
+          <GraphCard
+            isOpen={true}
+            title="Estanque 20 m³"
+            chartLabel="Nivel del Estanque (m)"
+            initialData={nivelEstanque2}
+            type="nivel"
+            fetchEndpoint={`${API_BASE}/nivel2`}
+            nivelMax={250}
+            divisor={100}
+            nivelAlarma={ALARMA_ESTANQUE_2_CM}
+            nivelRebalse={REBALSE_ESTANQUE_2_CM}
           />
           <GraphCard
             isOpen
@@ -181,7 +212,7 @@ function App() {
             chartLabel="Caudal (l/s)"
             initialData={caudal}
             type="caudal"
-            fetchEndpoint="https://app.jteanalytics.cl/cuevas/caudal"
+            fetchEndpoint={`${API_BASE}/caudal`}
             nivelMax={10}
           />
         </div>
@@ -214,7 +245,7 @@ function App() {
               title="Voltaje"
               chartLabel="Voltaje (V)"
               initialData={voltajeChartData}
-              fetchEndpoint="https://app.jteanalytics.cl/cuevas/voltaje"
+              fetchEndpoint={`${API_BASE}/voltaje`}
               divisor={10}
             />
           </div>
@@ -224,7 +255,7 @@ function App() {
               title="Corriente"
               chartLabel="Corriente (A)"
               initialData={corrienteChartData}
-              fetchEndpoint="https://app.jteanalytics.cl/cuevas/corriente"
+              fetchEndpoint={`${API_BASE}/corriente`}
               divisor={100}
             />
           </div>
@@ -280,9 +311,42 @@ function App() {
             chartLabel="Nivel (m)"
             initialData={nivelEstanque1}
             type="nivel"
-            fetchEndpoint="https://app.jteanalytics.cl/cuevas/nivel"
+            fetchEndpoint={`${API_BASE}/nivel`}
             nivelMax={5}
             nivelAlarma={nivelAlarma}
+            nivelRebalse={REBALSE_ESTANQUE_1_M}
+          />
+        </div>
+
+        {/* Estanque 2 */}
+        <div className="mb-2">
+          <Card>
+            <CardBody
+              title="Estanque 20 m³"
+              text1={["Nivel", `${nivel2.toFixed(2)} m`]}
+              text2={["Tiempo Vaciado", data.tiempo_vaciado_est_2_formatted]}
+              text3={["Voltaje Panel Solar", `${voltaje2.toFixed(2)} V`]}
+            />
+            <TankLevelCircular nivelActual={nivel2} nivelMaximo={2} />
+            <ToggleCardButton
+              isOpen={isOpenEstanque}
+              onToggle={() => setIsOpenEstanque(!isOpenEstanque)}
+            />
+          </Card>
+        </div>
+
+        <div className="mb-2">
+          <GraphCard
+            isOpen={isOpenEstanque}
+            title="Estanque 20 m³"
+            chartLabel="Nivel (m)"
+            initialData={nivelEstanque2}
+            type="nivel"
+            fetchEndpoint={`${API_BASE}/nivel2`}
+            nivelMax={250}
+            divisor={100}
+            nivelAlarma={ALARMA_ESTANQUE_2_CM}
+            nivelRebalse={REBALSE_ESTANQUE_2_CM}
           />
         </div>
 
@@ -317,7 +381,7 @@ function App() {
             chartLabel="Caudal (l/s)"
             initialData={caudal}
             type="caudal"
-            fetchEndpoint="https://app.jteanalytics.cl/cuevas/caudal"
+            fetchEndpoint={`${API_BASE}/caudal`}
             nivelMax={10}
           />
           <GraphCard
@@ -339,7 +403,7 @@ function App() {
             title="Voltaje"
             chartLabel="Voltaje (V)"
             initialData={voltajeChartData}
-            fetchEndpoint="https://app.jteanalytics.cl/cuevas/voltaje"
+            fetchEndpoint={`${API_BASE}/voltaje`}
             divisor={10}
           />
           <MultiLineGraphCard
@@ -347,7 +411,7 @@ function App() {
             title="Corriente"
             chartLabel="Corriente (A)"
             initialData={corrienteChartData}
-            fetchEndpoint="https://app.jteanalytics.cl/cuevas/corriente"
+            fetchEndpoint={`${API_BASE}/corriente`}
             divisor={100}
           />
         </div>
@@ -387,7 +451,7 @@ function App() {
 
   return (
     <>
-      {isLargeScreen ? <DesktopView /> : <MobileView />}
+      {isLargeScreen ? DesktopView() : MobileView()}
       <ExportModal show={isOpenExport} onClose={() => setIsOpenExport(false)} />
     </>
   );

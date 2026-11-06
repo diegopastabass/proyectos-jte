@@ -31,6 +31,11 @@ export class SsrCuevasController {
     return this.service.getNivel2(dto);
   }
 
+  @Get('voltaje2')
+  getVoltaje2(@Query() dto: DateRangeDto) {
+    return this.service.getVoltaje2(dto);
+  }
+
   @Get('caudal')
   getCaudal(@Query() dto: DateRangeDto) {
     return this.service.getCaudal(dto);

@@ -22,7 +22,8 @@ export function parsearMonto(valor: unknown): number {
   }
   if (typeof valor !== 'string')
     throw new Error(`Monto inválido: ${typeof valor}`);
-  const texto = valor.trim();
+  // El signo "+" va delante en algunas cartolas ("+0000500000"); no suma nada.
+  const texto = valor.trim().replace(/^\+\s*/, '');
   const negativo = texto.includes('-');
   const digitos = texto.replace(/[$\s.-]/g, '');
   if (!/^\d+$/.test(digitos)) throw new Error(`Monto inválido: "${texto}"`);

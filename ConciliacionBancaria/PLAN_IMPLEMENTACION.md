@@ -133,7 +133,9 @@ Se revisaron 3 cartolas de BancoEstado (N° 31 a 33, del 24/09 al 26/10/2026, 10
 - **Es una cuenta con línea de crédito:** el saldo es negativo en 241 de 266 filas. Las 24 «TRANSFERENCIA DESDE LINEA DE CREDI» (abonos, $2,7 M) y las 9 «AMORTIZACION A LINEA DE CREDITO» (cargos, $2,7 M) casi se anulan entre sí y no son ingresos ni gastos.
 - **Glosas:** `APP-TRASPASO A:` / `TRASPASO A:` (transferencias enviadas, nombre como el alias del beneficiario), `APP-TRASPASO DE:` / `TRASPASO DE:` (recibidas), `PAGO:` (compras con tarjeta en comercios y peajes) y operaciones bancarias sueltas.
 - **RUT escondido:** los abonos `PAGO:PROVEEDORES 0765177979` traen el RUT del cliente como `0` + cuerpo + DV (`76.517.797-9`). Los 5 que hay calzan con una factura de venta por monto exacto. Hoy `extraerRut` no los reconoce.
-- **Qué falla hoy:** el archivo se rechaza como «formato no reconocido» (el lector solo abre xlsx); el RUT `076907914-9` no pasa `normalizarRut` (cuerpo de 9 dígitos con cero) y `parsearMonto` rechaza el signo `+`.
+- **Resuelto (2026-11-03):** lector `bancochile.lector.ts` (texto plano y xlsx, por contenido). Corrige RUT con ceros a la izquierda y montos con `+`, valida el saldo corrido, deduce saldo inicial/final y período, y extrae el RUT de `PAGO:PROVEEDORES`. También acepta cartolas parciales que se traslapan y avisa de huecos por saldo y fecha. Un `.xls` binario, un PDF o una página web guardada como `.xls` se rechazan con un mensaje que dice qué hacer.
+- **Resultado con el archivo real (sin configurar nada):** 266 movimientos importados, 21 conciliados solos (todos correctos: 5 clientes por el RUT de la glosa, 11 compras con tarjeta por nombre y monto, 5 traspasos propios y del dueño). El resto es configuración: personas, línea de crédito, combustible y peajes.
+- **Pendiente de producto:** abonos del dueño se concilian como «Retiro del dueño» (conviene una categoría «Aporte del dueño»); pagos parciales de una misma factura en varias transferencias.
 
 ## Motor de conciliación
 
@@ -214,8 +216,8 @@ Todos los endpoints validan que el usuario pertenezca a `empresa_id` mediante un
 ## Fases
 
 ### Fase 0: insumos y base del proyecto
-- [x] Cartolas de BancoEstado (xlsx). **Pendiente: Banco de Chile.**
-- [ ] Conseguir **cartolas reales de Banco de Chile** (1–2 meses), en todos los formatos que ofrece cada portal empresas (xls/xlsx, csv, txt), y anonimizarlas para `test/fixtures`. Conviene tener más de un formato por banco: si el banco cambia uno, queda otro de respaldo.
+- [x] Cartolas de BancoEstado (xlsx) y de Banco de Chile (`CartolaEmitida.xls`, texto, octubre 2026).
+- [ ] Cartola de Banco de Chile **en Excel real**, si el portal la ofrece: el lector ya la acepta (mismas columnas), pero solo está probado con un xlsx sintético.
 - [x] CSV del RCV de compras y ventas (octubre 2026).
 - [x] `api-conciliacion` (Nest 11 + TypeORM 0.3, como Mantenimiento). Auth reescrito a partir del de Mantenimiento: el token expira, no hay secreto por defecto, se valida el body y hay permisos por empresa.
 - [x] `front-conciliacion` con Vite + React 19 + Bootstrap 5.3 (la misma línea que Mantenimiento y Cotizaciones, solo modo claro).
@@ -225,7 +227,7 @@ Todos los endpoints validan que el usuario pertenezca a `empresa_id` mediante un
 **Listo cuando:** se puede hacer login contra la API local y las migraciones corren limpias.
 
 ### Fase 1: primera versión usable
-- [x] Interfaz `LectorCartola` + lector de **BancoEstado**. **Pendiente: Banco de Chile.**
+- [x] Interfaz `LectorCartola` + lectores de **BancoEstado** y **Banco de Chile** (texto plano y xlsx, detectados por contenido; 2026-11-03).
   - Revisar en las cartolas reales cómo trae cada banco el RUT y el nombre de la contraparte en las transferencias. De eso depende que funcione el nivel 1 del motor.
   - xlsx con `exceljs` y csv con `csv-parse`. Si algún banco entrega `.xls` antiguo, se usa SheetJS (**desde cdn.sheetjs.com, no la versión de npm**, que está desactualizada).
 - [x] Lector del RCV (compras y ventas), probado con los archivos reales.

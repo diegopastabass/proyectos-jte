@@ -4,9 +4,7 @@ const api = axios.create({
   baseURL:
     import.meta.env.VITE_API_URL ||
     "https://app.jteanalytics.cl/checklist-vehiculos/",
-  headers: {
-    "Content-Type": "application/json",
-  },
+  // Sin Content-Type por defecto: axios usa JSON para objetos y multipart (con boundary) para FormData
   timeout: 60000, // 60s timeout global (las subidas de fotos usan 120s individual)
 });
 

@@ -1,0 +1,367 @@
+/* Página de SSR Las Balsas. Los colores de estado son los mismos del diagrama
+   (scada.css) y solo se usan para estado. */
+:root {
+  --balsas-fondo: #f2f4f7;
+  --balsas-superficie: #ffffff;
+  --balsas-tinta: #1f2933;
+  --balsas-tenue: #66727f;
+  --balsas-linea: #e2e7ed;
+  --balsas-agua: #0f7a91;
+  --balsas-ok: #22c55e;
+  --balsas-ok-texto: #15803d;
+  --balsas-aviso: #f59e0b;
+  --balsas-alarma: #dc2626;
+}
+
+body {
+  background-color: var(--balsas-fondo);
+  color: var(--balsas-tinta);
+}
+
+.balsas-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.balsas-page .navbar {
+  background-color: var(--balsas-superficie) !important;
+  border: 1px solid var(--balsas-linea);
+  box-shadow: none !important;
+  border-radius: 12px;
+}
+
+.balsas-main {
+  width: 100%;
+  max-width: 1760px;
+  margin: 0 auto;
+  padding: 16px clamp(8px, 1.4vw, 24px) 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.balsas-card {
+  background: var(--balsas-superficie);
+  border: 1px solid var(--balsas-linea);
+  border-radius: 12px;
+}
+
+.balsas-card__title {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.balsas-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--balsas-tenue);
+}
+
+.balsas-seccion {
+  margin: 12px 0 -4px;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+/* Alertas activas */
+.balsas-alertas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.balsas-alerta {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid #f5c2c2;
+  border-left: 4px solid var(--balsas-alarma);
+  background: #fef2f2;
+  color: #7f1d1d;
+}
+
+/* Indicadores */
+.balsas-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+}
+
+.kpi {
+  padding: 14px 16px;
+  gap: 2px;
+}
+
+.kpi__valor {
+  font-size: 1.6rem;
+  font-weight: 600;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.kpi__valor small {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--balsas-tenue);
+}
+
+.kpi__detalle {
+  font-size: 0.8rem;
+  color: var(--balsas-tenue);
+}
+
+.kpi__barra {
+  height: 6px;
+  margin: 6px 0 4px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--balsas-linea);
+}
+
+.kpi__barra > div {
+  height: 100%;
+  background: var(--balsas-agua);
+  transform-origin: left;
+  transition: transform 0.8s ease;
+}
+
+.kpi--alarma {
+  border-color: var(--balsas-alarma);
+}
+
+.kpi--alarma .kpi__valor {
+  color: var(--balsas-alarma);
+}
+
+.kpi--alarma .kpi__barra > div {
+  background: var(--balsas-alarma);
+}
+
+/* Diagrama y comunicación */
+.balsas-proceso {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 1400px) {
+  .balsas-proceso {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+}
+
+.balsas-scada {
+  padding: 16px;
+}
+
+.comunicacion {
+  padding: 16px;
+}
+
+.comunicacion__lista {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.comunicacion__lista li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--balsas-linea);
+}
+
+.comunicacion__punto {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.comunicacion__punto--ok {
+  background: var(--balsas-ok);
+}
+
+.comunicacion__punto--retrasado {
+  background: var(--balsas-aviso);
+}
+
+.comunicacion__punto--sin_datos {
+  background: var(--balsas-alarma);
+}
+
+.comunicacion__equipo {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.comunicacion__equipo code {
+  font-size: 0.72rem;
+  color: var(--balsas-tenue);
+}
+
+.comunicacion__estado {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 0.9rem;
+}
+
+.comunicacion__estado small {
+  color: var(--balsas-tenue);
+}
+
+.comunicacion__nota {
+  margin: 12px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--balsas-linea);
+  font-size: 0.8rem;
+  color: var(--balsas-tenue);
+}
+
+/* Grilla de dos columnas: tableros y gráficos */
+.balsas-grid-2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 992px) {
+  .balsas-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.balsas-grid-2 .card:not(.electric) {
+  max-width: none !important;
+  border: 1px solid var(--balsas-linea);
+  border-radius: 12px;
+}
+
+/* Tablero eléctrico */
+.electric {
+  padding: 16px;
+}
+
+.electric__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.electric__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.electric__pills {
+  display: flex;
+  gap: 6px;
+}
+
+.balsas-pill {
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--balsas-linea);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--balsas-tenue);
+}
+
+.balsas-pill--on {
+  border-color: var(--balsas-ok-texto);
+  background: #f0fdf4;
+  color: var(--balsas-ok-texto);
+}
+
+.electric__resumen {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.electric__valor {
+  font-size: 1.45rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.electric__valor small {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--balsas-tenue);
+}
+
+.electric__tabla {
+  width: 100%;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.electric__tabla th,
+.electric__tabla td {
+  padding: 6px 4px;
+  border-top: 1px solid var(--balsas-linea);
+  text-align: right;
+}
+
+.electric__tabla thead th {
+  border-top: 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--balsas-tenue);
+}
+
+.electric__tabla th:first-child {
+  text-align: left;
+}
+
+.electric__linea {
+  color: var(--balsas-tenue);
+}
+
+.electric__pie {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: var(--balsas-tenue);
+}
+
+.electric__pie strong {
+  color: var(--balsas-tinta);
+  font-variant-numeric: tabular-nums;
+}
+
+.balsas-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1760px;
+  margin: auto auto 0;
+  padding: 24px clamp(8px, 1.4vw, 24px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kpi__barra > div {
+    transition: none;
+  }
+}

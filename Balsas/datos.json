@@ -1,0 +1,702 @@
+[␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.L1L2",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "41452",␍
+    "mt_time_2": "2026-11-09 17:41:20.647221",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.L2L3",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "40310",␍
+    "mt_time_2": "2026-11-09 17:41:20.647221",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.I1",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "0",␍
+    "mt_time_2": "2026-11-09 17:41:20.647221",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.L1N",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "23536",␍
+    "mt_time_2": "2026-11-09 17:41:20.647221",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.I2",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "0",␍
+    "mt_time_2": "2026-11-09 17:41:20.647221",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.L2N",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "23886",␍
+    "mt_time_2": "2026-11-09 17:41:20.647221",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.L3L1",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "39641",␍
+    "mt_time_2": "2026-11-09 17:41:20.647221",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.L3N",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "22817",␍
+    "mt_time_2": "2026-11-09 17:41:20.647221",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.I3",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "0",␍
+    "mt_time_2": "2026-11-09 17:41:20.647221",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.automatico",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "1",␍
+    "mt_time_2": "2026-11-09 17:40:50.532549",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.AIB17:3",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "1",␍
+    "mt_time_2": "2026-11-09 17:40:50.532549",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.bomba",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "1",␍
+    "mt_time_2": "2026-11-09 17:40:50.532549",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.manual",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "0",␍
+    "mt_time_2": "2026-11-09 17:40:50.532549",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.presion",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "67",␍
+    "mt_time_2": "2026-11-09 17:40:50.532549",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.totalizador",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "3668482",␍
+    "mt_time_2": "2026-11-09 17:40:50.532549",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.caudal",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "133",␍
+    "mt_time_2": "2026-11-09 17:40:50.532549",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.AIB17:2",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "1",␍
+    "mt_time_2": "2026-11-09 17:40:50.532549",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.I1",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "1952",␍
+    "mt_time_2": "2026-11-09 17:40:49.243816",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.L1N",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "22415",␍
+    "mt_time_2": "2026-11-09 17:40:49.243816",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.I3",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "1626",␍
+    "mt_time_2": "2026-11-09 17:40:49.243816",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.I2",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "1726",␍
+    "mt_time_2": "2026-11-09 17:40:49.243816",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.L1L2",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "38646",␍
+    "mt_time_2": "2026-11-09 17:40:49.243816",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.L2L3",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "37139",␍
+    "mt_time_2": "2026-11-09 17:40:49.243816",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.L2N",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "21794",␍
+    "mt_time_2": "2026-11-09 17:40:49.243816",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.L3N",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "21374",␍
+    "mt_time_2": "2026-11-09 17:40:49.243816",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.L3L1",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "37825",␍
+    "mt_time_2": "2026-11-09 17:40:49.243816",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.L3L1",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "39641",␍
+    "mt_time_2": "2026-11-09 17:40:20.322765",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.L2N",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "23922",␍
+    "mt_time_2": "2026-11-09 17:40:20.322765",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.L2L3",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "40510",␍
+    "mt_time_2": "2026-11-09 17:40:20.322765",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.L3N",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "22807",␍
+    "mt_time_2": "2026-11-09 17:40:20.322765",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.L1L2",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "41643",␍
+    "mt_time_2": "2026-11-09 17:40:20.322765",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.I3",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "0",␍
+    "mt_time_2": "2026-11-09 17:40:20.322765",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.L1N",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "23570",␍
+    "mt_time_2": "2026-11-09 17:40:20.322765",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.I1",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "0",␍
+    "mt_time_2": "2026-11-09 17:40:20.322765",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.I2",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "0",␍
+    "mt_time_2": "2026-11-09 17:40:20.322765",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "ESTANQUE_BALSAS--slave.estanque",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "374",␍
+    "mt_time_2": "2026-11-09 17:40:04.53816",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "ESTANQUE_BALSAS--slave.solar_estanque",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "12850",␍
+    "mt_time_2": "2026-11-09 17:40:04.53816",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "ESTANQUE_BALSAS--slave.caudal_estanque",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "23",␍
+    "mt_time_2": "2026-11-09 17:40:04.53816",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "ESTANQUE_BALSAS--slave.totalizador_descarga",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "2901579",␍
+    "mt_time_2": "2026-11-09 17:40:04.53816",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.bomba",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "1",␍
+    "mt_time_2": "2026-11-09 17:39:56.881835",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.presion",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "67",␍
+    "mt_time_2": "2026-11-09 17:39:56.881835",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.AIB17:2",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "1",␍
+    "mt_time_2": "2026-11-09 17:39:56.881835",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.totalizador",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "3668475",␍
+    "mt_time_2": "2026-11-09 17:39:56.881835",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.automatico",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "1",␍
+    "mt_time_2": "2026-11-09 17:39:56.881835",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.caudal",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "116",␍
+    "mt_time_2": "2026-11-09 17:39:56.881835",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.manual",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "0",␍
+    "mt_time_2": "2026-11-09 17:39:56.881835",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.AIB17:3",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "1",␍
+    "mt_time_2": "2026-11-09 17:39:56.881835",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.L3N",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "21419",␍
+    "mt_time_2": "2026-11-09 17:39:55.748687",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.I1",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "1951",␍
+    "mt_time_2": "2026-11-09 17:39:55.748687",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.I2",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "1727",␍
+    "mt_time_2": "2026-11-09 17:39:55.748687",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.I3",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "1625",␍
+    "mt_time_2": "2026-11-09 17:39:55.748687",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.L1L2",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "38704",␍
+    "mt_time_2": "2026-11-09 17:39:55.748687",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.L1N",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "22459",␍
+    "mt_time_2": "2026-11-09 17:39:55.748687",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.L2N",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "21839",␍
+    "mt_time_2": "2026-11-09 17:39:55.748687",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.L2L3",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "37199",␍
+    "mt_time_2": "2026-11-09 17:39:55.748687",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.L3L1",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "37896",␍
+    "mt_time_2": "2026-11-09 17:39:55.748687",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.L1N",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "23564",␍
+    "mt_time_2": "2026-11-09 17:39:20.89919",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.L3L1",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "39654",␍
+    "mt_time_2": "2026-11-09 17:39:20.89919",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.L1L2",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "41648",␍
+    "mt_time_2": "2026-11-09 17:39:20.89919",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.L2N",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "23921",␍
+    "mt_time_2": "2026-11-09 17:39:20.89919",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.I3",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "0",␍
+    "mt_time_2": "2026-11-09 17:39:20.89919",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.L2L3",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "40498",␍
+    "mt_time_2": "2026-11-09 17:39:20.89919",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.L3N",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "22804",␍
+    "mt_time_2": "2026-11-09 17:39:20.89919",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.I1",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "0",␍
+    "mt_time_2": "2026-11-09 17:39:20.89919",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.I2",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "0",␍
+    "mt_time_2": "2026-11-09 17:39:20.89919",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "ESTANQUE_BALSAS--slave.estanque",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "373",␍
+    "mt_time_2": "2026-11-09 17:39:04.383669",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "ESTANQUE_BALSAS--slave.totalizador_descarga",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "2901577",␍
+    "mt_time_2": "2026-11-09 17:39:04.383669",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "ESTANQUE_BALSAS--slave.solar_estanque",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "12858",␍
+    "mt_time_2": "2026-11-09 17:39:04.383669",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "ESTANQUE_BALSAS--slave.caudal_estanque",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "23",␍
+    "mt_time_2": "2026-11-09 17:39:04.383669",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.AIB17:3",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "1",␍
+    "mt_time_2": "2026-11-09 17:38:55.564046",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.bomba",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "1",␍
+    "mt_time_2": "2026-11-09 17:38:55.564046",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.manual",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "0",␍
+    "mt_time_2": "2026-11-09 17:38:55.564046",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.presion",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "67",␍
+    "mt_time_2": "2026-11-09 17:38:55.564046",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.AIB17:2",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "1",␍
+    "mt_time_2": "2026-11-09 17:38:55.564046",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.totalizador",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "3668468",␍
+    "mt_time_2": "2026-11-09 17:38:55.564046",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.automatico",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "1",␍
+    "mt_time_2": "2026-11-09 17:38:55.564046",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.caudal",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "116",␍
+    "mt_time_2": "2026-11-09 17:38:55.564046",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.L2N",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "21762",␍
+    "mt_time_2": "2026-11-09 17:38:53.392633",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.L3N",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "21399",␍
+    "mt_time_2": "2026-11-09 17:38:53.392633",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.I1",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "1963",␍
+    "mt_time_2": "2026-11-09 17:38:53.392633",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.L2L3",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "37087",␍
+    "mt_time_2": "2026-11-09 17:38:53.392633",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.I2",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "1720",␍
+    "mt_time_2": "2026-11-09 17:38:53.392633",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.L3L1",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "37858",␍
+    "mt_time_2": "2026-11-09 17:38:53.392633",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.L1N",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "22454",␍
+    "mt_time_2": "2026-11-09 17:38:53.392633",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.L1L2",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "38645",␍
+    "mt_time_2": "2026-11-09 17:38:53.392633",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.I3",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "1625",␍
+    "mt_time_2": "2026-11-09 17:38:53.392633",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.L1N",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "23564",␍
+    "mt_time_2": "2026-11-09 17:38:21.01673",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.I3",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "0",␍
+    "mt_time_2": "2026-11-09 17:38:21.01673",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.L2N",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "23924",␍
+    "mt_time_2": "2026-11-09 17:38:21.01673",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.L2L3",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "40495",␍
+    "mt_time_2": "2026-11-09 17:38:21.01673",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.L3L1",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "39669",␍
+    "mt_time_2": "2026-11-09 17:38:21.01673",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.L1L2",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "41638",␍
+    "mt_time_2": "2026-11-09 17:38:21.01673",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.L3N",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "22804",␍
+    "mt_time_2": "2026-11-09 17:38:21.01673",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.I1",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "0",␍
+    "mt_time_2": "2026-11-09 17:38:21.01673",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "UNO_BALSAS--slave.I2",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "0",␍
+    "mt_time_2": "2026-11-09 17:38:21.01673",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "ESTANQUE_BALSAS--slave.estanque",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "372",␍
+    "mt_time_2": "2026-11-09 17:38:06.457119",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "ESTANQUE_BALSAS--slave.totalizador_descarga",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "2901576",␍
+    "mt_time_2": "2026-11-09 17:38:06.457119",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "ESTANQUE_BALSAS--slave.solar_estanque",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "12858",␍
+    "mt_time_2": "2026-11-09 17:38:06.457119",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "ESTANQUE_BALSAS--slave.caudal_estanque",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "23",␍
+    "mt_time_2": "2026-11-09 17:38:06.457119",␍
+    "mt_quality": "1"␍
+  },␍
+  {␍
+    "mt_name": "DOS_BALSAS--slave.caudal",␍
+    "mt_time": "2026-11-09",␍
+    "mt_value": "116",␍
+    "mt_time_2": "2026-11-09 17:37:52.113262",␍
+    "mt_quality": "1"␍
+  }␍
+]

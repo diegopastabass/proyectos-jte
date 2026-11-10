@@ -1,0 +1,21 @@
+{
+  "sitio": "SSR Las Balsas",
+  "api_base": "https://app.jteanalytics.cl/balsas",
+  "estanques": [
+    {
+      "id": "estanque",
+      "nombre": "Estanque",
+      "endpoint": "/nivel",
+      "divisor": 1,
+      "unidad": "m",
+      "nivel_alerta": 2,
+      "nivel_rebalse": null
+    }
+  ],
+  "conexion": {
+    "endpoint": "/equipos",
+    "modo": "sensor",
+    "nombre": "Equipos SSR Las Balsas",
+    "ignorar_sensores": ["Estanque (ESTANQUE_BALSAS)"]
+  }
+}

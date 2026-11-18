@@ -64,6 +64,8 @@ Después de importar:
 3. **Movimientos → «Por conciliar»:** lo que quedó sin propuesta, uno a uno (sección 6).
 4. **Documentos:** consulta qué facturas siguen pendientes de cobro o de pago.
 
+**Buscar por monto:** en el buscador de *Movimientos*, *Documentos*, el modal de conciliar y «Agregar al proyecto» puedes escribir un monto con `CLP` o `$` (por ejemplo `5500CLP` o `$5.500`). Aparecen los que estén a $1.000 o menos de ese monto, del más cercano al más lejano. Sin `CLP` ni `$`, un número se busca como folio o dentro de la glosa.
+
 ### Qué hace el motor solo
 
 El motor concilia **sin preguntarte** lo que tiene una confianza de **90 % o más**: COPEC contra su categoría, tus traspasos, el retiro del dueño, lo que cubren tus reglas, y los pagos donde el nombre y el monto calzan sin dudas. El resto queda como sugerencia.

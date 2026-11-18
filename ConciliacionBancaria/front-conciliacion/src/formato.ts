@@ -8,6 +8,24 @@ export function pesos(n: number | null | undefined): string {
   return n < 0 ? `-${clp.format(-n)}` : clp.format(n);
 }
 
+/** Diferencia máxima entre el monto buscado y el de cada resultado (igual que en la API). */
+export const MARGEN_MONTO_CLP = 1000;
+
+/** "5500CLP", "$5.500" → 5500. Exige "$" o "CLP" para no confundirlo con un folio o un número de la glosa. */
+export function montoDeBusqueda(q: string): number | null {
+  const m = /^(\$)?\s*(\d{1,3}(?:\.\d{3})+|\d+)\s*(clp)?$/i.exec(q.trim());
+  if (!m || (!m[1] && !m[3])) return null;
+  return Number(m[2].replace(/\./g, ""));
+}
+
+/** Con el botón de monto activo, "5000" o "5.000" se busca como "5000CLP"; lo demás queda igual. */
+export function resolverBusqueda(texto: string, porMonto: boolean): string {
+  const t = texto.trim();
+  if (!porMonto || montoDeBusqueda(t) !== null) return t;
+  const m = /^(\d{1,3}(?:\.\d{3})+|\d+)$/.exec(t);
+  return m ? `${m[1].replace(/\./g, "")}CLP` : t;
+}
+
 /** "2026-10-07" → "07-10-2026" (las fechas de la API vienen sin hora, no se pasan por Date). */
 export function fecha(iso: string | null | undefined): string {
   if (!iso) return "—";

@@ -658,6 +658,7 @@ No son de monitoreo, pero comparten stack (NestJS + TypeORM + PostgreSQL, React 
 - **PDF en el navegador** con `@react-pdf/renderer` (Mantenimiento, Mediciones, CheckList, Cotizaciones). Generarlo al hacer clic, no al renderizar listas (CheckList B11).
 - **`multipart/form-data`:** no fijes `Content-Type` a mano en axios, o el `FormData` se envía como JSON y las fotos se pierden (CheckList B1).
 - **Montos en pesos** como `bigint` con un *transformer* a `number`. **RUT** validado con dígito verificador (`common/rut.ts`).
+- **Buscar por monto:** si el buscador recibe un monto con `$` o `CLP` (`5500CLP`, `$5.500`) la API devuelve lo que esté a ±1.000 pesos, del más al menos cercano (`common/monto-busqueda.ts`; en movimientos y candidatos compara el valor absoluto). Sin marcador, un número sigue siendo folio o texto de la glosa. Aplica a Movimientos, Documentos, «Agregar al proyecto» y los candidatos del modal de conciliar.
 - **Tests** de la lógica pura (lectores de archivos, motor) con archivos sintéticos; los datos reales no van a git (`.gitignore` de la carpeta). Script `probar-lectores` para diagnosticar un archivo sin tocar la BD.
 
 ---

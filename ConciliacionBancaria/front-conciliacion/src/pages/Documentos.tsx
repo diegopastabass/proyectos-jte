@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import api, { mensajeError } from "../api";
-import { Alerta, BadgeDocumento, Cargando, Encabezado, Modal, Paginacion, Vacio } from "../components/comunes";
+import { Alerta, AvisoBusquedaMonto, BadgeDocumento, BotonMonto, Cargando, Encabezado, Modal, Paginacion, Vacio } from "../components/comunes";
 import SelectorProyecto from "../components/SelectorProyecto";
-import { fecha, pesos, tipoDte } from "../formato";
+import { fecha, pesos, resolverBusqueda, tipoDte } from "../formato";
 import { useEmpresa, useSesion } from "../sesion";
 import type { Direccion, Documento, DocumentoDetalle, EstadoDocumento, Pagina } from "../types";
 import { useCarga } from "../useCarga";
@@ -21,6 +21,7 @@ export default function Documentos() {
   const [direccion, setDireccion] = useState<Direccion>("emitido");
   const [estado, setEstado] = useState<(typeof ESTADOS)[number]["valor"]>("con_saldo");
   const [busqueda, setBusqueda] = useState("");
+  const [porMonto, setPorMonto] = useState(false);
   const [q, setQ] = useState("");
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
@@ -29,11 +30,11 @@ export default function Documentos() {
 
   useEffect(() => {
     const t = setTimeout(() => {
-      setQ(busqueda.trim());
+      setQ(resolverBusqueda(busqueda, porMonto));
       setPagina(1);
     }, 350);
     return () => clearTimeout(t);
-  }, [busqueda]);
+  }, [busqueda, porMonto]);
 
   const { datos, error, cargando, recargar } = useCarga<Pagina<Documento>>(`/empresas/${empresa.id}/documentos`, {
     direccion,
@@ -81,13 +82,15 @@ export default function Documentos() {
                 <span className="input-group-text bg-white border-end-0">
                   <i className="bi bi-search text-muted" />
                 </span>
-                <input className="form-control border-start-0 ps-0" placeholder="Razón social o folio" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
+                <input className="form-control border-start-0 ps-0" placeholder="Razón social, folio o monto (ej. 5500CLP)" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
+                <BotonMonto activo={porMonto} onCambiar={setPorMonto} />
                 {busqueda && (
                   <button className="btn btn-outline-secondary" onClick={() => setBusqueda("")}>
                     <i className="bi bi-x" />
                   </button>
                 )}
               </div>
+              <AvisoBusquedaMonto q={q} />
             </div>
             <div className="col-6 col-md-3">
               <input type="date" className="form-control" value={desde} onChange={(e) => cambiar(setDesde)(e.target.value)} title="Emitidos desde" />

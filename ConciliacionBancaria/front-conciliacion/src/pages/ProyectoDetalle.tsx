@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import api, { mensajeError } from "../api";
-import { Alerta, BadgeDocumento, BadgeMovimiento, Cargando, Modal } from "../components/comunes";
+import { Alerta, AvisoBusquedaMonto, BadgeDocumento, BotonMonto, BadgeMovimiento, Cargando, Modal } from "../components/comunes";
 import ConciliarModal from "../components/ConciliarModal";
-import { fecha, pesos, tipoDte } from "../formato";
+import { fecha, pesos, resolverBusqueda, tipoDte } from "../formato";
 import { useEmpresa, useSesion } from "../sesion";
 import type { BalanceProyecto, Documento, Movimiento, Pagina, ProyectoDetalle as TProyecto } from "../types";
 import { useCarga } from "../useCarga";
@@ -369,6 +369,7 @@ function AgregarModal({
   const empresa = useEmpresa();
   const base = `/empresas/${empresa.id}`;
   const [busqueda, setBusqueda] = useState("");
+  const [porMonto, setPorMonto] = useState(false);
   const [q, setQ] = useState("");
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
@@ -378,9 +379,9 @@ function AgregarModal({
   const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setQ(busqueda.trim()), 350);
+    const t = setTimeout(() => setQ(resolverBusqueda(busqueda, porMonto)), 350);
     return () => clearTimeout(t);
-  }, [busqueda]);
+  }, [busqueda, porMonto]);
 
   const filtros = { sinProyecto: "true", q, desde, hasta, porPagina: 200 };
   const movs = useCarga<Pagina<Movimiento>>(tipo === "movimientos" ? `${base}/movimientos` : null, filtros);
@@ -440,13 +441,17 @@ function AgregarModal({
       <Alerta error={error} onCerrar={() => setError("")} />
       <div className="row g-2 mb-3">
         <div className="col-md-5">
-          <input
-            className="form-control"
-            placeholder={tipo === "movimientos" ? "Buscar en la glosa" : "Buscar por razón social"}
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            autoFocus
-          />
+          <div className="input-group">
+            <input
+              className="form-control"
+              placeholder={tipo === "movimientos" ? "Glosa o monto (ej. 5500CLP)" : "Razón social o monto (ej. 5500CLP)"}
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              autoFocus
+            />
+            <BotonMonto activo={porMonto} onCambiar={setPorMonto} />
+          </div>
+          <AvisoBusquedaMonto q={q} />
         </div>
         {tipo === "documentos" && (
           <div className="col-md-3">

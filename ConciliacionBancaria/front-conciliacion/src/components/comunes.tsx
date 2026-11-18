@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from "react";
-import { ESTADO_DOCUMENTO, ESTADO_MOVIMIENTO, colorScore, porcentaje } from "../formato";
+import { ESTADO_DOCUMENTO, ESTADO_MOVIMIENTO, MARGEN_MONTO_CLP, colorScore, montoDeBusqueda, pesos, porcentaje } from "../formato";
 import type { EstadoDocumento, EstadoMovimiento } from "../types";
 
 export function Cargando({ texto = "Cargando…" }: { texto?: string }) {
@@ -29,6 +29,34 @@ export function Alerta({ error, onCerrar }: { error?: string | null; onCerrar?: 
       <div className="flex-grow-1">{error}</div>
       {onCerrar && <button type="button" className="btn-close" aria-label="Cerrar" onClick={onCerrar} />}
     </div>
+  );
+}
+
+/** Aviso bajo el buscador cuando lo escrito es un monto: se listan los cercanos, del más parecido al menos. */
+export function AvisoBusquedaMonto({ q }: { q: string }) {
+  const monto = montoDeBusqueda(q);
+  if (monto === null) return null;
+  return (
+    <small className="text-muted d-block mt-1">
+      <i className="bi bi-bullseye me-1" />
+      Montos entre {pesos(Math.max(0, monto - MARGEN_MONTO_CLP))} y {pesos(monto + MARGEN_MONTO_CLP)}, del más cercano a {pesos(monto)} al más lejano.
+    </small>
+  );
+}
+
+/** Botón del buscador: con él activo, un número suelto ("5000", "5.000") se busca como monto. */
+export function BotonMonto({ activo, onCambiar }: { activo: boolean; onCambiar: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      className={`btn ${activo ? "btn-primary" : "btn-outline-secondary"}`}
+      aria-pressed={activo}
+      title="Buscar por monto: 5000 o 5.000 se busca como 5000CLP"
+      onClick={() => onCambiar(!activo)}
+    >
+      <i className="bi bi-currency-dollar" />
+      CLP
+    </button>
   );
 }
 

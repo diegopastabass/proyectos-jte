@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Alerta, BadgeMovimiento, Cargando, Encabezado, Paginacion, Vacio } from "../components/comunes";
+import { Alerta, AvisoBusquedaMonto, BadgeMovimiento, BotonMonto, Cargando, Encabezado, Paginacion, Vacio } from "../components/comunes";
 import ConciliarModal from "../components/ConciliarModal";
-import { BANCOS, fecha, pesos } from "../formato";
+import { BANCOS, fecha, pesos, resolverBusqueda } from "../formato";
 import { useEmpresa } from "../sesion";
 import type { Categoria, CuentaBancaria, EstadoMovimiento, Movimiento, Pagina, Proyecto } from "../types";
 import { useCarga } from "../useCarga";
@@ -31,17 +31,18 @@ export default function Movimientos() {
   const [proyecto, setProyecto] = useState(url.get("proyectoId") ?? "");
   const [conComprobante, setConComprobante] = useState("");
   const [busqueda, setBusqueda] = useState("");
+  const [porMonto, setPorMonto] = useState(false);
   const [q, setQ] = useState("");
   const [pagina, setPagina] = useState(1);
   const [abierto, setAbierto] = useState<number | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => {
-      setQ(busqueda.trim());
+      setQ(resolverBusqueda(busqueda, porMonto));
       setPagina(1);
     }, 350);
     return () => clearTimeout(t);
-  }, [busqueda]);
+  }, [busqueda, porMonto]);
 
   const cuentas = useCarga<CuentaBancaria[]>(`${base}/cuentas`);
   const categorias = useCarga<Categoria[]>(`${base}/categorias`);
@@ -88,13 +89,15 @@ export default function Movimientos() {
                 <span className="input-group-text bg-white border-end-0">
                   <i className="bi bi-search text-muted" />
                 </span>
-                <input className="form-control border-start-0 ps-0" placeholder="Buscar en la glosa" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
+                <input className="form-control border-start-0 ps-0" placeholder="Glosa o monto (ej. 5500CLP)" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
+                <BotonMonto activo={porMonto} onCambiar={setPorMonto} />
                 {busqueda && (
                   <button className="btn btn-outline-secondary" onClick={() => setBusqueda("")}>
                     <i className="bi bi-x" />
                   </button>
                 )}
               </div>
+              <AvisoBusquedaMonto q={q} />
             </div>
             <div className="col-6 col-md-3 col-xl-2">
               <select className="form-select" value={signo} onChange={(e) => cambiar(setSigno)(e.target.value as typeof signo)}>

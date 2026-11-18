@@ -33,6 +33,7 @@ import {
   auditar,
   recalcular,
 } from '../common/auditoria';
+import { montoDeBusqueda, porCercaniaDeMonto } from '../common/monto-busqueda';
 import { Pagina, PaginacionDto } from '../common/paginacion';
 import { normalizarRut } from '../common/rut';
 import { type Direccion, Documento, type EstadoDocumento } from '../entities';
@@ -62,7 +63,10 @@ class FiltroDocumentosDto extends PaginacionDto {
   @IsOptional() @Type(() => Number) @IsInt() folio?: number;
   @IsOptional() @IsDateString() desde?: string;
   @IsOptional() @IsDateString() hasta?: string;
-  /** Busca en la razón social. */
+  /**
+   * Busca en la razón social. Si es un monto ("5500CLP", "$5.500") trae los documentos de
+   * ±1.000 pesos de ese total, del más al menos cercano.
+   */
   @IsOptional() @IsString() q?: string;
   @IsOptional() @Type(() => Number) @IsInt() proyectoId?: number;
   @IsOptional() @IsIn(['true', 'false']) sinProyecto?: 'true' | 'false';
@@ -102,13 +106,22 @@ export class DocumentosService {
     if (f.folio) qb.andWhere('d.folio = :folio', { folio: f.folio });
     if (f.desde) qb.andWhere('d.fechaEmision >= :desde', { desde: f.desde });
     if (f.hasta) qb.andWhere('d.fechaEmision <= :hasta', { hasta: f.hasta });
-    if (f.q) qb.andWhere('d.razonSocial ILIKE :q', { q: `%${f.q}%` });
+    const monto = montoDeBusqueda(f.q);
+    if (monto !== null) {
+      const { donde, distancia } = porCercaniaDeMonto('d.montoTotal', ':monto');
+      qb.andWhere(donde, { monto }).addSelect(distancia, 'distancia');
+    } else if (f.q) {
+      qb.andWhere('d.razonSocial ILIKE :q', { q: `%${f.q}%` });
+    }
     if (f.proyectoId)
       qb.andWhere('d.proyectoId = :proyectoId', { proyectoId: f.proyectoId });
     if (f.sinProyecto === 'true') qb.andWhere('d.proyectoId IS NULL');
 
+    // Con un monto manda la cercanía; el resto del orden desempata.
+    if (monto !== null)
+      qb.orderBy('distancia', 'ASC').addOrderBy('d.fechaEmision', 'DESC');
+    else qb.orderBy('d.fechaEmision', 'DESC');
     const [items, total] = await qb
-      .orderBy('d.fechaEmision', 'DESC')
       .addOrderBy('d.folio', 'DESC')
       .skip((f.pagina - 1) * f.porPagina)
       .take(f.porPagina)

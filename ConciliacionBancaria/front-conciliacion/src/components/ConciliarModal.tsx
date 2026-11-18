@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import api, { mensajeError } from "../api";
-import { fecha, pesos, porcentaje, tipoDte } from "../formato";
+import { fecha, pesos, porcentaje, resolverBusqueda, tipoDte } from "../formato";
 import { useEmpresa, useSesion } from "../sesion";
 import type { Candidato, Categoria, MovimientoDetalle } from "../types";
 import { useCarga } from "../useCarga";
 import Comprobantes from "./Comprobantes";
-import { Alerta, BadgeDocumento, BadgeMovimiento, Cargando, Modal } from "./comunes";
+import { Alerta, AvisoBusquedaMonto, BadgeDocumento, BotonMonto, BadgeMovimiento, Cargando, Modal } from "./comunes";
 import SelectorProyecto from "./SelectorProyecto";
 
 /**
@@ -29,11 +29,12 @@ export default function ConciliarModal({
   const categorias = useCarga<Categoria[]>(`${base}/categorias`);
 
   const [busqueda, setBusqueda] = useState("");
+  const [porMonto, setPorMonto] = useState(false);
   const [q, setQ] = useState("");
   useEffect(() => {
-    const t = setTimeout(() => setQ(busqueda.trim()), 350);
+    const t = setTimeout(() => setQ(resolverBusqueda(busqueda, porMonto)), 350);
     return () => clearTimeout(t);
-  }, [busqueda]);
+  }, [busqueda, porMonto]);
   const candidatos = useCarga<Candidato[]>(`${base}/movimientos/${movimientoId}/candidatos`, { q });
 
   // Documentos elegidos (id → monto a aplicar) y la línea opcional por categoría.
@@ -234,11 +235,15 @@ export default function ConciliarModal({
                   </span>
                   <input
                     className="form-control border-start-0 ps-0"
-                    placeholder="Buscar por razón social, RUT o folio"
+                    placeholder="Razón social, RUT, folio o monto (ej. 5500CLP)"
                     value={busqueda}
                     onChange={(e) => setBusqueda(e.target.value)}
                   />
+                  <BotonMonto activo={porMonto} onCambiar={setPorMonto} />
                 </div>
+              </div>
+              <div className="text-end">
+                <AvisoBusquedaMonto q={q} />
               </div>
               <div className="border rounded mb-3" style={{ maxHeight: 320, overflowY: "auto" }}>
                 <table className="table table-sm table-hover align-middle mb-0">

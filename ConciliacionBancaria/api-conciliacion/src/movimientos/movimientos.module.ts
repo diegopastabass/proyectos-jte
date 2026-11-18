@@ -29,6 +29,7 @@ import {
   UsuarioAutenticado,
 } from '../auth/auth.decorators';
 import { auditar, consultar, recalcular } from '../common/auditoria';
+import { montoDeBusqueda, porCercaniaDeMonto } from '../common/monto-busqueda';
 import { IndiceNombres, redondear } from '../motor/similitud';
 import { Pagina, PaginacionDto } from '../common/paginacion';
 import { normalizarTexto } from '../common/texto';
@@ -44,7 +45,10 @@ class FiltroMovimientosDto extends PaginacionDto {
   @IsOptional() @IsIn(['abono', 'cargo']) signo?: 'abono' | 'cargo';
   @IsOptional() @IsDateString() desde?: string;
   @IsOptional() @IsDateString() hasta?: string;
-  /** Busca en la glosa. */
+  /**
+   * Busca en la glosa. Si es un monto ("5500CLP", "$5.500") trae los de ±1.000 pesos de ese
+   * monto, del más al menos cercano.
+   */
   @IsOptional() @IsString() q?: string;
   /** Con alguna línea de conciliación vigente a esta categoría. */
   @IsOptional() @Type(() => Number) @IsInt() categoriaId?: number;
@@ -54,7 +58,10 @@ class FiltroMovimientosDto extends PaginacionDto {
 }
 
 class FiltroCandidatosDto {
-  /** Busca por razón social, RUT o folio, en todos los documentos con saldo (incluso excluidos). */
+  /**
+   * Busca por razón social, RUT o folio, en todos los documentos con saldo (incluso excluidos).
+   * Un monto ("5500CLP", "$5.500") trae los documentos con saldo a ±1.000 pesos.
+   */
   @IsOptional() @IsString() q?: string;
 }
 
@@ -101,10 +108,15 @@ export class MovimientosService {
       qb.andWhere(f.signo === 'abono' ? 'm.monto > 0' : 'm.monto < 0');
     if (f.desde) qb.andWhere('m.fecha >= :desde', { desde: f.desde });
     if (f.hasta) qb.andWhere('m.fecha <= :hasta', { hasta: f.hasta });
-    if (f.q)
+    const monto = montoDeBusqueda(f.q);
+    if (monto !== null) {
+      const { donde, distancia } = porCercaniaDeMonto('m.monto', ':monto');
+      qb.andWhere(donde, { monto }).addSelect(distancia, 'distancia');
+    } else if (f.q) {
       qb.andWhere('m.glosaNormalizada LIKE :q', {
         q: `%${normalizarTexto(f.q)}%`,
       });
+    }
     if (f.categoriaId)
       qb.andWhere(
         `EXISTS (SELECT 1 FROM conciliacion_linea l
@@ -121,8 +133,11 @@ export class MovimientosService {
                   WHERE k.movimiento_id = m.id AND k.eliminado_en IS NULL)`,
       );
 
+    // Con un monto manda la cercanía; el resto del orden desempata.
+    if (monto !== null)
+      qb.orderBy('distancia', 'ASC').addOrderBy('m.fecha', 'DESC');
+    else qb.orderBy('m.fecha', 'DESC');
     const [filas, total] = await qb
-      .orderBy('m.fecha', 'DESC')
       .addOrderBy('m.cuentaId')
       .addOrderBy('m.orden', 'DESC')
       .skip((f.pagina - 1) * f.porPagina)
@@ -189,6 +204,7 @@ export class MovimientosService {
     if (!mov) throw new NotFoundException('Movimiento no encontrado');
     const disponible = Math.abs(mov.monto) - mov.montoConciliado;
     const q = f.q?.trim();
+    const monto = montoDeBusqueda(q);
 
     const docs = await consultar<Omit<Candidato, 'similitud' | 'montoCalza'>>(
       this.ds,
@@ -199,11 +215,12 @@ export class MovimientosService {
          FROM documento
         WHERE empresa_id = $1 AND saldo_pendiente > 0
           AND ((direccion = 'emitido') <> (tipo_dte = 61)) = $2
-          AND (CASE WHEN $3::text IS NULL THEN estado IN ('pendiente', 'parcial')
+          AND (CASE WHEN $4::bigint IS NOT NULL THEN estado <> 'anulado' AND ${porCercaniaDeMonto('saldo_pendiente', '$4::bigint').donde}
+                    WHEN $3::text IS NULL THEN estado IN ('pendiente', 'parcial')
                     ELSE estado <> 'anulado'
                          AND (razon_social ILIKE '%' || $3 || '%' OR rut_contraparte ILIKE $3 || '%'
                               OR folio::text = $3) END)`,
-      [empresaId, mov.monto > 0, q || null],
+      [empresaId, mov.monto > 0, monto === null ? q || null : null, monto],
     );
 
     const indice = new IndiceNombres(
@@ -228,7 +245,12 @@ export class MovimientosService {
           0.45 * d.similitud +
           0.1 * Math.max(0, 1 - dias(d) / 180),
       }))
-      .sort((a, b) => b.orden - a.orden)
+      .sort((a, b) =>
+        monto !== null
+          ? Math.abs(a.d.saldoPendiente - monto) -
+              Math.abs(b.d.saldoPendiente - monto) || b.orden - a.orden
+          : b.orden - a.orden,
+      )
       .slice(0, 30)
       .map(({ d }) => ({ ...d, similitud: redondear(d.similitud) }));
   }

@@ -1,18 +1,22 @@
 # Catálogo de features para dashboards de monitoreo
 
-Versión: 2026-11-18 · Referencias: Viña Montes (`Montes/`) y Undurraga (`Undurraga/`).
+Versión: 2026-11-18 (revisión completa del repo, cliente por cliente) · Referencias: Viña Montes (`Montes/`), Undurraga (`Undurraga/`), SSR Las Balsas (`Balsas/`), Cumpeo (`Cumpeo/`) y Conciliación Bancaria (`ConciliacionBancaria/`).
 
-Este documento describe features ya implementadas y probadas que se pueden llevar a otros clientes. Está escrito para que una persona o un LLM pueda:
+Este documento describe features ya implementadas y probadas que se pueden llevar a otros clientes, y las convenciones que mantienen el repo coherente. Está escrito para que una persona o un LLM pueda:
 
-1. entender el contexto de la plataforma sin leer todo el repo (§1);
+1. entender el contexto de la plataforma sin leer todo el repo (§1, §12);
 2. elegir qué features aplicar a un cliente (§2);
-3. implementar cada feature siguiendo su ficha (§4–§6), que es autocontenida.
+3. implementar cada feature siguiendo su ficha (§4–§6, §8–§9), que es autocontenida;
+4. crear un cliente nuevo o modernizar uno existente con la plantilla actual (§10) o, si no es de monitoreo, con las convenciones de apps de negocio (§11);
+5. saber qué está roto o pendiente antes de tocar un cliente (§13).
 
 ---
 
 ## 0. Cómo usar este documento (instrucciones para un LLM)
 
 - **Lee §1 y §3 siempre.** Son el contexto y las reglas que aplican a cualquier feature.
+- **Busca el cliente en §12 y revisa §13** antes de tocarlo: ahí están su puerto, su tabla, qué tiene implementado y los bugs conocidos.
+- **Para un cliente nuevo o una reescritura, parte de §10** (plantilla Balsas), no de un cliente antiguo: la mayoría de los clientes antiguos arrastran los errores de §13.
 - **Usa la tabla de §2 para decidir.** No implementes una feature si el cliente no cumple sus requisitos (columna "Requiere"). Si falta un requisito, dilo y propón cómo cubrirlo antes de escribir código.
 - **Cada ficha tiene la misma estructura:** qué es, cuándo usarla, requisitos, archivos de referencia, pasos, adaptación, verificación y errores conocidos. Sigue los pasos en orden.
 - **Copia desde las implementaciones de referencia en vez de reescribir.** La consistencia visual y de comportamiento entre clientes es parte del valor.
@@ -29,23 +33,43 @@ Ejemplo de pedido a un LLM:
 
 ### 1.1 Qué es
 
-JTE Analytics monitorea instalaciones de agua de clientes (APR, viñas, agrícolas): pozos, bombas, estanques, caudalímetros y totalizadores. Cada cliente tiene su propia carpeta en este repo, con una API y un dashboard web, y en algunos casos servicios Python (ingesta y alertas).
+JTE Analytics monitorea instalaciones de agua de clientes (APR, SSR, viñas, agrícolas): pozos, bombas, estanques, caudalímetros y totalizadores. Cada cliente tiene su propia carpeta en este repo, con una API y un dashboard web, y en algunos casos servicios Python (ingesta, alertas y reportes a la DGA). El repo también contiene apps de negocio que no son de monitoreo (§11).
 
-### 1.2 Estructura típica de un cliente
+Familias de proyectos (inventario completo en §12):
+
+| Familia | Clientes | Qué los distingue |
+|---------|----------|-------------------|
+| **SSR / APR con estanques** (la mayoría) | Balsas, Tambo, Cuevas, Cumpeo, Zuñiga, Ranguil, Boldos, Bucalemu, California, Carmen, Cocalán, Compañía, González, Hornillas, Idahue, Manzano, Nerquihue, Puquillay, Quillay, Trinidad, Villa Carmen, Aromos, Auquinco | Tabla `ssr_<cliente>(mt_name, mt_value, mt_time_2)`, rutas `snapshot`, `nivel`, `caudal`, `totalizador`, `horometro`; diagrama SCADA (F2); monitor de estanques (F3). Plantilla actual: §10 |
+| **Pozos con reporte DGA** | Auquinco, California, Carracedo, Encinos (Araucarias tiene el módulo sin uso) | Script diario que envía freático, caudal y totalizador a la DGA y guarda el resultado en `<cliente>_reports` (F5, §9) |
+| **Caudal y totalizadores sin estanques** | Montes, Undurraga | Rutas por sensor (`caudal/:sensor`, `totalizador-hora/:sensor`…), consumo diario cacheado, exportador `exceljs` (F1). Ver §4 y §7 |
+| **Pozos simples (sin SCADA)** | Amigos, Miraflores, Araucarias, Carracedo, Encinos | Dashboard de tarjetas y `TimeSeriesChart`; tablas sin prefijo `ssr_` (`araucarias`, `carracedo`, `encinos`, `ssr_amigos`, `pozo_miraflores`); sin monitor salvo Araucarias |
+| **Agro** | Zagal (parcelas 18, 57 y 82), Viveros, Olivar Bajo | Riego por sectores con mapa Leaflet y triggers SQL (Zagal); temperatura, humedad y VPD (Viveros); API con `POST` de ingesta (Olivar, Viveros) |
+| **Apps de terreno y negocio** | Mantenimiento, RanguilMediciones, ZunigaMediciones, DemoMediciones, CheckListVehiculos, Cotizaciones, Maval, MavalECommerce, ReconocimientoVehiculos, ConciliacionBancaria | Login JWT, formularios con fotos, PDFs generados en el navegador. Convenciones en §11 |
+| **Portal** | `jte/JTEFront` | Página de entrada con enlaces a los dashboards |
+
+### 1.2 Estructura típica de un cliente de monitoreo
 
 | Pieza | Ubicación habitual | Stack |
 |-------|--------------------|-------|
-| API | `<Cliente>/api-<cliente>/` | NestJS 11 + TypeORM + PostgreSQL (algunos MySQL) |
-| Dashboard | `<Cliente>/front-<cliente>/`, `<Cliente>/Dashboard<Cliente>React/` o `<Cliente>/dashboard-<cliente>/` | React 19 + Vite + TypeScript + Bootstrap 5 + bootstrap-icons + Chart.js (`react-chartjs-2`) |
-| Ingesta | Script Python con MQTT → BD (p. ej. `Montes/providerMontes.py`), o un equipo en terreno que hace `POST` a la API (Undurraga) | Python 3, `paho-mqtt`, `psycopg2` |
+| API | `<Cliente>/api-<cliente>/` | NestJS 11 + TypeORM + PostgreSQL en AWS RDS. Amigos y Miraflores tienen además una versión MySQL antigua (`api-<cliente>` frente a `api-<cliente>-pg`); Trinidad lee también la MySQL de Marchigüe con `mysql2` |
+| Dashboard | `<Cliente>/front-<cliente>/` (nombre de los proyectos nuevos), `<Cliente>/Dashboard<Cliente>React/` o `<Cliente>/dashboard-<cliente>/` (antiguos) | React 19 + Vite + TypeScript + Bootstrap 5 + bootstrap-icons + Chart.js (`react-chartjs-2`) |
+| Ingesta | Script Python MQTT → BD (`Tambo/providerTambo.py` es la referencia, §10.4), un equipo en terreno que hace `POST` a la API (Undurraga, Olivar, Viveros) o un colector fuera del repo (la mayoría de los SSR) | Python 3, `paho-mqtt`, `psycopg2` |
 | Alertas | `<Cliente>/<script>.py` + `monitor_config.json` (monitor unificado, F3) | Python 3, `requests`, `python-dotenv` |
+| Reporte DGA | `<Cliente>/<cliente>Reports.py` + módulo `reports` de la API (F5) | Python 3, `schedule`, `requests` |
 
-Publicación: `https://app.jteanalytics.cl/<cliente>/`. Un nginx en Windows enruta `/<cliente>/` al puerto de la API (copia de referencia en `Montes/nginx.conf`) y el dashboard se compila con `base: "/<cliente>/"` en `vite.config.ts`. Las APIs corren con pm2 (`ecosystem.config.js`).
+Publicación: `https://app.jteanalytics.cl/<cliente>/`. Un nginx en Windows enruta `/<cliente>/` al puerto de la API y quita el prefijo: las rutas de la API **no** llevan `/<cliente>`. La copia de `Montes/nginx.conf` está desactualizada (solo llega al puerto 3020); los puertos reales están en §12. El dashboard se compila con `base: "/<cliente>/"` en `vite.config.ts`, con barra final. Las APIs corren con pm2 (`ecosystem.config.js`, `script: 'dist/main.js'`) y los servicios Python como servicio de Windows (pm2, NSSM o el programador de tareas), en carpetas `C:\AutomatizationServices\<cliente>\`.
 
 ### 1.3 Datos
 
 - Las tablas guardan lecturas crudas `(sensor, valor, hora)`. El nombre de la tabla, de las columnas y el tipo cambian por cliente: `montes(name, value varchar, time timestamp)`, `undurraga_metrics(sensor_id int, value numeric, time timestamptz)`, `ssr_<cliente>(mt_name, mt_value, mt_time_2)`, etc.
+- En las tablas `ssr_*`:
+  - `mt_name` lleva el prefijo del equipo que reporta: `<EQUIPO>--slave.<variable>` (`DOS_BALSAS--slave.caudal`, `ESTANQUE_20M3--slave.AI12`). Un sitio puede tener varios equipos, cada uno con su prefijo y su hora de último dato.
+  - `mt_value` es **texto** y llega en unidades crudas del PLC (×10, ×100, mV); hay que convertirlo con `Number()` y un divisor.
+  - `mt_time_2` es `timestamp` **sin zona, en hora de Chile**. Lo pone la BD al insertar (por eso los providers insertan apenas llega el dato) o el provider con la hora de llegada.
+  - Muchas tablas repiten la misma lectura con el mismo `mt_time_2` (Cocalán la repite unas 10 veces). La entidad TypeORM declara `mt_time_2` como PK, así que TypeORM fusiona esas filas: con `LIMIT` usa SQL directo con `DISTINCT ON` o sondeos `LATERAL` (§10.2).
+- Junto a la tabla cruda suele existir `ssr_<cliente>_daily_metrics(mt_name, mt_day, mt_value)` con los totales diarios cacheados (PK `(mt_name, mt_day)`). Su `CREATE TABLE` no está en el repo en la mayoría de los clientes.
 - Tipos de sensor habituales: **caudal** (m³/h o L/s, instantáneo), **totalizador** (m³ acumulados; algunos se reinician cada día), **nivel** (m o %, a veces en cm), **presión**, **horómetro**, **bomba on/off**.
+- Señales eléctricas (Balsas, Cuevas, Ranguil, Auquinco, Nerquihue, Quillay): tensiones de fase y de línea, corrientes por fase, kWh del PLC. Estado de tablero: `bomba`, `falla`, `automatico`/`manual` (0/1). Algunos sitios tienen además panel solar (`solar`, en mV) y nivel freático del pozo (`freatico`, en cm).
 - Frecuencia: de 1 lectura por minuto (Undurraga) a 1 cada 10 min (Montes).
 - La hora relevante para el cliente es siempre **hora de Chile** (`America/Santiago`, con horario de verano).
 
@@ -66,6 +90,18 @@ Publicación: `https://app.jteanalytics.cl/<cliente>/`. Un nginx en Windows enru
 
   Implementación de referencia: `Montes/api-montes/src/services/metrics.service.ts` (`time` sin zona) y `Undurraga/api-undurraga/src/metrics/services/metrics.service.ts` (`time` con zona).
 
+- Rutas de los clientes SSR (contrato usado por los dashboards, el monitor F3 y los reportes F5). La forma exacta de la plantilla está en §10.2:
+
+| Ruta | Parámetros | Devuelve |
+|------|------------|----------|
+| `GET snapshot` | — | `{ snapshot: { [variable]: { value, time } }, tiempo_vaciado…, nivel_alerta? }`; variables **sin prefijo** de equipo |
+| `GET nivel`, `nivel2`, `caudal`, `presion`… | `start`/`end` (días, `end` inclusivo) **o** `limit` (los N más recientes, 100 por defecto, tope 5000) | `[{ time: ISO, value }]` en orden cronológico |
+| `GET totalizador`, `horometro`, `kwh` | `start`/`end` obligatorios | `[{ time: "AAAA-MM-DD", value }]`: consumo del día (m³), minutos de operación, kWh |
+| `GET voltaje`, `corriente` | `start`/`end` opcionales (sin rango: últimas 6 h o `limit`) | `{ L1L2: [...], ... }` o `{ v1, v2, v3 }` según el cliente |
+| `GET reports` | `start`/`end` | historial de envíos a la DGA (F5) |
+
+  Cuando un sitio tiene varios pozos o estanques, los clientes nuevos usan un parámetro (`?pozo=pozo_1`, `?estanque=estanque_superior`; Balsas y Tambo) en vez de rutas numeradas (`nivel2`, `caudal-pozo2`, `horometro_planta1`).
+
 ---
 
 ## 2. Tabla de decisión
@@ -75,11 +111,14 @@ Publicación: `https://app.jteanalytics.cl/<cliente>/`. Un nginx en Windows enru
 | **F1 Exportador a Excel** | Descarga de un libro `.xlsx` con resumen diario, consumo por hora y lecturas de caudal; atajos de rango; una hoja por serie | Rutas de §1.4 (al menos `totalizador` y `caudal` con `start`/`end`), o adaptar las que tenga el cliente | 2–4 h si la API ya tiene las rutas | §4 |
 | **F2 Diagrama SCADA** | Esquema animado del proceso (pozo, bomba, tuberías, estanques, instrumentos) con el estado en vivo | Endpoint de snapshot con las señales del proceso; inventario de equipos y unidades confirmado | 0,5–1,5 días | §5 |
 | **F3 Monitor de desconexión** | Aviso por WhatsApp al grupo admin cuando un equipo deja de reportar, aviso de recuperación, recordatorio cada 24 h, alerta si la API falla; opcional: nivel crítico y rebalse de estanques | Endpoint con la hora del último dato (snapshot o serie con `?limit=`); que la ingesta **no** reinserte datos viejos | 1–2 h (solo configuración) | §6 |
-| Otras (selector de día, tarjetas de consumo, caché diaria, consumo por hora, aviso "sin datos") | Ver §7 | Ver §7 | — | §7 |
+| **F4 Panel eléctrico** | Tensiones, corrientes, desbalance y estado de cada bomba; en la versión completa (Ranguil) salud del equipo, kWh/m³, costo y diagnósticos | Señales eléctricas en la tabla (V, I, kWh); escalas confirmadas | 0,5 día (panel Balsas) a 2 días (panel Ranguil) | §8 |
+| **F5 Reporte DGA** | Envío diario a la DGA de freático, caudal y totalizador, con respaldo de cada respuesta y su historial en el dashboard | Pozo inscrito en la DGA (código de obra y credenciales del cliente); freático, caudal y totalizador en el snapshot | 2–4 h | §9 |
+| Otras (selector de día, tarjetas de consumo, caché diaria, consumo por hora, aviso "sin datos", resumen mensual, indicador de llegada de datos, tiempo de vaciado robusto, horómetro por corriente) | Ver §7 | Ver §7 | — | §7 |
 
 Combinaciones habituales:
 
-- **Cliente nuevo con estanques:** F3 (con estanques) + F2 + F1.
+- **Cliente nuevo con estanques:** API y dashboard desde la plantilla §10 + F3 (con estanques) + F2 + F1. Si tiene tablero eléctrico, F4.
+- **Pozo con obligación de reportar a la DGA:** F5 además de lo anterior.
 - **Cliente con caudal y totalizadores, sin estanques:** F3 (solo conexión) + F1 + las de §7 (como Montes).
 - **Cliente existente sin cambios grandes:** empieza por F3: es configuración pura y detecta caídas de inmediato. En Undurraga habría avisado de 11 meses sin datos.
 
@@ -101,6 +140,15 @@ Aplican a cualquier feature. Cada una salió de un problema real.
    - revisa con `pm2 describe` que el `script` apunte a lo que genera la compilación (`dist/main.js`).
 7. **Dependencias:** npm de este equipo bloquea paquetes desde URLs remotas. Usa paquetes del registro (`exceljs`, no la versión de `xlsx` desde el CDN de SheetJS; `xlsx@0.18.5` de npm está abandonada).
 8. **Verifica en el navegador** antes de dar por terminado un cambio visual, y prueba la API contra una BD local con el mismo esquema que producción cuando la de producción no es accesible.
+9. **Al copiar de otro cliente, busca su nombre.** Casi todos los dashboards nacieron copiando otro, y quedaron URLs, claves y textos del original: hoy hay exportadores que consultan la API de otro cliente y un reporte DGA que envía datos de otro pozo (§13). Después de copiar, ejecuta `grep -rniE "zuniga|ranguil|carracedo|auquinco|nerquihue|<cliente de origen>" src/` y deja **una sola** constante con la URL base (`API_BASE`, §10.3).
+10. **Claves de `localStorage` con el nombre del cliente.** Todos los dashboards comparten origen (`app.jteanalytics.cl`) y por lo tanto `localStorage`. Una clave como `jte_cache_totalizador` hace que un dashboard muestre la caché de otro. Usa `jte_cache_<cliente>_<endpoint>_<parámetros>` (Balsas, Tambo). González ya pasó por esto (notas del 2026-05-25).
+11. **La API entrega unidades de ingeniería.** Los divisores (cm → m, ×10, mV → V) van en un solo archivo de la API (`sensores.config.ts`, §10.2), no repartidos entre `Home.tsx`, el diagrama, el exportador y el monitor. En los clientes antiguos la misma conversión está en tres o cuatro sitios y no siempre coincide (Zuñiga, Ranguil).
+12. **Caché de totales diarios:** el día en curso nunca se guarda (ni en `*_daily_metrics` ni en `localStorage`) y el día anterior se recalcula siempre, porque pudo cachearse incompleto (Cumpeo). Un día sin lecturas es `NULL`/"sin datos", no `0`.
+13. **Valida la entrada y responde 400, no 500.** `ValidationPipe({ transform: true })` global y DTO con `class-validator`: fechas `AAAA-MM-DD`, `start <= end`, `limit` entero entre 1 y 5000, parámetros de lista con `@IsIn`. Sin el pipe, las validaciones del DTO no se aplican (Zuñiga, Ranguil).
+14. **Umbrales en un solo lugar.** El nivel de alerta que dibuja el dashboard debe ser el mismo con que avisa el monitor. La plantilla lo lee del `.env` de la API y lo devuelve en el snapshot (`nivel_alerta`, `nivel_maximo`); Boldos y Cuevas lo leen del `.env` del monitor (`C:\AutomatizationServices\<cliente>\.env`, receta en `PROMPT_NivelAlarmas.txt`). En ambos casos documenta que `nivel_alerta` de `monitor_config.json` debe coincidir.
+15. **Puertos únicos y registrados.** Antes de asignar un puerto, revisa §12: hoy hay choques reales. Usa el siguiente libre (el último asignado es 3042) y anótalo en §12 y en el nginx.
+16. **Secretos sin valor por defecto.** `JWT_SECRET` con `config.getOrThrow` (la API no arranca sin él), CORS restringido con `CORS_ORIGINS` y `synchronize: false`. Varias apps firman tokens con `'secreto_super_seguro'` o `'defaultSecret'` si falta la variable (§13).
+17. **Código muerto fuera.** Componentes sin importar (`LoginModal`, `BurgerMenu`, `DropdownCard*`, `pages/Chart.tsx`, `CaudalChart`), copias de componentes en la raíz del cliente (`Ranguil/Pipe.tsx`) y `.zip` de la API versionados confunden la siguiente revisión. Si se deja, que sea con un motivo escrito.
 
 ---
 
@@ -251,10 +299,13 @@ Implementaciones en el repo, de la más reciente a la más antigua:
 | Cliente | Archivo | Particularidad |
 |---------|---------|----------------|
 | Cumpeo | `Cumpeo/front-cumpeo/src/components/ScadaDiagram.tsx` | Dos pozos que se unen a la línea, un estanque, indicadores de llegada de datos (`DataArrivalIndicator`), conversión de unidades en constantes |
-| Balsas | `Balsas/front-balsas/src/components/ScadaDiagram.tsx` | — |
-| Cuevas | `Cuevas/front-cuevas/src/components/ScadaDiagram.tsx` | — |
-| Tambo | `Tambo/front-tambo/src/components/ScadaDiagram.tsx` | Varios estanques |
+| Balsas | `Balsas/front-balsas/src/components/ScadaDiagram.tsx` | Dos pozos (uno sin caudalímetro todavía: muestra `--`), estanque y descarga a la red; la API ya entrega unidades de ingeniería, así que el diagrama no divide |
+| Cuevas | `Cuevas/front-cuevas/src/components/ScadaDiagram.tsx` | Dos estanques de equipos distintos (`SSR_CUEVAS` y `ESTANQUE_20M3`) |
+| Tambo | `Tambo/front-tambo/src/components/ScadaDiagram.tsx` | Tres estanques en cascada, dos pozos |
+| Ranguil | `Ranguil/DashboardRanguilReact/src/components/ScadaDiagram.tsx` | Dos estanques (uno en cm y otro en m) |
 | Zuñiga | `Zuniga/DashboardZunigaReact/src/components/ScadaDiagram.tsx` | Referencia de la skill |
+
+Los demás SSR (Aromos, Auquinco, Boldos, Bucalemu, California, Carmen, Cocalán, Compañía, González, Hornillas, Idahue, Manzano, Nerquihue, Puquillay, Quillay, Trinidad, Villa Carmen) siguen con el diagrama antiguo de sprites PNG (`Elbow.tsx`, imágenes de bomba y estanque). Son candidatos al modo "migrar desde sprites" de la skill.
 
 ### 5.5 Pasos (resumen; el detalle está en la skill)
 
@@ -306,6 +357,14 @@ Tiempo sin datos: 329 día(s), 7 hora(s) y 44 minuto(s).
 ### 6.2 Cuándo usarla
 
 En **todos** los clientes con datos en vivo. Es configuración pura, así que es la primera feature a instalar en un cliente nuevo o en uno que se retoma.
+
+Estado al 2026-11-18: 25 sitios registrados en `sincronizar.py` y todas las copias idénticas a la v1.1.0 (`--verificar` da 25 ✓). Modos en uso:
+
+- **solo estanques:** Aromos, Auquinco, Bucalemu (4), California (2), Carmen (2), Cocalán, Compañía, Cuevas (2), Cumpeo, González (2), Hornillas (2), Idahue (2), Manzano, Marchigüe, Nerquihue, Puquillay, Villa Carmen, Zuñiga;
+- **estanques + conexión:** Balsas (`/equipos`, por sensor), Boldos (por sensor, umbral 10 min), Ranguil (equipo completo), Tambo (3 estanques, por sensor);
+- **solo conexión:** Araucarias (equipo), Montes (`/latest`, por sensor), Undurraga (por sensor).
+
+**Sin monitor:** Amigos, Carracedo, Encinos, Miraflores, Quillay, Trinidad, Zagal, Guindo y Llaveria (estos dos necesitan una API nueva: hoy leen MySQL directo). Viveros y Olivar Bajo tienen sus propios monitores en `services/`. Zuñiga mantiene además `healthCheckService.py` (latido "todo OK" a las 00:00 y 12:00 al grupo del cliente).
 
 ### 6.3 Requisitos
 
@@ -419,3 +478,282 @@ Al calcular consumos, el orden de las lecturas depende de la columna de hora:
 - **`timestamptz`** (Undurraga): ordenar por `time, id`. Así no quedan fuera de lugar las filas cargadas a mano después.
 
 Ver los comentarios en cada `metrics.service.ts`.
+
+Implementadas en otros clientes (rutas relativas a la carpeta del dashboard o de la API indicada):
+
+| Feature | Qué hace | Archivos de referencia | Requiere en la API |
+|---------|----------|------------------------|--------------------|
+| Resumen mensual (calendario) | Calendario del mes con el consumo de cada día coloreado en 5 niveles, navegación entre meses, total, promedio, día máximo y mínimo, días sin operación, horas de bomba, caudal medio (m³ ÷ minutos de operación), proyección al cierre y comparación con **los mismos días** del mes anterior (se oculta si ese mes tuvo menos del 60 % de días con operación). Vista de tabla y exportación a Excel. Se refresca cada 5 min solo si se mira el mes en curso; los meses cerrados quedan en memoria | `Cumpeo/front-cumpeo/src/components/MonthlySummary.tsx` + `.css` | `totalizador` y `horometro` diarios con `start`/`end` |
+| Indicador de llegada de datos | Pastilla "Datos al día / retrasados / sin datos" por equipo, con modo compacto para ponerla dentro del diagrama SCADA | `Cumpeo/front-cumpeo/src/components/DataArrivalIndicator.tsx`; versión por equipo en `Balsas/front-balsas/src/balsas.ts` (`estadoComunicacion`, `RETRASO_MIN` = 10, `SIN_DATOS_MIN` = 30, el mismo umbral del monitor) | Hora del último dato por equipo (`snapshot.equipos` en Balsas) |
+| Tiempo de vaciado robusto | Pendiente Theil-Sen (mediana de las pendientes entre pares) sobre los últimos 20 min, banda muerta de 1 mm/min y tope de 7 días. Distingue `vaciado`, `llenado`, `estable` y `sin_datos`, así "Llenando…" ya no aparece con el nivel estable. Reemplaza el cálculo con las dos últimas lecturas de los clientes antiguos | `Balsas/api-balsas/src/metrics/metrics.service.ts` (`calcularTiempoVaciado`), `Tambo/api-tambo/src/metrics/metrics.service.ts` | Serie del estanque |
+| Horómetro desde la corriente | Minutos por día con la bomba en marcha (`I1 > 1 A`) cuando el tablero no reporta horómetro ni señal de bomba. Cada muestra vale hasta la siguiente, con tope de 5 min, y los tramos que cruzan medianoche se reparten. Compañía hace lo mismo con la señal `bomba` (0/1) | `getHorometro` en `Balsas/api-balsas/src/metrics/metrics.service.ts`; Compañía en `api-compania` (agrupa días en UTC: ver §13) | Corriente por fase o estado de bomba |
+| Series por recurso independientes | Cada serie se pide por separado con `Promise.allSettled`: si una falla, las demás se actualizan y se conserva el último valor bueno de la que falló. El día "hoy" se recalcula en cada ciclo porque la pantalla queda abierta pasada la medianoche | `Balsas/front-balsas/src/pages/Home.tsx` | — |
+| Gráfico de varias series | Tensiones y corrientes por fase en un solo gráfico | `MultiLineGraphCard.tsx` (Balsas, Cuevas) | `voltaje`, `corriente` |
+
+---
+
+## 8. F4 · Panel eléctrico
+
+### 8.1 Qué es
+
+Vista del tablero de cada bomba a partir de las señales eléctricas del PLC. Hay dos niveles:
+
+- **Panel básico** (Balsas, `components/ElectricPanel.tsx`): por pozo, tensiones de fase y de línea, corrientes por fase, desbalance de corriente (desviación máxima respecto al promedio, en %; "—" con la bomba detenida) y estado de la bomba. Se acompaña de `MultiLineGraphCard` con las tres fases del día.
+- **Panel completo** (Ranguil, `ranguil-electrico/` y la ruta `/ranguil/electrico`): alinea voltaje, corriente, caudal y presión en muestras de 5 min y calcula potencia aparente, kWh del día (contador del PLC × factor), costo, kWh/m³, factor de potencia implícito (solo con ≥ 90 % de muestras), desbalance P95, arranques y un puntaje de salud ponderado (tensión 25 %, balance 25 %, arranques 15 %, eficiencia 20 %, carga 15 %). Tarifa, factor de kWh, tensión nominal y corriente de placa se editan en un modal y se guardan en `localStorage`.
+
+### 8.2 Cuándo usarla
+
+Cuando el tablero reporta tensiones y corrientes. Ayuda a detectar desbalance, arranques excesivos y pérdida de eficiencia de la bomba (más kWh por m³). El panel completo vale la pena si además hay caudal y kWh confiables.
+
+### 8.3 Requisitos
+
+- Señales `L1N…L3N`, `L1L2…L3L1` (o `v1…v3`) e `I1…I3`, con su escala confirmada. En Balsas llegan ×100 (41452 = 414,52 V); en Ranguil la tensión llega ×10 y la corriente ×100. Valida la escala con la física: potencia eléctrica ≈ potencia hidráulica (caudal × presión) y corriente coherente con la placa del motor.
+- Rutas `voltaje` y `corriente` (en la plantilla, `?pozo=...&tipo=linea|fase`), y `kwh` diario si se calcula energía.
+- Para el estado "en marcha" sin señal de bomba: umbral de corriente (`UMBRAL_CORRIENTE_A = 1`), el mismo que usa el horómetro calculado (§7).
+
+### 8.4 Archivos de referencia
+
+| Archivo | Rol |
+|---------|-----|
+| `Balsas/api-balsas/src/config/sensores.config.ts` | Escalas y nombres públicos de las variables eléctricas por pozo (`variablePozo`) |
+| `Balsas/front-balsas/src/components/ElectricPanel.tsx`, `MultiLineGraphCard.tsx` | Panel básico |
+| `Ranguil/DashboardRanguilReact/src/electrico/lib/electrical.ts` | Cálculos del panel completo (`buildSamples`, `buildDailyRows`, `computeHealth`, `computeFindings`) |
+| `Ranguil/DOCUMENTACION.md` §5.3–§5.4 | Fórmulas y constantes |
+
+### 8.5 Errores conocidos
+
+- **Escalas distintas por cliente**, incluso para la misma señal. Nunca copies el divisor de otro sitio.
+- **Diagnósticos con datos viejos:** el panel de Ranguil no avisa si las muestras tienen horas de antigüedad (`Ranguil/POSIBLES_BUGS.md` #14). Muestra la hora del último dato junto al diagnóstico.
+- **`ranguil-electrico/` es una copia** del panel que vive dentro de `DashboardRanguilReact/src/electrico/`. Los cambios hay que hacerlos en los dos o eliminar la copia.
+
+---
+
+## 9. F5 · Reporte DGA
+
+### 9.1 Qué es
+
+Un script Python por pozo que, una vez al día, toma el snapshot de la API, arma la medición subterránea (fecha y hora, totalizador entero, caudal y nivel freático con dos decimales) y la envía a la API de la DGA. Siempre guarda el resultado, con la respuesta de la DGA o la excepción, en la tabla `<cliente>_reports` mediante `POST /reports` de la propia API. El dashboard muestra el historial (`ReportsHistoryModal`).
+
+| Cliente | Script | Hora | Puerto de la API |
+|---------|--------|------|------------------|
+| Auquinco | `Auquinco/auquincoReports.py` | 12:00 | 3025 |
+| California | `California/californiaReports.py` (el más completo: divisores por `.env`, hora de la medición desde el sensor) | 21:00 | 3034 |
+| Carracedo | `Carracedo/carracedoReports.py` | 21:00 | 3021 |
+| Encinos | `Encinos/encinoReports.py` (**copia idéntica del de Carracedo**: ver §13) | 21:00 | 3039 |
+
+### 9.2 Piezas
+
+- **API:** módulo `reports` (`reports.controller.ts`, `reports.service.ts`, entidad `<cliente>_reports(id, freatico, caudal, totalizador, response jsonb, time)`).
+  - `POST /reports` solo acepta peticiones desde `127.0.0.1`/`::1` **y** con el encabezado `x-api-password` igual a `REPORTS_API_PASSWORD`. Por eso el script lo llama en `http://127.0.0.1:<API_PORT>/reports` y no por la URL pública.
+  - `GET /reports?start&end` es público y alimenta el historial.
+- **Script:** `schedule.every().day.at("HH:MM")`, log en `dga_reporte.log` junto al script. `.env` con `INTERNAL_API_URL`, `API_PORT`, `REPORTS_API_PASSWORD`, `DGA_API_URL`, `DGA_CODIGO_OBRA`, `DGA_RUT_EMPRESA`, `DGA_RUT_USUARIO` y `DGA_PASSWORD`. Encabezados de la DGA: `codigoObra` y `timeStampOrigen` (ISO con zona de Chile). Documento de la API de la DGA: `Transmision_mee_superficiales_flujometro_nueva-API.pdf` en la raíz (también en `DGA/`).
+- **Recuperación:** `reporteMasivo.py` reenvía mediciones desde un CSV (`<cliente>_niv_tot_caud_2026.csv`) saltando las que ya están en `/reports`; `corregir_fechas.py` corrige fechas de registros ya guardados.
+
+### 9.3 Pasos para un pozo nuevo
+
+1. Copia `California/californiaReports.py` (no el de Carracedo) y cambia **la ruta del snapshot**, los nombres de las variables y los divisores. Después aplica la regla 9 de §3: busca el nombre del cliente de origen.
+2. Copia el módulo `reports` de `California/api-california/src/reports/` y regístralo en `app.module.ts`. Crea la tabla y define `REPORTS_API_PASSWORD` en el `.env` de la API.
+3. Prueba primero sin enviar a la DGA: comenta el `requests.post` o apunta `DGA_API_URL` a un servidor local, y revisa el payload en el log.
+4. Agrega `ReportsHistoryModal` al dashboard.
+
+### 9.4 Errores conocidos
+
+- **Hora de la medición:** el sensor del freático se actualiza poco y su `time` puede estar en UTC; usarlo produjo fechas futuras y registros duplicados en la DGA (Auquinco usa ahora la hora actual de Chile). Decide con el cliente qué hora se informa.
+- **Divisores:** freático en cm o dm, totalizador en décimas, caudal ×100. Cada script los tiene distintos y algunos fijos en el código. Si el snapshot ya entrega unidades de ingeniería (plantilla §10), los divisores son 1.
+- **Un envío fallido no se reintenta:** queda en `<cliente>_reports` con la excepción. Revisa el historial y usa `reporteMasivo.py` para recuperar.
+
+---
+
+## 10. Plantilla actual para un cliente SSR
+
+La implementación más moderna es **SSR Las Balsas** (`Balsas/`, noviembre 2026), con `Balsas/DOCUMENTACION.md` como ejemplo del documento por cliente. Tambo, Cuevas y Cumpeo comparten parte de sus ideas. Para un cliente nuevo, copia Balsas y adapta; para modernizar uno antiguo, aplica estas piezas una a una.
+
+### 10.1 Estructura
+
+```
+<Cliente>/
+  api-<cliente>/           NestJS: config/ (database, sensores), metrics/, filters/, migrations/, env.example, ecosystem.config.js
+  front-<cliente>/         React: <cliente>.ts (config y tipos), components/, components/scada/, pages/
+  tankService.py           copia del monitor unificado (F3), con monitor_config.json
+  provider<Cliente>.py     solo si la ingesta MQTT es nuestra (§10.4)
+  env.example, requirements.txt
+  DOCUMENTACION.md         señales, rutas, alarmas, despliegue y "por confirmar con el cliente"
+```
+
+### 10.2 API
+
+| Pieza | Cómo es en la plantilla | Archivo |
+|-------|-------------------------|---------|
+| Sensores | Un único mapa `SENSORES: { nombrePúblico: { mtName, divisor } }`, más `EQUIPOS` (id, nombre visible, prefijo) y su inverso `NOMBRE_DE`. La API **siempre** entrega m, l/s, bar, V, A y m³ | `src/config/sensores.config.ts` |
+| Consultas | SQL directo con `DataSource.query` y parámetros (`$1`…). Última lectura por sensor con `unnest($1::text[]) CROSS JOIN LATERAL (... ORDER BY mt_time_2 DESC LIMIT 1)`: un sondeo por índice en vez de `DISTINCT ON` sobre toda la tabla | `src/metrics/metrics.service.ts` |
+| Zona horaria | Los filtros comparan `mt_time_2` (hora Chile sin zona) contra fechas locales: `mt_time_2 >= $2::DATE AND mt_time_2 < $3::DATE + 1`. La salida se convierte con `mt_time_2 AT TIME ZONE 'America/Santiago'` y se serializa con `toISOString()`. No depende de la zona de Node ni de la sesión de la BD | `TIME_SQL` en el servicio |
+| Totales diarios | `generate_series` de días + dos sondeos `LATERAL` (primera y última lectura del día), `GREATEST(último − primero, 0)`. Sin tabla `*_daily_metrics`: con el índice es suficientemente rápido. Si usas la tabla, aplica la regla 12 de §3 | `totalDiario` |
+| Tiempo de vaciado | Theil-Sen sobre 20 min (§7) | `calcularTiempoVaciado` |
+| Umbrales | `NIVEL_ALERTA` y `NIVEL_MAXIMO` en el `.env` de la API, devueltos en el snapshot | `umbral()` |
+| Último dato por equipo | `snapshot.equipos` y `GET /equipos` con la forma `{ snapshot: { "<Nombre> (<EQUIPO>)": { time } } }` que lee el monitor en modo sensor | `getEquipos` |
+| Validación | `ValidationPipe({ transform: true })` global; `DateRangeDto` (`start`/`end` con `@Matches`, `limit` 1–5000), `PozoQueryDto` y `VoltajeQueryDto` con `@IsIn` | `src/main.ts`, `models/dto/date-range.dto.ts` |
+| Errores | `HttpExceptionFilter` → `{ success: false, statusCode, message }`; `uncaughtException` se escribe en `fatal-crashes.log` y el proceso sale (pm2 lo levanta) | `src/filters/`, `src/main.ts` |
+| Caché | `CacheModule` global de 60 s con `CacheInterceptor` en todas las rutas GET | `src/app.module.ts` |
+| BD | TypeORM `forRootAsync` con `ConfigService`, `synchronize: false`, SSL sin verificar certificado (RDS), pool de 5, `statement_timeout` de 10 s | `src/config/database.config.ts` |
+| Índice | `CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_ssr_<cliente>_name_time ON ssr_<cliente> (mt_name, mt_time_2 DESC)`, a mano y fuera de una transacción | `migrations/add-performance-indexes.sql` |
+| pm2 | `name: 'api-<cliente>'`, `script: 'dist/main.js'`, 2 instancias, `PORT` en `env` | `ecosystem.config.js` |
+
+Zagal añade una variante útil para APIs con consultas pesadas y varios usuarios a la vez: `QueryCache` en memoria con TTL y *single-flight* (peticiones iguales simultáneas esperan la misma promesa y llega una sola consulta a la BD), y SQL compartido entre parcelas con los nombres de tabla como constantes del código (`Zagal/api-zagal-pg/src/common/`).
+
+### 10.3 Dashboard
+
+| Pieza | Cómo es en la plantilla | Archivo |
+|-------|-------------------------|---------|
+| Configuración | `API_BASE = import.meta.env.VITE_API_URL ?? "https://app.jteanalytics.cl/<cliente>"`, `apiUrl(path, params)` con `URL` y `searchParams`, tipos (`Metric`, `Snapshot`, `Datos`), constantes de frescura y formateadores, todo en un archivo | `src/<cliente>.ts` |
+| Fecha | `todayInChile()` con `Intl.DateTimeFormat("en-CA", { timeZone: "America/Santiago" })`, recalculada en cada ciclo de refresco | `src/<cliente>.ts` |
+| Carga | `Promise.allSettled` por recurso; refresco cada 60 s (los antiguos usan 120 s) | `src/pages/Home.tsx` |
+| Caché de diarios | `fetchWithCache(endpoint, params, hoy)`: pide desde el último día cacheado, fusiona por fecha, no guarda el día en curso. Clave `jte_cache_<cliente>_<endpoint>_<params>`. Lectura del JSON con `try/catch` (Cumpeo) | `src/components/fetchWithcache.tsx` |
+| Estado de comunicación | Por equipo: en línea (≤ 10 min), retrasado (≤ 30 min), sin datos (> 30 min, el umbral del monitor) | `estadoComunicacion` |
+| SCADA | Componentes CSS de la skill (F2) en `components/` y `components/scada/scada.css` | — |
+| Exportador | Hoy Balsas usa el exportador antiguo (`xlsx` + `file-saver`). Para uno nuevo, usa F1 (`exceljs`) | — |
+| Desarrollo local | `VITE_API_URL=http://localhost:<puerto> npm run dev` y abrir `/<cliente>/` | — |
+
+### 10.4 Ingesta MQTT (cuando es nuestra)
+
+Referencia: `Tambo/providerTambo.py` v1.0.0 (equipo COPSET, topic `data/<SITIO>/COPSET/<id>`), con `Tambo/env.example` y `requirements.txt`. Comparado con los providers antiguos (`providerCumpeo.py`, `provideorCalifornia.py`, `mqttProviderCompania.py`, que acumulan 5 min o abren una conexión por mensaje):
+
+- inserta apenas llega el dato (cada `FLUSH_SEGUNDOS` = 2), para que el `mt_time_2` que pone la BD sea la hora real de la lectura;
+- conexión persistente con *keepalive* y reconexión al broker y a la BD;
+- si la BD falla, las filas quedan en memoria (tope `MAX_PENDIENTES`) y al detenerse se escriben en `pendientes_<cliente>.jsonl`, que se recupera al iniciar;
+- descarta reenvíos con el mismo `_terminalTime` y el mensaje retenido que el broker entrega al suscribirse: así **no reinserta datos viejos**, condición de F3 (§6.3);
+- log rotativo `logs_provider.txt` (5 × 5 MB) y alertas opcionales al grupo admin (sin datos del equipo, BD caída);
+- `--sin-bd` imprime lo que insertaría y `--probar-bd` prueba la conexión y la tabla.
+
+Montes tiene un provider propio que guarda un valor por sensor cada 10 min (`Montes/providerMontes.py`). Bucalemu tiene el flujo inverso: `brokerAutomatizacion.py` lee el nivel de Casuto en la BD y lo publica en MQTT (`/DownloadTopic`, con `retain`) para automatizar un equipo en terreno.
+
+### 10.5 Documento por cliente
+
+Cada cliente nuevo o revisado lleva un `DOCUMENTACION.md` con: resumen y diagrama, tabla de señales (equipo, `mt_name`, nombre en la API, divisor, unidad y de dónde salió la escala), rutas, valores derivados, alarmas, despliegue y una tabla **"Por confirmar con el cliente"** con el valor provisorio y dónde se cambia. Ejemplos: `Balsas/DOCUMENTACION.md` (el más reciente), `Zuniga/DOCUMENTACION.md`, `Ranguil/DOCUMENTACION.md` + `POSIBLES_BUGS.md`. Montes y Undurraga usan `PLAN_MEJORAS.md`.
+
+---
+
+## 11. Apps de terreno y de negocio
+
+No son de monitoreo, pero comparten stack (NestJS + TypeORM + PostgreSQL, React + Vite + Bootstrap) y conviene que nuevas apps sigan el mismo patrón.
+
+### 11.1 Inventario
+
+| App | Carpeta | Qué hace | Particularidades |
+|-----|---------|----------|------------------|
+| Conciliación bancaria | `ConciliacionBancaria/` | Importa cartolas (BancoEstado, Banco de Chile) y el RCV del SII, concilia movimientos con documentos, motor de sugerencias, boletas con foto, proyectos con balance e IVA | **Referencia para apps nuevas** (§11.2). Documentada en `api-conciliacion/README.md`, `PLAN_IMPLEMENTACION.md` y `GUIA_DE_USO.md` |
+| Mantenimiento | `Mantenimiento/` | Informes de mantención con fotos, firma del técnico y del cliente, PDF | Datos variables en una columna `jsonb` (`data`): se agregaron los formularios preventivos sin migración (`RELEASENOTES.md`, 2026-06-01). `old/` es la versión MySQL anterior |
+| Mediciones | `RanguilMediciones/`, `ZunigaMediciones/`, `DemoMediciones/` | Sesiones de medición en terreno con foto por medición; PDF por sesión y acumulado | Tres copias del mismo código con el nombre cambiado (Zuñiga agrega edición de sesiones). Un cambio se hace en las tres |
+| Checklist de vehículos | `CheckListVehiculos/` | Inspecciones de flota con fotos, alertas de mantención y revisión técnica, PDF | React 18 y NestJS 10, navegación por hash sin router. Ver `DOCUMENTACION.md` y `REVISION_BUGS_Y_MEJORAS.md` |
+| Cotizaciones | `Cotizaciones/`, `Maval/` | Cotizaciones con PDF | Dos copias del mismo código (JTE y Maval) |
+| E-commerce Maval | `MavalECommerce/` | Catálogo, categorías, pedidos sin login con historial de estados | Única con refresh tokens rotativos, prefijo global `/api` e interceptor de respuesta. Plan en `plan_backend.md` |
+| Reconocimiento de vehículos | `ReconocimientoVehiculos/` | Patentes con AWS Rekognition, personas y vehículos | — |
+
+### 11.2 Convenciones (tomadas de Conciliación Bancaria)
+
+- **Esquema por scripts SQL numerados** (`db/001_esquema.sql`, `002_…`) y entidades TypeORM ajustadas a mano; `synchronize: false`. Lógica que debe ser atómica (saldos, estados) en funciones SQL llamadas dentro de la misma transacción.
+- **Auth:** JWT de 8 h, `bcrypt`, `JWT_SECRET` con `getOrThrow`, usuario admin inicial con un script (`npm run crear-admin`), roles por recurso (lector, operador, admin) además del admin global. El front guarda el token en `localStorage` y ante un 401 limpia la sesión.
+- **CORS** limitado con `CORS_ORIGINS`.
+- **Archivos subidos:** `memoryStorage` de multer, tipo validado por el contenido (no por la extensión), tope de tamaño, nombre `<uuid>.<ext>` en una carpeta configurable fuera del proyecto (`COMPROBANTES_DIR`); en la tabla solo el id y la ruta. Servirlos por una ruta autenticada, no como estáticos públicos (CheckList los expone en `/uploads` y acepta cualquier tipo: B3).
+- **Fotos desde el celular:** se reducen en el navegador antes de subir (Conciliación: lado mayor de 2000 px en JPG). `PhotoCaptureModal` (Mantenimiento, Mediciones, CheckList) usa `getUserMedia`; hay que apagar la cámara al cerrar y avisar si se niega el permiso.
+- **PDF en el navegador** con `@react-pdf/renderer` (Mantenimiento, Mediciones, CheckList, Cotizaciones). Generarlo al hacer clic, no al renderizar listas (CheckList B11).
+- **`multipart/form-data`:** no fijes `Content-Type` a mano en axios, o el `FormData` se envía como JSON y las fotos se pierden (CheckList B1).
+- **Montos en pesos** como `bigint` con un *transformer* a `number`. **RUT** validado con dígito verificador (`common/rut.ts`).
+- **Tests** de la lógica pura (lectores de archivos, motor) con archivos sintéticos; los datos reales no van a git (`.gitignore` de la carpeta). Script `probar-lectores` para diagnosticar un archivo sin tocar la BD.
+
+---
+
+## 12. Inventario de clientes
+
+Estado al 2026-11-18. "Puerto" es el de `ecosystem.config.js` o, si no tiene, el valor por defecto de `main.ts`. SCADA: **CSS** = componentes de la skill (F2); **sprites** = diagrama antiguo con PNG; — = no tiene. Monitor: estanques vigilados y modo de conexión (F3).
+
+### 12.1 Monitoreo
+
+| Cliente | API (puerto) | Tabla | Dashboard | SCADA | Monitor | Notas |
+|---------|--------------|-------|-----------|-------|---------|-------|
+| Amigos | `api-amigos-pg` (3010) | `ssr_amigos` | `amigosReact` | — | — | `api-amigos` es la versión MySQL anterior, mismo puerto |
+| Araucarias | `api-araucarias` (3022) | `araucarias` | `dashboard-araucarias` | — | conexión (equipo) | Módulo `reports` sin script propio: `carracedoReports.py` de la carpeta apunta a Carracedo. Sin `ecosystem.config.js` |
+| Aromos | `api-aromos` (3014) | `ssr_aromos` | `dashboard-aromos` | sprites | 1 estanque | — |
+| Auquinco | `api-auquinco` (3025) | `ssr_auquinco` | `DashboardAuquinco` | sprites | 1 estanque | DGA 12:00 (F5); señales eléctricas y presión |
+| Balsas | `api-balsas` (3042) | `ssr_balsas` | `front-balsas` | CSS | 1 estanque + conexión | **Plantilla §10**; F4 básico |
+| Boldos | `api-boldos` (3013) | `ssr_boldos` | `DashboardBoldos` | sprites | 2 estanques + conexión (10 min) | Nivel de alarma desde el `.env` del monitor. Sin `ecosystem.config.js` |
+| Bucalemu | `api-bucalemu-postgres` (3004) | `ssr_bucalemu` | `DashboardBucalemuNuevo` | sprites | 4 estanques | Rutas bajo `/metrics/`; `brokerAutomatizacion.py` publica el nivel de Casuto por MQTT |
+| California | `api-california` (3034) | `ssr_california` | `front-california` | sprites | 2 estanques | DGA 21:00 (F5, script de referencia); `provideorCalifornia.py` |
+| Carmen | `api-carmen` (3023) | `ssr_carmen_bajo` | `DashboardCarmenReact` | sprites | 2 estanques | Rutas `nivel_bajo`, `nivel_sentina`. `package.json` incluye `mysql2`, pero la conexión es PostgreSQL |
+| Carracedo | `api-carracedo` (3021) | `carracedo` | `dashboard-carracedo` | — | — | DGA 21:00 (F5). Sin `ecosystem.config.js` |
+| Cocalán | `api-cocalan` (3029) | `ssr_cocalan` | `front-cocalan` | sprites | 1 estanque | Lecturas repetidas ×10 (`DISTINCT ON`); `base: "/cocalan"` sin barra final |
+| Compañía | `api-compania` (3028) | `ssr_compania` | `front-compania` | sprites | 1 estanque | Horómetro desde la señal `bomba`; `mqttProviderCompania.py` |
+| Cuevas | `api-cuevas` (3032) | `ssr_cuevas` | `front-cuevas` | CSS | 2 estanques | Dos equipos (`SSR_CUEVAS`, `ESTANQUE_20M3`) con alias en `metrics/models/sensors.ts`; nivel de alarma desde el `.env` del monitor; señales eléctricas. Sin `ecosystem.config.js` |
+| Cumpeo | `api-cumpeo` (3036) | `ssr_cumpeo` | `front-cumpeo` | CSS | 1 estanque | Resumen mensual, indicador de llegada de datos; `providerCumpeo.py`. Sin `ecosystem.config.js` |
+| Encinos | `api-encinos` (3039) | `encinos` | `front-encinos` | — | — | DGA 21:00 (F5, con el bug de §13). Sin `ecosystem.config.js` |
+| González | `api-gonzalez` (3012) | `ssr_gonzalez` | `gonzalez-dashboard` | sprites | 2 estanques | Sin `ecosystem.config.js` |
+| Guindo, Llaveria | — | MySQL `apr_guindo_alto`, `apr_llaveria` | — | — | scripts propios con MySQL | Fuera del monitor unificado hasta tener API |
+| Hornillas | `api-hornillas` (3031) | `ssr_hornillas` | `front-hornillas` | sprites | 2 estanques | Varios pozos, caudales y presiones con rutas numeradas |
+| Idahue | `api-idahue` (3024) | `ssr_idahue` | `DashboardIdahueReact` | sprites | 2 estanques | Rutas por planta (`nivel_planta1`…) |
+| Manzano | `api-manzano` (3033) | `ssr_manzano` | `front-manzano` | sprites | 1 estanque | — |
+| Marchigüe | (usa la de Trinidad) | MySQL `apr_marchigue` | — | — | 1 estanque | El monitor lee `https://app.jteanalytics.cl/trinidad/nivel` |
+| Miraflores | `api-miraflores-pg` (3011) | `pozo_miraflores` | `mirafloresReact` | — | — | `api-miraflores` es la versión MySQL anterior, mismo puerto |
+| Montes | `api-montes` (3020) | `montes` | `dashboard-montes` | — | conexión (sensor) | Referencia F1 y §7; `providerMontes.py`; `PLAN_MEJORAS.md` |
+| Nerquihue | `api-nerquihue-pg` (3006) | `ssr_nerquihue` | `DashboardNerquihueReact` | sprites | 1 estanque | Señales eléctricas. El nombre del paquete dice `mysql2`, pero conecta a PostgreSQL |
+| Olivar Bajo | `api-olivar` (3006, nginx 3008) | `ssr_olivar_bajo_metrics` | (no está en el repo) | — | `services/MonitoreoEstanqueOlivarBajo.py` | Ingesta por `POST`. Puerto en conflicto (§13) |
+| Puquillay | `api-puquillay` (3016) | `ssr_puquillay` | `front-puquillay` | sprites | 1 estanque | Sin `ecosystem.config.js` |
+| Quillay | `api-quillay` (3007) | `ssr_quillay` | `quillayDashboard` | sprites | — | Señales eléctricas |
+| Ranguil | `api-ranguil` (3009) | `ssr_ranguil` | `DashboardRanguilReact` (+ `ranguil-electrico`) | CSS | 2 estanques + conexión (equipo) | F4 completo; `DOCUMENTACION.md`, `POSIBLES_BUGS.md` |
+| Tambo | `api-tambo` (3040) | `ssr_tambo` | `front-tambo` | CSS | 3 estanques + conexión | `providerTambo.py` (§10.4); totalizadores por pozo aún no llegan (`/totalizador` responde 503). Sin `ecosystem.config.js` |
+| Trinidad | `api-trinidad` (3038; `main.ts` dice 3000) | `ssr_trinidad` + MySQL `apr_marchigue` | `front-trinidad` | sprites | — | Sirve también el nivel de Marchigüe |
+| Undurraga | `api-undurraga` (3002) | `undurraga_metrics` | `dashboardUndurraga` | — | conexión (sensor) | Referencia F1 y §7; ingesta por `POST`; `PLAN_MEJORAS.md` |
+| Villa Carmen | `api-villacarmen` (3030) | `ssr_villa_carmen` | `front-villacarmen` | sprites | 1 estanque | Sin `ecosystem.config.js` |
+| Viveros | `api-viveros` (3005) | `viveros_tambo` | `viverosDashboard` | — | `services/monitorUnificado.py` y otros | VPD; `env-manager` edita umbrales del monitor en `C:\AutomatizationServices\Viveros\env.txt`; reporte semanal |
+| Zagal | `api-zagal-pg` (3003) | `parc_18_zagal`, `parc_57_zagal`, `parc_82_zagal` | `Zagal/18`, `57`, `82` (mismo código, cambia `config.ts`) | — (mapa Leaflet + KML) | — | Riego por sectores con triggers (`sql/002_triggers_riego.sql`); `QueryCache`; `ApiZagal` es la versión MySQL anterior |
+| Zuñiga | `api-zuniga` (3000) | `ssr_zuniga` | `DashboardZunigaReact` | CSS (referencia de la skill) | 1 estanque | `healthCheckService.py`; `DOCUMENTACION.md` |
+
+### 12.2 Apps de negocio
+
+| App | API (puerto) | Front (`base`) |
+|-----|--------------|----------------|
+| Mantenimiento | `api-mantenimiento` (3015) | `/mantenimiento/` |
+| RanguilMediciones | `api-ranguilmediciones` (3017) | `/ranguil-mediciones/` |
+| DemoMediciones | `api-demomediciones` (`main.ts` 3018; `ecosystem` 3017) | `/demo-mediciones/` |
+| Cotizaciones | `api-cotizaciones` (3019) | `/cotizaciones/` |
+| Maval | `api-maval` (3026) | `/maval-cotizaciones/` |
+| ZunigaMediciones | `api-zunigamediciones` (`main.ts` 3027; `ecosystem` 3017) | `/zuniga-mediciones/` |
+| CheckListVehiculos | `api-checklist-vehiculos` (3037) | `/checklist-vehiculos/` |
+| ConciliacionBancaria | `api-conciliacion` (3041) | relativa (`./`) |
+| ReconocimientoVehiculos | `api-reconocimiento` (3000) | `/reconocimiento/` |
+| MavalECommerce | `api-maval-ecommerce` (3000, prefijo `/api`) | sin front en el repo |
+
+Siguiente puerto libre: **3043**.
+
+---
+
+## 13. Hallazgos pendientes (revisión del 2026-11-18)
+
+Encontrados al revisar el repo; **ninguno está corregido**. Se basan en el código del repo: confirma en el servidor antes de actuar, porque la copia desplegada puede ser distinta.
+
+### 13.1 Alta
+
+1. **El reporte DGA de Encinos envía datos de Carracedo.** `Encinos/encinoReports.py` es idéntico a `Carracedo/carracedoReports.py`: lee `/carracedo/snapshot` y lo envía con el `DGA_CODIGO_OBRA` del `.env` de Encinos (el respaldo sí va a la API de Encinos, por `API_PORT=3039`). Si así está en el servidor, la DGA tiene mediciones de Carracedo informadas como de Encinos. Corregir la ruta y revisar el historial de `encinos_reports`.
+2. **Cocalán pide sus totales diarios a la API de Auquinco.** `Cocalan/front-cocalan/src/components/fetchWithcache.tsx` arma `https://app.jteanalytics.cl/auquinco/<endpoint>` y `Home.tsx` le pasa `cocalan/horometro` y `cocalan/totalizador`. La URL resultante (`/auquinco/cocalan/horometro`) no corresponde a ninguna ruta de la API de Auquinco, así que esos gráficos probablemente están vacíos.
+3. **Exportadores que consultan la API de otro cliente** (`components/ExportToExcel.tsx`): Bucalemu → `nerquihue`, California → `ranguil`, Quillay → `ranguil`, Cuevas → `zuniga` y Manzano → `zuniga` (estos dos además con `fechaInicio`/`fechaFin`, que ninguna API lee: es el error que se corrigió en Zuñiga). El Excel descargado trae datos de otro sitio o falla.
+4. **Claves de caché compartidas entre dashboards.** Araucarias, Amigos, Aromos, Boldos, Cocalán, Quillay, Ranguil y Zuñiga usan `jte_cache_<endpoint>` sin el cliente. Quien abra dos de esos dashboards en el mismo navegador ve en el segundo los totalizadores y horómetros cacheados del primero (regla 10 de §3).
+5. **Puertos en conflicto:**
+   - Olivar Bajo escucha en 3006, igual que Nerquihue, y el nginx lo espera en 3008;
+   - `DemoMediciones/api-demomediciones/ecosystem.config.js` usa el puerto 3017 y el nombre pm2 `api-ranguilmediciones`, los mismos de RanguilMediciones: arrancarla con ese archivo reemplaza o choca con la otra;
+   - `ZunigaMediciones/api-zunigamediciones/ecosystem.config.js` también usa 3017 (su `main.ts` dice 3027);
+   - ReconocimientoVehiculos y MavalECommerce usan 3000, el de Zuñiga.
+6. **Secretos con valor por defecto:** Mantenimiento, las tres Mediciones, Cotizaciones y Maval firman los JWT con `'secreto_super_seguro'` si falta `JWT_SECRET`; ReconocimientoVehiculos con `'secretKey'`; Viveros y MavalECommerce con `'defaultSecret'`. CheckListVehiculos tiene `synchronize: true` en producción y devuelve `password_hash` en `GET /checklists` (B2).
+
+### 13.2 Media
+
+7. **Días y horas en UTC** en los SSR antiguos: la mayoría arma rangos con `T00:00:00Z` y `toISOString()` (Zuñiga, hallazgo 3; Ranguil, #7–#8); Compañía agrupa el horómetro con `AT TIME ZONE 'UTC'`. Entre las 21:00 y las 24:00 el "hoy" de la API no coincide con el del cliente. La corrección es la de §10.2.
+8. **Sin `ValidationPipe`** en casi todas las APIs SSR (entre ellas solo lo tienen Balsas, Bucalemu, Cuevas, Montes y Undurraga): fechas inválidas dan 500 (regla 13 de §3).
+9. **Once APIs sin `ecosystem.config.js`** (Araucarias, Boldos, Carracedo, Cuevas, Cumpeo, Encinos, González, Maval, Puquillay, Tambo, Villa Carmen): el puerto y el nombre en pm2 dependen de cómo se lanzaron a mano.
+10. **`Montes/nginx.conf` desactualizado** (llega a 3020). Conviene versionar el nginx real del servidor o, al menos, mantener §12 al día.
+11. **Exportador antiguo** (`xlsx@0.18.5` + `file-saver`) en todos los dashboards salvo Montes y Undurraga: librería abandonada y fechas en UTC. Migrar con F1 cuando se toque cada cliente.
+12. **Cumpeo tiene cambios sin commit** (API, SCADA, resumen mensual): confirmar que lo desplegado coincide con el repo.
+
+### 13.3 Baja
+
+13. Worktree huérfano en `Balsas/.claude/worktrees/cool-satoshi-0d05c2` (rama `claude/cool-satoshi-0d05c2`, copia completa del repo). Eliminarlo con `git worktree remove` si ya no se usa: duplica resultados en cualquier búsqueda.
+14. `.zip` de las APIs versionados en git (29 archivos `api-<cliente>.zip` en 28 carpetas) y archivos sueltos (capturas, `logs_*.txt`, `test_*.js`, copias `monitorTemperatura copy.py`).
+15. `LoginModal` apunta a `undurraga/auth/login` y `viveros/auth/register` (Amigos, Araucarias, Carracedo, Encinos, Miraflores), pero no se importa en ninguna parte y Undurraga ya no tiene autenticación. Eliminarlo.
+16. En `.gitignore` de la raíz, la línea `package-lock.json  # Si usas npm…` no ignora nada (git no admite comentarios al final de una línea) y los lock están versionados, que es lo correcto (regla 6 de §3). Conviene borrar la línea para que no confunda.

@@ -12,7 +12,7 @@ const Loading = () => {
       <img className="mb-5" src={logo} alt="logo" width={200} />
       <img className="mb-5" src={lgoJte} alt="logo" width={45} height={30} />
       <footer className="d-flex flex-wrap justify-content-between align-items-center py-3 px-4 border-top">
-        <p className="mb-0 text-body-secondary">&copy; 2025 JTE Analytics.</p>
+        <p className="mb-0 text-body-secondary">&copy; {new Date().getFullYear()} JTE Analytics.</p>
       </footer>
     </div>
   );

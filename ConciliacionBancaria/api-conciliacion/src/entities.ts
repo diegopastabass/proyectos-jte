@@ -159,6 +159,8 @@ export class Movimiento {
   @Column({ name: 'monto_conciliado', ...monto }) montoConciliado: number;
   @Column() estado: EstadoMovimiento;
   @Column({ type: 'text', nullable: true }) nota: string | null;
+  @Column({ name: 'proyecto_id', type: 'int', nullable: true }) proyectoId:
+    number | null;
   @Column({ name: 'hash_dedup', select: false }) hashDedup: string;
   @CreateDateColumn({ name: 'creado_en' }) creadoEn: Date;
 }
@@ -193,6 +195,8 @@ export class Documento {
     number | null;
   @Column({ name: 'saldo_pendiente', ...monto }) saldoPendiente: number;
   @Column() estado: EstadoDocumento;
+  @Column({ name: 'proyecto_id', type: 'int', nullable: true }) proyectoId:
+    number | null;
   @CreateDateColumn({ name: 'creado_en' }) creadoEn: Date;
 }
 
@@ -289,6 +293,61 @@ export class Sugerencia {
   resueltaEn: Date | null;
 }
 
+/** Centro de costo: agrupa documentos y movimientos para sacar su balance. */
+@Entity('proyecto')
+export class Proyecto {
+  @PrimaryGeneratedColumn() id: number;
+  @Column({ name: 'empresa_id' }) empresaId: number;
+  @Column({ type: 'text', nullable: true }) codigo: string | null;
+  @Column() nombre: string;
+  @Column({ type: 'text', nullable: true }) descripcion: string | null;
+  @Column({ name: 'contraparte_id', type: 'int', nullable: true })
+  contraparteId: number | null;
+  @Column({ name: 'fecha_inicio', type: 'date', nullable: true })
+  fechaInicio: string | null;
+  @Column({ name: 'fecha_fin', type: 'date', nullable: true })
+  fechaFin: string | null;
+  @Column({ ...monto, nullable: true }) presupuesto: number | null;
+  @Column() activo: boolean;
+  @CreateDateColumn({ name: 'creado_en' }) creadoEn: Date;
+}
+
+export type TipoComprobante = 'boleta' | 'factura' | 'otro';
+
+/** Foto o PDF que respalda un movimiento (ej. la boleta del restaurante). */
+@Entity('comprobante')
+export class Comprobante {
+  @PrimaryGeneratedColumn({
+    type: 'bigint',
+    transformer: numeroDesdePg,
+  } as never)
+  id: number;
+  @Column({ name: 'empresa_id' }) empresaId: number;
+  @Column({ name: 'movimiento_id', ...idLargo }) movimientoId: number;
+  @Column() tipo: TipoComprobante;
+  @Column({ type: 'date', nullable: true }) fecha: string | null;
+  @Column({ name: 'monto_total', ...monto }) montoTotal: number;
+  @Column({ name: 'monto_iva', ...monto }) montoIva: number;
+  @Column({ name: 'rut_emisor', type: 'text', nullable: true }) rutEmisor:
+    string | null;
+  @Column({ name: 'razon_social', type: 'text', nullable: true })
+  razonSocial: string | null;
+  @Column({ type: 'text', nullable: true }) folio: string | null;
+  @Column({ type: 'text', nullable: true }) descripcion: string | null;
+  /** Nombre con que se guardó la imagen (uuid, sin extensión). */
+  @Column({ name: 'archivo_id', type: 'uuid' }) archivoId: string;
+  /** Ruta completa en el servidor (no se expone en la API). */
+  @Column({ name: 'archivo_ruta', select: false }) archivoRuta: string;
+  @Column({ name: 'conciliacion_id', ...idLargo, nullable: true })
+  conciliacionId: number | null;
+  @Column({ name: 'creado_por' }) creadoPor: number;
+  @CreateDateColumn({ name: 'creado_en' }) creadoEn: Date;
+  @Column({ name: 'eliminado_en', type: 'timestamptz', nullable: true })
+  eliminadoEn: Date | null;
+  @Column({ name: 'eliminado_por', type: 'int', nullable: true })
+  eliminadoPor: number | null;
+}
+
 export const ENTIDADES = [
   Usuario,
   Empresa,
@@ -303,4 +362,6 @@ export const ENTIDADES = [
   ConciliacionLinea,
   Regla,
   Sugerencia,
+  Proyecto,
+  Comprobante,
 ];

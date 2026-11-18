@@ -46,6 +46,11 @@ class FiltroMovimientosDto extends PaginacionDto {
   @IsOptional() @IsDateString() hasta?: string;
   /** Busca en la glosa. */
   @IsOptional() @IsString() q?: string;
+  /** Con alguna línea de conciliación vigente a esta categoría. */
+  @IsOptional() @Type(() => Number) @IsInt() categoriaId?: number;
+  @IsOptional() @Type(() => Number) @IsInt() proyectoId?: number;
+  @IsOptional() @IsIn(['true', 'false']) sinProyecto?: 'true' | 'false';
+  @IsOptional() @IsIn(['true', 'false']) conComprobante?: 'true' | 'false';
 }
 
 class FiltroCandidatosDto {
@@ -82,7 +87,7 @@ export class MovimientosService {
   async listar(
     empresaId: number,
     f: FiltroMovimientosDto,
-  ): Promise<Pagina<Movimiento>> {
+  ): Promise<Pagina<Movimiento & { nComprobantes: number }>> {
     const qb = this.ds
       .getRepository(Movimiento)
       .createQueryBuilder('m')
@@ -100,14 +105,37 @@ export class MovimientosService {
       qb.andWhere('m.glosaNormalizada LIKE :q', {
         q: `%${normalizarTexto(f.q)}%`,
       });
+    if (f.categoriaId)
+      qb.andWhere(
+        `EXISTS (SELECT 1 FROM conciliacion_linea l
+                   JOIN conciliacion c ON c.id = l.conciliacion_id AND c.deshecha_en IS NULL
+                  WHERE l.movimiento_id = m.id AND l.categoria_id = :categoriaId)`,
+        { categoriaId: f.categoriaId },
+      );
+    if (f.proyectoId)
+      qb.andWhere('m.proyectoId = :proyectoId', { proyectoId: f.proyectoId });
+    if (f.sinProyecto === 'true') qb.andWhere('m.proyectoId IS NULL');
+    if (f.conComprobante)
+      qb.andWhere(
+        `${f.conComprobante === 'true' ? '' : 'NOT '}EXISTS (SELECT 1 FROM comprobante k
+                  WHERE k.movimiento_id = m.id AND k.eliminado_en IS NULL)`,
+      );
 
-    const [items, total] = await qb
+    const [filas, total] = await qb
       .orderBy('m.fecha', 'DESC')
       .addOrderBy('m.cuentaId')
       .addOrderBy('m.orden', 'DESC')
       .skip((f.pagina - 1) * f.porPagina)
       .take(f.porPagina)
       .getManyAndCount();
+    const conteos = await consultar<{ id: number; n: number }>(
+      this.ds,
+      `SELECT movimiento_id::float8 AS id, count(*)::int AS n FROM comprobante
+        WHERE movimiento_id = ANY($1::bigint[]) AND eliminado_en IS NULL GROUP BY movimiento_id`,
+      [filas.map((m) => m.id)],
+    );
+    const n = new Map(conteos.map((c) => [c.id, c.n]));
+    const items = filas.map((m) => ({ ...m, nComprobantes: n.get(m.id) ?? 0 }));
     return { total, pagina: f.pagina, porPagina: f.porPagina, items };
   }
 
@@ -131,7 +159,18 @@ export class MovimientosService {
         ORDER BY l.id`,
       [id],
     );
-    return { ...movimiento, lineas };
+    const comprobantes: Record<string, unknown>[] = await this.ds.query(
+      `SELECT id::float8 AS id, tipo, to_char(fecha, 'YYYY-MM-DD') AS fecha,
+              monto_total::float8 AS "montoTotal", monto_iva::float8 AS "montoIva",
+              rut_emisor AS "rutEmisor", razon_social AS "razonSocial", folio, descripcion,
+              archivo_id AS "archivoId",
+              conciliacion_id::float8 AS "conciliacionId", creado_en AS "creadoEn"
+         FROM comprobante
+        WHERE movimiento_id = $1 AND eliminado_en IS NULL
+        ORDER BY id`,
+      [id],
+    );
+    return { ...movimiento, lineas, comprobantes };
   }
 
   /**

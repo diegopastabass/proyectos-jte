@@ -4,7 +4,9 @@ import { fecha, pesos, porcentaje, tipoDte } from "../formato";
 import { useEmpresa, useSesion } from "../sesion";
 import type { Candidato, Categoria, MovimientoDetalle } from "../types";
 import { useCarga } from "../useCarga";
+import Comprobantes from "./Comprobantes";
 import { Alerta, BadgeDocumento, BadgeMovimiento, Cargando, Modal } from "./comunes";
+import SelectorProyecto from "./SelectorProyecto";
 
 /**
  * Conciliación manual de un movimiento: uno o varios documentos (con monto editable para pagos
@@ -162,6 +164,10 @@ export default function ConciliarModal({
             </div>
           </div>
 
+          <div className="mb-3">
+            <SelectorProyecto tipo="movimiento" id={m.id} proyectoId={m.proyectoId} onCambio={recargarTodo} />
+          </div>
+
           {/* Lo ya conciliado */}
           {grupos.size > 0 && (
             <div className="mb-3">
@@ -214,6 +220,8 @@ export default function ConciliarModal({
               )}
             </div>
           )}
+
+          <Comprobantes m={m} categorias={categorias.datos ?? []} onCambio={recargarTodo} />
 
           {puedeConciliar && (
             <>

@@ -5,6 +5,8 @@
 /*.csv
 /*.txt
 /datos/
+# Fotos de boletas subidas en desarrollo (COMPROBANTES_DIR por defecto)
+api-conciliacion/datos/
 
 # Artefactos de compilación (el /dist del .gitignore raíz solo cubre la raíz del repo)
 dist/

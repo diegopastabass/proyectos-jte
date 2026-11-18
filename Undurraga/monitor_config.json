@@ -1,0 +1,16 @@
+{
+  "sitio": "Undurraga",
+  "api_base": "https://app.jteanalytics.cl/undurraga",
+  "estanques": [],
+  "conexion": {
+    "endpoint": "/snapshot",
+    "modo": "sensor",
+    "nombre": "Equipos Undurraga",
+    "ignorar_sensores": ["3", "4", "6"],
+    "nombres": {
+      "1": "Equipo 1 (caudal y totalizador 1)",
+      "2": "Equipo 2 (caudal y totalizador 2)",
+      "5": "Piscina"
+    }
+  }
+}

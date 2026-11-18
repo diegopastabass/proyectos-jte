@@ -9,6 +9,9 @@ import Configuracion from "./pages/Configuracion";
 import Documentos from "./pages/Documentos";
 import Importar from "./pages/Importar";
 import Movimientos from "./pages/Movimientos";
+import ProyectoDetalle from "./pages/ProyectoDetalle";
+import Proyectos from "./pages/Proyectos";
+import Reportes from "./pages/Reportes";
 import Resumen from "./pages/Resumen";
 import { useSesion } from "./sesion";
 
@@ -31,6 +34,9 @@ export default function App() {
             <Route path="/bandeja" element={<Bandeja />} />
             <Route path="/movimientos" element={<Movimientos />} />
             <Route path="/documentos" element={<Documentos />} />
+            <Route path="/proyectos" element={<Proyectos />} />
+            <Route path="/proyectos/:id" element={<ProyectoDetalle />} />
+            <Route path="/reportes" element={<Reportes />} />
             <Route path="/importar" element={puede("operador") ? <Importar /> : <Navigate to="/" />} />
             <Route path="/configuracion" element={<Configuracion />} />
             <Route path="*" element={<Navigate to="/" />} />

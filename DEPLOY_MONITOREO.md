@@ -13,6 +13,7 @@ Contexto y análisis completo en [HOMOGENEIZACION_MONITOREO.md](HOMOGENEIZACION_
   - Parámetros: `REPETIR_ALERTA_MINUTOS` (si no está, se usa el antiguo `INTERVALO_MINUTOS`), `UMBRAL_DESCONEXION_MINUTOS`, `VENTANA_VACIADO_MINUTOS`, `ALERTAR_NIVEL_ESTABLE`, etc. La lista completa está en `PARAMETROS_DEFECTO`, al inicio del script.
 - **Credenciales**: acepta `API_TOKEN` o `TOKEN`, `API_TO` o `TO`, y `API_TO_ADMIN` o `TO_ADMIN`. Con eso se elimina el problema de nombres distintos entre el código y el `.env`.
 - **Archivos que genera junto al script**: `logs_monitor.txt` (rotativo, 5 × 5 MB) y `estado_monitor.json` (estado de alertas y desconexiones, para no repetir avisos al reiniciar). Ambos están en `.gitignore`.
+- **Nombres visibles en modo `sensor`** (v1.1.0): `conexion.nombres` en `monitor_config.json` mapea cada sensor a un nombre para los avisos (si falta, se usa `Sensor: <nombre>`). Es opcional, así que los sitios con la v1.0.0 no necesitan actualizarse.
 - **Prueba sin enviar mensajes**: `python <script>.py --una-vez --sin-enviar` ejecuta un ciclo, imprime los mensajes que enviaría y no guarda estado.
 
 ### Pasos comunes para cada sitio (marcados como "pasos comunes" más abajo)
@@ -52,7 +53,7 @@ Ninguno de estos cambios altera lo que reciben los dashboards cuando no se enví
 
 ## Fase 2: monitores por sitio
 
-Al final de la Fase 2, ejecutar `python MonitorEstanques/sincronizar.py --verificar` → 21 ✓.
+Al final de la Fase 2, ejecutar `python MonitorEstanques/sincronizar.py --verificar` → 25 ✓.
 
 ### Sitios que ya consultaban la API
 
@@ -121,6 +122,14 @@ En estos sitios ya no se necesitan `mysql-connector-python` ni `psycopg2`.
 - [ ] **Araucarias**: `Araucarias/connectionService.py` + `monitor_config.json`
   - Pasos comunes. Compara en UTC: se eliminó el `DESFASE_BACKEND = 3h` fijo, que fallaba con el cambio de horario de abril.
   - Ya no necesita la librería `schedule`. Puedes borrar el `connection_state.json` antiguo.
+- [ ] **Viña Montes**: `Montes/monitorMontes.py` + `monitor_config.json` (agregado 2026-11-12, script v1.1.0)
+  - Pasos comunes. Vigila `/montes/latest` en modo `sensor`, solo los caudales (uno por equipo: Riles y General); los totalizadores llegan en el mismo mensaje MQTT y se ignoran para no duplicar avisos.
+  - **Requiere el `providerMontes.py` nuevo**: el antiguo reinsertaba el último valor cada 10 min aunque el MQTT estuviera caído, así que la hora de `/latest` seguía avanzando y la desconexión no se notaba. El nuevo ya no envía alertas propias (las reemplaza este monitor).
+  - Usa el mismo `.env` del provider (carpeta `Montes`); hay que agregarle `API_TO_ADMIN` en el servidor (el local ya lo tiene).
+- [ ] **Undurraga**: `Undurraga/monitorUndurraga.py` + `monitor_config.json` (agregado 2026-11-18)
+  - Pasos comunes. Vigila `/undurraga/snapshot` en modo `sensor`: caudales 1 y 2 (uno por equipo) y la piscina; ignora los totalizadores 3 y 4 y el sensor 6 (prueba).
+  - ⚠️ Al 2026-11-18 los equipos 1 y 2 llevan **329 días** y la piscina **176 días** sin datos: el aviso llega apenas se despliegue.
+  - El `.env` local (`Undurraga/.env`) ya tiene `API_URL`, `API_TOKEN` y `API_TO_ADMIN`; hay que replicarlo en el servidor.
 
 ## Fase 3: servicios corregidos sin migrar
 

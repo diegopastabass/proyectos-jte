@@ -9,7 +9,7 @@ function Card(props: CardProps) {
   const { children, className } = props;
   return (
     <div
-      className={`card ${className}`}
+      className={`card ${className ?? ""}`}
       style={{
         width: "100%",
         maxWidth: "1500px",

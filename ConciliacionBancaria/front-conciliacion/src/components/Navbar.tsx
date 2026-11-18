@@ -10,6 +10,8 @@ const ENLACES = [
   { a: "/bandeja", texto: "Bandeja", icono: "bi-inbox" },
   { a: "/movimientos", texto: "Movimientos", icono: "bi-bank" },
   { a: "/documentos", texto: "Documentos", icono: "bi-receipt" },
+  { a: "/proyectos", texto: "Proyectos", icono: "bi-briefcase" },
+  { a: "/reportes", texto: "Reportes", icono: "bi-pie-chart" },
   { a: "/importar", texto: "Importar", icono: "bi-upload", rol: "operador" as const },
   { a: "/configuracion", texto: "Configuración", icono: "bi-gear" },
 ];

@@ -12,4 +12,8 @@ export const validationSchema = Joi.object({
   DB_USER: Joi.string().required(),
   DB_PASS: Joi.string().allow('').required(),
   DB_NAME: Joi.string().required(),
+
+  // Opcionales
+  TOTALIZADOR_MAX_M3H: Joi.number().positive().default(500),
+  INTERVALO_MAX_MINUTOS: Joi.number().positive().default(15),
 });

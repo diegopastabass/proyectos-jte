@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Raw } from 'typeorm';
 import { Telemetria } from './models/metrics.entity';
@@ -28,6 +28,33 @@ export class SsrCumpeoService {
     );
   }
 
+  private static readonly DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+  /** Exige start/end con formato YYYY-MM-DD y start <= end. Responde 400 en vez de 500. */
+  private assertRange(dto: DateRangeDto): { start: string; end: string } {
+    const { start, end } = dto ?? {};
+    if (
+      !start ||
+      !end ||
+      !SsrCumpeoService.DATE_RE.test(start) ||
+      !SsrCumpeoService.DATE_RE.test(end)
+    ) {
+      throw new BadRequestException(
+        'Rango inválido: start y end son requeridos con formato YYYY-MM-DD',
+      );
+    }
+    if (start > end) {
+      throw new BadRequestException('Rango inválido: start es posterior a end');
+    }
+    return { start, end };
+  }
+
+  /** `limit` llega como string desde la query; se acota a un entero razonable. */
+  private parseLimit(limit: DateRangeDto['limit'], fallback = 100): number {
+    const n = Math.floor(Number(limit));
+    return Number.isFinite(n) && n > 0 ? Math.min(n, 5000) : fallback;
+  }
+
   /**
    * Convierte el DTO a strings de fecha listos para usar en consultas SQL.
    * Se pasan como strings (no como objetos Date) para evitar que JS/TypeORM
@@ -38,17 +65,19 @@ export class SsrCumpeoService {
     dto: DateRangeDto,
   ): { start: string; end: string } | null {
     try {
-      if (!dto.start || !dto.end) return null;
+      if (!dto.start && !dto.end) return null;
+      const { start, end } = this.assertRange(dto);
       const pad = (n: number) => String(n).padStart(2, '0');
       // Calcular el día siguiente para límite exclusivo (>= start AND < end)
-      const [year, month, day] = dto.end.split('-').map(Number);
+      const [year, month, day] = end.split('-').map(Number);
       const nextDay = new Date(year, month - 1, day + 1);
       const nextDayStr = `${nextDay.getFullYear()}-${pad(nextDay.getMonth() + 1)}-${pad(nextDay.getDate())}`;
       return {
-        start: `${dto.start} 00:00:00`,
+        start: `${start} 00:00:00`,
         end: `${nextDayStr} 00:00:00`,
       };
     } catch (error) {
+      if (error instanceof BadRequestException) throw error;
       this.logger.error(
         `Error en normalizeDateRange con dto: ${JSON.stringify(dto)} - ${error instanceof Error ? error.message : error}`,
         error instanceof Error ? error.stack : undefined,
@@ -188,10 +217,18 @@ export class SsrCumpeoService {
       const [ey, em, ed] = end.split('-').map(Number);
       const endDate = new Date(ey, em - 1, ed);
       const todayStr = toDateStr(new Date());
+      const yesterdayDate = new Date();
+      yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+      const yesterdayStr = toDateStr(yesterdayDate);
 
+      // Hoy y ayer se recalculan siempre: ayer pudo haberse cacheado incompleto
       while (currentDate <= endDate) {
         const dateStr = toDateStr(currentDate);
-        if (!metricsMap.has(dateStr) || dateStr === todayStr)
+        if (
+          !metricsMap.has(dateStr) ||
+          dateStr === todayStr ||
+          dateStr === yesterdayStr
+        )
           missingDates.push(dateStr);
         currentDate.setDate(currentDate.getDate() + 1);
       }
@@ -219,10 +256,13 @@ export class SsrCumpeoService {
             typeof row.day === 'string'
               ? row.day.split('T')[0]
               : toDateStr(row.day);
-          await this.repo.query(
-            `INSERT INTO ssr_cumpeo_daily_metrics (mt_name, mt_day, mt_value) VALUES ($1, $2, $3) ON CONFLICT (mt_name, mt_day) DO UPDATE SET mt_value = EXCLUDED.mt_value`,
-            [metricName, dateStr, Number(row.daily_value || 0)],
-          );
+          // El día en curso es parcial: se devuelve pero no se persiste
+          if (dateStr !== todayStr) {
+            await this.repo.query(
+              `INSERT INTO ssr_cumpeo_daily_metrics (mt_name, mt_day, mt_value) VALUES ($1, $2, $3) ON CONFLICT (mt_name, mt_day) DO UPDATE SET mt_value = EXCLUDED.mt_value`,
+              [metricName, dateStr, Number(row.daily_value || 0)],
+            );
+          }
           metricsMap.set(dateStr, Number(row.daily_value || 0));
         }
       }
@@ -247,12 +287,11 @@ export class SsrCumpeoService {
 
   async getTotalizador(dto: DateRangeDto): Promise<Metric[]> {
     try {
-      if (!dto?.start || !dto?.end)
-        throw new Error('Rango inválido: start y end son requeridos');
+      const { start, end } = this.assertRange(dto);
       return await this.calculateAndCacheDaily(
         'SSR_CUMPEO_6--slave.totalizador',
-        dto.start,
-        dto.end,
+        start,
+        end,
       );
     } catch (error) {
       this.logger.error(
@@ -265,16 +304,15 @@ export class SsrCumpeoService {
 
   async getHorometro(dto: DateRangeDto): Promise<Metric[]> {
     try {
-      if (!dto?.start || !dto?.end)
-        throw new Error('Rango inválido: start y end son requeridos');
+      const { start, end } = this.assertRange(dto);
       return await this.calculateAndCacheDaily(
         'SSR_CUMPEO_6--slave.horometro',
-        dto.start,
-        dto.end,
+        start,
+        end,
       );
     } catch (error) {
       this.logger.error(
-        `Error en getTotalizador con dto: ${JSON.stringify(dto)} - ${error instanceof Error ? error.message : error}`,
+        `Error en getHorometro con dto: ${JSON.stringify(dto)} - ${error instanceof Error ? error.message : error}`,
         error instanceof Error ? error.stack : undefined,
       );
       throw error;
@@ -303,7 +341,7 @@ export class SsrCumpeoService {
       const results = await this.repo.find({
         where: { mt_name: 'SSR_CUMPEO--slave.estanque' },
         order: { mt_time_2: 'DESC' },
-        take: dto.limit ? Number(dto.limit) : 100,
+        take: this.parseLimit(dto.limit),
       });
       return results.reverse().map((r) => ({
         time: this.toLocalISOString(r.mt_time_2),
@@ -340,7 +378,7 @@ export class SsrCumpeoService {
       const results = await this.repo.find({
         where: { mt_name: 'SSR_CUMPEO--slave.estanque_2' },
         order: { mt_time_2: 'DESC' },
-        take: dto.limit ? Number(dto.limit) : 100,
+        take: this.parseLimit(dto.limit),
       });
       return results.reverse().map((r) => ({
         time: this.toLocalISOString(r.mt_time_2),
@@ -525,10 +563,13 @@ export class SsrCumpeoService {
               ? row.day.split('T')[0]
               : toDateStr(row.day);
           const value = Number(row.daily_value || 0);
-          await this.repo.query(
-            `INSERT INTO ssr_cumpeo_daily_metrics (mt_name, mt_day, mt_value) VALUES ($1, $2, $3) ON CONFLICT (mt_name, mt_day) DO UPDATE SET mt_value = EXCLUDED.mt_value`,
-            [cacheMetricName, dateStr, value],
-          );
+          // El día en curso es parcial: se devuelve pero no se persiste
+          if (dateStr !== todayStr) {
+            await this.repo.query(
+              `INSERT INTO ssr_cumpeo_daily_metrics (mt_name, mt_day, mt_value) VALUES ($1, $2, $3) ON CONFLICT (mt_name, mt_day) DO UPDATE SET mt_value = EXCLUDED.mt_value`,
+              [cacheMetricName, dateStr, value],
+            );
+          }
           metricsMap.set(dateStr, value);
         }
       }
@@ -558,13 +599,12 @@ export class SsrCumpeoService {
    */
   async getHorometroPozo2(dto: DateRangeDto): Promise<Metric[]> {
     try {
-      if (!dto?.start || !dto?.end)
-        throw new Error('Rango inválido: start y end son requeridos');
+      const { start, end } = this.assertRange(dto);
       return await this.calculateAndCacheDailyHorometro(
         'SSR_CUMPEO--slave.caudal_pozos',
         'CALC--horometro_pozo2',
-        dto.start,
-        dto.end,
+        start,
+        end,
       );
     } catch (error) {
       this.logger.error(

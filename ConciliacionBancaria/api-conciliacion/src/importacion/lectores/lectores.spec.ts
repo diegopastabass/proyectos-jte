@@ -122,6 +122,17 @@ describe('BancoEstado xlsx', () => {
     ).rejects.toThrow(/saldo no cuadra/);
   });
 
+  it('reordena una cartola entregada del más nuevo al más antiguo', async () => {
+    const c = await leerArchivo(
+      'c.xlsx',
+      await cartolaBancoEstado({ filas: [FILAS_OK[1], FILAS_OK[0]] }),
+    );
+    if (c.clase !== 'cartola') throw new Error('se esperaba una cartola');
+    expect(c.cartola.movimientos.map((m) => m.saldo)).toEqual([91000, 141000]);
+    expect(c.cartola.movimientos.map((m) => m.orden)).toEqual([1, 2]);
+    expect(c.cartola.advertencias.join()).toMatch(/otro orden/);
+  });
+
   it('rechaza si el saldo final no coincide con el resumen', async () => {
     await expect(
       leerArchivo(

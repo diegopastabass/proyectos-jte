@@ -54,6 +54,26 @@ export interface Movimiento {
   montoConciliado: number;
   estado: EstadoMovimiento;
   nota: string | null;
+  proyectoId: number | null;
+  /** Solo en el listado. */
+  nComprobantes?: number;
+}
+
+export type TipoComprobante = "boleta" | "factura" | "otro";
+
+export interface Comprobante {
+  id: number;
+  tipo: TipoComprobante;
+  fecha: string | null;
+  montoTotal: number;
+  montoIva: number;
+  rutEmisor: string | null;
+  razonSocial: string | null;
+  folio: string | null;
+  descripcion: string | null;
+  archivoId: string;
+  conciliacionId: number | null;
+  creadoEn: string;
 }
 
 export interface LineaMovimiento {
@@ -73,6 +93,7 @@ export interface LineaMovimiento {
 
 export interface MovimientoDetalle extends Movimiento {
   lineas: LineaMovimiento[];
+  comprobantes: Comprobante[];
 }
 
 export interface Documento {
@@ -92,6 +113,7 @@ export interface Documento {
   refFolio: number | null;
   saldoPendiente: number;
   estado: EstadoDocumento;
+  proyectoId: number | null;
 }
 
 export interface DocumentoDetalle extends Documento {
@@ -279,4 +301,85 @@ export interface UsuarioAdmin {
   nombre: string;
   esAdmin: boolean;
   activo: boolean;
+}
+
+export interface BalanceProyecto {
+  ingresos: { neto: number; iva: number; total: number };
+  gastos: { neto: number; ivaCredito: number; ivaBoletas: number; total: number };
+  resultado: number;
+  iva: { debito: number; credito: number; saldo: number };
+  porCobrar: number;
+  porPagar: number;
+  documentos: number;
+  movimientos: number;
+}
+
+export interface Proyecto {
+  id: number;
+  codigo: string | null;
+  nombre: string;
+  descripcion: string | null;
+  contraparteId: number | null;
+  fechaInicio: string | null;
+  fechaFin: string | null;
+  presupuesto: number | null;
+  activo: boolean;
+  balance: BalanceProyecto;
+}
+
+export interface ProyectoDetalle extends Proyecto {
+  porCategoria: { categoriaId: number | null; nombre: string; gastos: number; ingresos: number }[];
+  documentos: {
+    id: number;
+    direccion: Direccion;
+    tipoDte: number;
+    folio: number;
+    rutContraparte: string;
+    razonSocial: string;
+    fechaEmision: string;
+    montoNeto: number;
+    montoIva: number;
+    montoTotal: number;
+    saldoPendiente: number;
+    estado: EstadoDocumento;
+  }[];
+  movimientos: {
+    id: number;
+    fecha: string;
+    monto: number;
+    /** Parte que no se concilió con un documento (lo que cuenta en el balance). */
+    sinDocumento: number;
+    iva: number;
+    glosa: string;
+    estado: EstadoMovimiento;
+    categorias: string | null;
+    nComprobantes: number;
+  }[];
+}
+
+export interface MontosReporte {
+  cargos: number;
+  abonos: number;
+  movimientos: number;
+}
+
+export interface ReporteCategorias {
+  meses: string[];
+  categorias: (MontosReporte & {
+    id: number;
+    nombre: string;
+    tipo: Categoria["tipo"];
+    meses: Record<string, { cargos: number; abonos: number }>;
+  })[];
+  documentos: MontosReporte;
+  porConciliar: MontosReporte;
+}
+
+export interface ReporteContraparte {
+  rut: string;
+  razonSocial: string;
+  pagado: number;
+  cobrado: number;
+  documentos: number;
+  movimientos: number;
 }

@@ -1,0 +1,356 @@
+/* Resumen mensual: KPIs + calendario tipo heatmap (rampa azul secuencial) */
+.msum {
+  --msum-ink: #0b0b0b;
+  --msum-ink-2: #52514e;
+  --msum-ink-3: #75746f;
+  --msum-line: #e3e6ea;
+  --msum-accent: #2a78d6;
+  --msum-l0: #efefec;
+  --msum-l1: #cde2fb;
+  --msum-l2: #9ec5f4;
+  --msum-l3: #5598e7;
+  --msum-l4: #256abf;
+  --msum-l5: #104281;
+
+  width: 100%;
+  padding: 18px 20px 20px;
+  text-align: left;
+  color: var(--msum-ink);
+}
+
+.msum__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.msum__title {
+  margin: 0;
+  font-weight: 700;
+}
+
+.msum__sub {
+  font-size: 0.8rem;
+  color: var(--msum-ink-2);
+}
+
+.msum__nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.msum__month {
+  min-width: 128px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.msum__state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 140px;
+  color: var(--msum-ink-2);
+}
+
+.msum__state--error {
+  color: #b42318;
+}
+
+/* ---- KPIs ---- */
+.msum__kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.msum__kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--msum-line);
+  border-radius: 8px;
+  background: #fcfcfd;
+}
+
+.msum__kpi--primary {
+  background: #eff5fd;
+  border-color: #b7d3f6;
+}
+
+.msum__kpi-label {
+  font-size: 0.72rem;
+  color: var(--msum-ink-2);
+}
+
+.msum__kpi-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.msum__kpi-value small {
+  margin-left: 4px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--msum-ink-2);
+}
+
+.msum__kpi-note {
+  font-size: 0.72rem;
+  color: var(--msum-ink-3);
+}
+
+.msum__tools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+/* ---- Calendario ---- */
+.msum__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+}
+
+@media (min-width: 992px) {
+  .msum__body {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  }
+}
+
+.msum__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.msum__grid--head {
+  margin-bottom: 4px;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--msum-ink-2);
+}
+
+.msum__cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 56px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 6px;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+  color: var(--msum-ink);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.msum__cell--blank {
+  background: transparent;
+  pointer-events: none;
+}
+
+button.msum__cell:not(:disabled) {
+  cursor: pointer;
+}
+
+button.msum__cell:not(:disabled):hover,
+button.msum__cell:not(:disabled):focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 2px var(--msum-ink);
+  outline: none;
+}
+
+.msum__cell:disabled {
+  cursor: default;
+}
+
+.msum__cell--lx {
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0 5px,
+    rgba(117, 116, 111, 0.16) 5px 6px
+  );
+  border: 1px dashed var(--msum-line);
+  color: var(--msum-ink-3);
+}
+
+.msum__cell--l0 {
+  background: var(--msum-l0);
+}
+.msum__cell--l1 {
+  background: var(--msum-l1);
+}
+.msum__cell--l2 {
+  background: var(--msum-l2);
+}
+.msum__cell--l3 {
+  background: var(--msum-l3);
+}
+.msum__cell--l4 {
+  background: var(--msum-l4);
+  color: #fff;
+}
+.msum__cell--l5 {
+  background: var(--msum-l5);
+  color: #fff;
+}
+
+.msum__cell.is-picked {
+  box-shadow: 0 0 0 2px var(--msum-ink);
+}
+
+.msum__cell.is-today .msum__day::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: middle;
+}
+
+.msum__day {
+  font-size: 0.7rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.msum__val {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.msum__val .bi {
+  margin-right: 2px;
+  font-size: 0.6rem;
+}
+
+.msum__legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  margin-top: 12px;
+  font-size: 0.72rem;
+  color: var(--msum-ink-2);
+}
+
+.msum__swatch {
+  width: 20px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.msum__legend-scale {
+  margin-left: auto;
+  color: var(--msum-ink-3);
+}
+
+.msum__detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #f4f6f8;
+  font-size: 0.82rem;
+  color: var(--msum-ink-2);
+}
+
+.msum__detail strong {
+  color: var(--msum-ink);
+}
+
+/* ---- Barras por día de la semana ---- */
+.msum__side-title {
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.msum__bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.msum__bars li {
+  display: grid;
+  grid-template-columns: 34px 1fr 74px;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+}
+
+.msum__bar-label {
+  color: var(--msum-ink-2);
+}
+
+.msum__bar-track {
+  height: 10px;
+  border-radius: 0 4px 4px 0;
+  background: transparent;
+}
+
+.msum__bar-fill {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: 0 4px 4px 0;
+  background: var(--msum-accent);
+}
+
+.msum__bar-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.msum__note {
+  margin: 12px 0 0;
+  font-size: 0.78rem;
+  color: var(--msum-ink-3);
+}
+
+.msum__table {
+  max-height: 420px;
+}
+
+@media (max-width: 575px) {
+  .msum {
+    padding: 14px 12px 16px;
+  }
+  .msum__cell {
+    min-height: 48px;
+    padding: 3px 4px;
+  }
+  .msum__val {
+    font-size: 0.74rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .msum__cell {
+    transition: none;
+  }
+}

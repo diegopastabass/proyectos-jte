@@ -80,69 +80,54 @@ function GraphCard({
 }: GraphCardProps) {
   const isDualMode = !!secondaryInitialData && !!secondaryLabel;
 
-  const [currentData, setCurrentData] = useState<Metric[]>(initialData);
-  const [secondaryData, setSecondaryData] = useState<Metric[]>(
-    secondaryInitialData ?? [],
-  );
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [remote, setRemote] = useState<{
+    key: string;
+    primary: Metric[];
+    secondary: Metric[];
+  } | null>(null);
 
-  // Sincronizar initialData con currentData si no hay una fecha seleccionada
+  // Con fecha seleccionada se muestra lo consultado; sin ella, lo que entrega la página
+  // (que se refresca sola). Así el refresco periódico no dispara nuevas consultas.
+  const formattedDate = selectedDate ? format(selectedDate, "yyyy-MM-dd") : null;
+  const showRemote = !!formattedDate && !!fetchEndpoint;
+  const isLoading = showRemote && remote?.key !== formattedDate;
+  const currentData = showRemote ? (remote?.primary ?? initialData) : initialData;
+  const secondaryData = showRemote
+    ? (remote?.secondary ?? secondaryInitialData ?? [])
+    : (secondaryInitialData ?? []);
+
   useEffect(() => {
-    if (!selectedDate) {
-      setCurrentData(initialData);
-    }
-  }, [initialData, selectedDate]);
+    if (!formattedDate || !fetchEndpoint) return;
+    let cancelled = false;
 
-  // Sincronizar secondaryInitialData
-  useEffect(() => {
-    if (!selectedDate && secondaryInitialData) {
-      setSecondaryData(secondaryInitialData);
-    }
-  }, [secondaryInitialData, selectedDate]);
-
-  useEffect(() => {
-    const fetchDataByDate = async () => {
-      if (selectedDate && fetchEndpoint) {
-        setIsLoading(true);
-        try {
-          const formattedDate = format(selectedDate, "yyyy-MM-dd");
-
-          // Fetch primario
-          const primaryPromise = fetch(
-            `${fetchEndpoint}?start=${formattedDate}&end=${formattedDate}`,
-          ).then((r) => (r.ok ? r.json() : Promise.reject("Error fetch primario")));
-
-          // Fetch secundario (si existe)
-          const secondaryPromise =
-            isDualMode && secondaryFetchEndpoint
-              ? fetch(
-                  `${secondaryFetchEndpoint}?start=${formattedDate}&end=${formattedDate}`,
-                ).then((r) =>
-                  r.ok ? r.json() : Promise.reject("Error fetch secundario"),
-                )
-              : Promise.resolve(null);
-
-          const [primaryData, secData] = await Promise.all([
-            primaryPromise,
-            secondaryPromise,
-          ]);
-
-          setCurrentData(primaryData);
-          if (secData !== null) setSecondaryData(secData);
-        } catch (error) {
-          console.error("Excepción al hacer fetch:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      } else if (!selectedDate) {
-        setCurrentData(initialData);
-        if (secondaryInitialData) setSecondaryData(secondaryInitialData);
-      }
+    const getSeries = async (endpoint: string): Promise<Metric[]> => {
+      const res = await fetch(`${endpoint}?start=${formattedDate}&end=${formattedDate}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json: unknown = await res.json();
+      if (!Array.isArray(json)) throw new Error("Respuesta inválida");
+      return json as Metric[];
     };
 
-    fetchDataByDate();
-  }, [selectedDate, fetchEndpoint, secondaryFetchEndpoint, initialData, secondaryInitialData, isDualMode]);
+    Promise.all([
+      getSeries(fetchEndpoint),
+      isDualMode && secondaryFetchEndpoint
+        ? getSeries(secondaryFetchEndpoint)
+        : Promise.resolve<Metric[]>([]),
+    ])
+      .then(([primary, secondary]) => {
+        if (!cancelled) setRemote({ key: formattedDate, primary, secondary });
+      })
+      .catch((error) => {
+        console.error("Excepción al hacer fetch:", error);
+        // Se marca como resuelta (vacía) para no dejar el "Cargando..." pegado
+        if (!cancelled) setRemote({ key: formattedDate, primary: [], secondary: [] });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [formattedDate, fetchEndpoint, secondaryFetchEndpoint, isDualMode]);
 
   // Procesamiento de datos y etiquetas según el tipo
   const isTimeChart = type === "nivel" || type === "caudal";

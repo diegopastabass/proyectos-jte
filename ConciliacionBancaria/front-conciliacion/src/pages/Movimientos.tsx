@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Alerta, BadgeMovimiento, Cargando, Encabezado, Paginacion, Vacio } from "../components/comunes";
 import ConciliarModal from "../components/ConciliarModal";
 import { BANCOS, fecha, pesos } from "../formato";
 import { useEmpresa } from "../sesion";
-import type { CuentaBancaria, EstadoMovimiento, Movimiento, Pagina } from "../types";
+import type { Categoria, CuentaBancaria, EstadoMovimiento, Movimiento, Pagina, Proyecto } from "../types";
 import { useCarga } from "../useCarga";
 
 const ESTADOS: { valor: EstadoMovimiento | "por_conciliar" | ""; texto: string }[] = [
@@ -18,11 +19,17 @@ const POR_PAGINA = 50;
 export default function Movimientos() {
   const empresa = useEmpresa();
   const base = `/empresas/${empresa.id}`;
-  const [estado, setEstado] = useState<(typeof ESTADOS)[number]["valor"]>("por_conciliar");
+  // Desde Reportes y Proyectos se llega con filtros en la URL (ej. ?categoriaId=6&desde=2026-01-01).
+  const [url] = useSearchParams();
+  const vieneFiltrado = url.has("categoriaId") || url.has("proyectoId");
+  const [estado, setEstado] = useState<(typeof ESTADOS)[number]["valor"]>(vieneFiltrado ? "" : "por_conciliar");
   const [signo, setSigno] = useState<"" | "abono" | "cargo">("");
   const [cuentaId, setCuentaId] = useState("");
-  const [desde, setDesde] = useState("");
-  const [hasta, setHasta] = useState("");
+  const [desde, setDesde] = useState(url.get("desde") ?? "");
+  const [hasta, setHasta] = useState(url.get("hasta") ?? "");
+  const [categoriaId, setCategoriaId] = useState(url.get("categoriaId") ?? "");
+  const [proyecto, setProyecto] = useState(url.get("proyectoId") ?? "");
+  const [conComprobante, setConComprobante] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [q, setQ] = useState("");
   const [pagina, setPagina] = useState(1);
@@ -37,6 +44,8 @@ export default function Movimientos() {
   }, [busqueda]);
 
   const cuentas = useCarga<CuentaBancaria[]>(`${base}/cuentas`);
+  const categorias = useCarga<Categoria[]>(`${base}/categorias`);
+  const proyectos = useCarga<Proyecto[]>(`${base}/proyectos`, { incluirInactivos: "true" });
   const { datos, error, cargando, recargar } = useCarga<Pagina<Movimiento>>(`${base}/movimientos`, {
     estado: estado === "por_conciliar" ? "" : estado,
     porConciliar: estado === "por_conciliar" ? "true" : "",
@@ -45,6 +54,10 @@ export default function Movimientos() {
     desde,
     hasta,
     q,
+    categoriaId,
+    proyectoId: proyecto === "sin" ? "" : proyecto,
+    sinProyecto: proyecto === "sin" ? "true" : "",
+    conComprobante,
     pagina,
     porPagina: POR_PAGINA,
   });
@@ -57,6 +70,10 @@ export default function Movimientos() {
   const nombreCuenta = (id: number) => {
     const c = cuentas.datos?.find((x) => x.id === id);
     return c ? `${BANCOS[c.banco] ?? c.banco} ${c.numero.slice(-4)}` : "";
+  };
+  const nombreProyecto = (id: number | null) => {
+    const p = id === null ? undefined : proyectos.datos?.find((x) => x.id === id);
+    return p ? (p.codigo ?? p.nombre) : "";
   };
 
   return (
@@ -101,6 +118,35 @@ export default function Movimientos() {
             </div>
             <div className="col-6 col-md-3 col-xl-2">
               <input type="date" className="form-control" value={hasta} onChange={(e) => cambiar(setHasta)(e.target.value)} title="Hasta" />
+            </div>
+            <div className="col-6 col-md-4 col-xl-3">
+              <select className="form-select" value={categoriaId} onChange={(e) => cambiar(setCategoriaId)(e.target.value)}>
+                <option value="">Todas las categorías</option>
+                {categorias.datos?.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="col-6 col-md-4 col-xl-3">
+              <select className="form-select" value={proyecto} onChange={(e) => cambiar(setProyecto)(e.target.value)}>
+                <option value="">Todos los proyectos</option>
+                <option value="sin">Sin proyecto</option>
+                {proyectos.datos?.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.codigo ? `${p.codigo} · ` : ""}
+                    {p.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="col-6 col-md-4 col-xl-2">
+              <select className="form-select" value={conComprobante} onChange={(e) => cambiar(setConComprobante)(e.target.value)}>
+                <option value="">Con y sin boleta</option>
+                <option value="true">Con boleta</option>
+                <option value="false">Sin boleta</option>
+              </select>
             </div>
           </div>
           <div className="d-flex flex-wrap align-items-center gap-2 mt-3">
@@ -151,6 +197,13 @@ export default function Movimientos() {
                     <td>
                       <span className="glosa">{m.glosa}</span>
                       {m.nota && <i className="bi bi-chat-left-text text-muted ms-2" title={m.nota} />}
+                      {!!m.nComprobantes && <i className="bi bi-paperclip text-primary ms-2" title={`${m.nComprobantes} boleta(s) adjunta(s)`} />}
+                      {m.proyectoId !== null && (
+                        <span className="badge bg-light text-secondary border ms-2">
+                          <i className="bi bi-briefcase me-1" />
+                          {nombreProyecto(m.proyectoId)}
+                        </span>
+                      )}
                     </td>
                     <td className="d-none d-lg-table-cell text-muted small text-nowrap">{nombreCuenta(m.cuentaId)}</td>
                     <td className={`monto fw-semibold ${m.monto > 0 ? "text-success" : "text-danger"}`}>{pesos(m.monto)}</td>

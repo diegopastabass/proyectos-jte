@@ -1,0 +1,15 @@
+{
+  "sitio": "Viña Montes",
+  "api_base": "https://app.jteanalytics.cl/montes",
+  "estanques": [],
+  "conexion": {
+    "endpoint": "/latest",
+    "modo": "sensor",
+    "nombre": "Equipos Montes",
+    "ignorar_sensores": ["montes_riles_totalizador", "montes_general_totalizador"],
+    "nombres": {
+      "montes_riles_caudal": "Equipo: Riles (MONTES_RILES)",
+      "montes_general_caudal": "Equipo: General (MONTES_GENERAL)"
+    }
+  }
+}

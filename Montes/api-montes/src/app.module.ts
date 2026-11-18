@@ -24,6 +24,10 @@ import { Metric } from './models/metric.entity';
         ssl: {
           rejectUnauthorized: false,
         },
+        extra: {
+          // Días y horas se calculan en hora de Chile sin depender de la configuración de la BD.
+          options: '-c timezone=America/Santiago -c statement_timeout=15000',
+        },
       }),
     }),
     TypeOrmModule.forFeature([Metric]),

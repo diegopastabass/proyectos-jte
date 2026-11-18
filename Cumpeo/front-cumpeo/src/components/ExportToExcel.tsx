@@ -5,26 +5,35 @@ import { saveAs } from "file-saver";
 // Tipos para el combobox
 type ExportDataType =
   | "nivelEstanque"
-  | "caudal"
+  | "caudalPozo1"
+  | "caudalPozo2"
   | "horometro"
+  | "horometroPozo2"
   | "totalizador";
 
 const EXPORT_OPTIONS = {
   nivelEstanque: "Nivel Estanque",
-  caudal: "Caudal",
-  horometro: "Horómetro",
-  totalizador: "Totalizador",
+  caudalPozo1: "Caudal San Enrique 3",
+  caudalPozo2: "Caudal San Enrique 1",
+  horometro: "Horómetro San Enrique 3",
+  horometroPozo2: "Horómetro San Enrique 1",
+  totalizador: "Totalizador San Enrique 3",
 };
 
 const ENDPOINT_MAP: Record<ExportDataType, string> = {
   nivelEstanque: "nivel",
-  caudal: "caudal",
+  caudalPozo1: "caudal-pozo1",
+  caudalPozo2: "caudal-pozo2",
   horometro: "horometro",
+  horometroPozo2: "horometro-pozo2",
   totalizador: "totalizador",
 };
 
 function Export() {
-  const today = new Date().toISOString().split("T")[0];
+  // Fecha de Chile: toISOString() adelanta el día después de las ~20:00 (UTC)
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Santiago",
+  }).format(new Date());
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(today);
   const [loading, setLoading] = useState(false);

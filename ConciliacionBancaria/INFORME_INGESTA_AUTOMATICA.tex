@@ -1,0 +1,254 @@
+% Informe para decisión: automatizar cartolas y RCV
+% Compilar con XeLaTeX:   latexmk -xelatex INFORME_INGESTA_AUTOMATICA.tex
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[a4paper,margin=2.4cm,top=2.6cm,bottom=2.4cm]{geometry}
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setdefaultlanguage{spanish}
+\setmainfont{Liberation Serif}
+\setsansfont{Liberation Sans}
+\setmonofont{Liberation Mono}[Scale=0.9]
+
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{ragged2e}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{colortbl}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage[most]{tcolorbox}
+\usepackage{xurl}
+\usepackage[hidelinks]{hyperref}
+
+\definecolor{azul}{HTML}{0D6EFD}
+\definecolor{oscuro}{HTML}{212529}
+\definecolor{gris}{HTML}{6C757D}
+\definecolor{grisclaro}{HTML}{F1F3F5}
+\definecolor{verde}{HTML}{198754}
+\definecolor{ambar}{HTML}{B58100}
+\definecolor{rojo}{HTML}{DC3545}
+
+\hypersetup{pdftitle={Informe: automatizar cartolas y RCV},pdfauthor={JT Automatización},colorlinks=false}
+
+\RaggedRight
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\setlist{itemsep=0.25em,topsep=0.3em,parsep=0pt}
+\renewcommand{\arraystretch}{1.25}
+\setlength{\emergencystretch}{2em}
+
+\titleformat{\section}{\sffamily\Large\bfseries\color{azul}}{\thesection.}{0.6em}{}[\vspace{-0.4em}\color{azul}\titlerule]
+\titleformat{\subsection}{\sffamily\large\bfseries\color{oscuro}}{\thesubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.8em}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+
+\setlength{\headheight}{22pt}
+\addtolength{\topmargin}{-6pt}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.3pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{gris}\leaders\hrule height \headrulewidth\hfill}}
+\fancyhead[L]{\sffamily\small\color{gris}Conciliación bancaria}
+\fancyhead[R]{\sffamily\small\color{gris}Informe para decisión}
+\fancyfoot[C]{\sffamily\small\color{gris}\thepage}
+
+% Recuadros
+\newtcolorbox{resumen}{colback=grisclaro,colframe=azul,boxrule=0.6pt,left=8pt,right=8pt,top=6pt,bottom=6pt,arc=2pt}
+\newtcolorbox{aviso}{colback=white,colframe=ambar,boxrule=0.6pt,left=8pt,right=8pt,top=5pt,bottom=5pt,arc=2pt}
+
+\newcommand{\tablahead}[1]{{\color{white}\sffamily\bfseries #1}}
+\newcolumntype{R}{>{\RaggedLeft\arraybackslash}X}
+\newcolumntype{L}{>{\RaggedRight\arraybackslash}X}
+
+\begin{document}
+
+% ------------------------------------------------------------------
+\begin{center}
+{\sffamily\LARGE\bfseries\color{oscuro} Automatizar cartolas bancarias y RCV\par}
+\vspace{0.3em}
+{\sffamily\large\color{gris} Costos, riesgos y decisión requerida\par}
+\vspace{0.6em}
+{\sffamily\small\color{gris} Proyecto de conciliación bancaria · JT Automatización · 10 de noviembre de 2026\par}
+\end{center}
+\vspace{0.4em}
+
+\begin{resumen}
+\textbf{Decisión que se solicita.} Hoy las cartolas (BancoEstado y Banco de Chile) y el RCV del SII se descargan a mano y se suben al sistema. Se evaluó automatizar esa carga y compararla con seguir pagando los servicios que hoy funcionan en paralelo, TryLuca y Chipax.
+
+\textbf{Conclusión.} Automatizar por cuenta propia \textbf{ahorraría como máximo unos \$80.000--\$95.000 al mes} frente a un solo servicio de ese tipo (hoy se pagan dos), y solo si las conexiones bancarias salen baratas, dato que aún no se conoce. A cambio, la mantención y el riesgo de las credenciales quedan de nuestro lado. Falta cotizar los bancos antes de decidir con números firmes.
+
+\textbf{Propuesta.} Pedir las cotizaciones pendientes (sección 5) y decidir con ellas. Si no bajan de unos \$100.000 al mes en total, o si la conciliación se hace solo una vez al mes, conviene mantener los servicios actuales o prescindir de ellos y seguir con la carga manual.
+\end{resumen}
+
+% ------------------------------------------------------------------
+\section{Situación actual}
+
+El sistema propio ya hace lo más difícil: lee las cartolas de BancoEstado y Banco de Chile y el RCV, cruza movimientos con documentos y deja lo dudoso en una bandeja para revisión. Lo único manual es \textbf{descargar los archivos del banco y del SII y subirlos}. El costo mensual actual es el del servidor, que ya existe, más unos minutos de trabajo por empresa y por mes.
+
+TryLuca y Chipax se usaron antes para esta tarea y hoy siguen funcionando \textbf{en paralelo} con el sistema propio. El objetivo del proyecto es prescindir del costo de esos servicios.
+
+La automatización mejora la frecuencia (datos al día en lugar de una vez al mes), no la capacidad. Si la conciliación se hace una vez al mes, el ahorro de tiempo es pequeño.
+
+% ------------------------------------------------------------------
+\section{Qué canales existen}
+
+\subsection{SII: Registro de Compras y Ventas}
+
+El SII \textbf{no ofrece una API pública para descargar el RCV}. Sus web services oficiales funcionan con certificado digital, pero consultan un documento a la vez (por ejemplo, los acuses y reclamos de una factura); no entregan el listado del período.
+
+Quedan dos caminos:
+\begin{itemize}
+  \item \textbf{Intermediario comercial} (BaseAPI, API Gateway): entrega el RCV en JSON a cambio de la Clave Tributaria de un usuario autorizado. Por dentro replican el portal del SII; el riesgo de que el SII lo cambie lo asume el proveedor.
+  \item \textbf{Vía oficial}: leer los XML que llegan al correo de intercambio de DTE y complementarlos con los web services. No requiere entregar claves, pero da más trabajo y las ventas dependen del sistema con que se emiten las facturas.
+\end{itemize}
+
+\begin{aviso}
+\textbf{Descartado:} conectarse directamente al portal del SII por cuenta propia. Su detalle está protegido con reCAPTCHA y los proyectos abiertos que lo evaden usan un token copiado del portal, lo que equivale a saltarse un control del SII. Además exigiría un mantenimiento permanente.
+\end{aviso}
+
+\subsection{Bancos}
+
+\begin{itemize}
+  \item \textbf{Banco de Chile:} su portal de APIs (API Store) lista una API de \emph{Movimientos y Saldos} para cuentas empresa. Es oficial y no obliga a entregar la clave a un tercero. Los requisitos y el costo no son públicos; hay que gestionarlos con el ejecutivo.
+  \item \textbf{BancoEstado:} no tiene API pública para empresas. La opción es un agregador (Fintoc o Boufin) que se conecta con las credenciales de un usuario del banco, o seguir subiendo la cartola a mano.
+\end{itemize}
+
+\subsection{Open Finance (Ley Fintec)}
+
+Será el canal oficial, pero la CMF lo postergó a \textbf{julio de 2027}. Los datos de transacciones de \emph{personas jurídicas} en los bancos entran 12 meses después, es decir, \textbf{alrededor de julio de 2028}. Para consumirlos hay que ser un proveedor inscrito en la CMF o usar uno que lo esté. No es una solución para el corto plazo.
+
+% ------------------------------------------------------------------
+\section{Costos comparados}
+
+Valores mensuales, \textbf{netos de IVA}, según las páginas de cada proveedor. Los precios están en UF; se convirtió a pesos con UF $\approx$ \$41.300 (6 de noviembre de 2026).
+
+\subsection{Servicios completos}
+
+\begin{center}
+\small
+\begin{tabularx}{\textwidth}{@{}L l r r@{}}
+\rowcolor{azul}\tablahead{Servicio y plan} & \tablahead{Incluye} & \tablahead{UF} & \tablahead{Pesos} \\
+TryLuca Advance Pro & 2 bancos, 600 mov., 1 empresa & 3,3 & $\sim$136.000 \\
+TryLuca Go Bigger & 1 banco, 150 mov., 1 empresa & 1,9 & $\sim$78.000 \\
+Clay Pyme & Conciliación, multiempresa, 10 bancos & desde 3 & desde $\sim$124.000 \\
+Chipax Crece & 2 cuentas corrientes sincronizadas & 3,6 & $\sim$149.000 \\
+\end{tabularx}
+\end{center}
+
+TryLuca y Chipax son los servicios que se usan hoy; Clay se incluye solo como referencia de mercado. Los planes de la tabla son los que calzan con dos bancos y no necesariamente los contratados. En TryLuca, cada empresa o banco adicional suma 0,5 UF ($\sim$\$20.600). Clay y Chipax cobran aparte por cuenta, factura y usuario, y publican tarifas ``desde'', por lo que el precio final puede ser mayor.
+
+\subsection{Automatización propia}
+
+\begin{center}
+\small
+\begin{tabularx}{\textwidth}{@{}L L r@{}}
+\rowcolor{azul}\tablahead{Pieza} & \tablahead{Proveedor} & \tablahead{Pesos/mes} \\
+Servidor y API propios & Ya existen & \$0 adicional \\
+RCV del SII & BaseAPI Node (1 UF por equipo, empresas ilimitadas) & $\sim$41.000 \\
+BancoEstado y Banco de Chile & Fintoc, Boufin o API de Banco de Chile & \textbf{Sin dato} \\
+Desarrollo de conectores & Trabajo interno & Sin costo en caja \\
+\end{tabularx}
+\end{center}
+
+\begin{aviso}
+\textbf{Riesgo del proveedor SII.} BaseAPI informa que su servicio en la nube cierra el 11 de diciembre (la página no indica el año; el pie dice 2026). Solo continúa la versión instalada en nuestro equipo, con 30 días de prueba. Su página describe consultas al SII en general y no menciona el RCV, así que debe confirmarse en la prueba. Un cierre con un mes de aviso muestra el riesgo de depender de un proveedor pequeño.
+\end{aviso}
+
+\subsection{Punto de equilibrio}
+
+Si las conexiones bancarias cuestan $B$ pesos al mes, la automatización propia cuesta $41.000 + B$. Comparada con el servicio completo:
+
+\begin{center}
+\small
+\begin{tabularx}{\textwidth}{@{}L r r@{}}
+\rowcolor{azul}\tablahead{Se compara con} & \tablahead{Costo del servicio} & \tablahead{Ahorro máximo (si $B=0$)} \\
+TryLuca Advance Pro & $\sim$136.000 & $\sim$95.000 \\
+Clay Pyme & desde $\sim$124.000 & $\sim$83.000 \\
+\end{tabularx}
+\end{center}
+
+Como hoy se pagan dos servicios, el ahorro real al dejarlos podría ser mayor que estas cifras. El ahorro de automatizar es esa cifra menos $B$. Por ejemplo, si las conexiones bancarias cuestan \$60.000 al mes, el ahorro frente a TryLuca baja a unos \$35.000. Si $B$ supera los \$83.000--\$95.000, el servicio completo sale más barato.
+
+% ------------------------------------------------------------------
+\section{Comparación de opciones}
+
+\begin{center}
+\small
+\begin{tabularx}{\textwidth}{@{}>{\RaggedRight\sffamily\bfseries}p{2.6cm} L L L@{}}
+\rowcolor{azul}\tablahead{} & \tablahead{A. Solo sistema propio (carga manual)} & \tablahead{B. Automatización propia} & \tablahead{C. Mantener TryLuca y Chipax} \\
+Costo mensual & \$0 (se dan de baja los servicios) & $\sim$41.000 + bancos (por cotizar) & Lo que se paga hoy (referencia: TryLuca $\sim$136.000, Chipax $\sim$149.000) \\
+Frecuencia de datos & La que decidamos subir & Diaria & Diaria (Clay informa cada 2 horas) \\
+Cambios del SII o de los bancos & No afectan & Los absorbe el proveedor; si desaparece, hay que reemplazarlo & Los absorbe el proveedor \\
+Credenciales de terceros & Ninguna & Clave SII y usuarios bancarios en nuestro servidor, cifrados & Quedan con el proveedor \\
+Datos personales (Ley 21.719) & Mínimo & Responsabilidad nuestra: contratos y seguridad & Responsabilidad compartida con el proveedor \\
+Sistema propio de conciliación & Se usa solo & Se usa y se amplía & Queda en paralelo, sin función propia \\
+Cobertura de BancoEstado empresa & No aplica & \textbf{Por confirmar con el agregador} & Conocida por el uso actual \\
+\end{tabularx}
+\end{center}
+
+La opción C implica seguir pagando los servicios y dejar de usar el sistema desarrollado hasta ahora. La opción A, en cambio, aprovecha el sistema propio tal como está: el ahorro es total, a cambio de seguir subiendo los archivos a mano.
+
+% ------------------------------------------------------------------
+\section{Qué falta saber}
+
+Estos datos no están publicados y cambian la decisión:
+
+\begin{enumerate}
+  \item \textbf{Precio de Fintoc y Boufin} para dos cuentas empresa (BancoEstado y Banco de Chile) y si cubren BancoEstado empresa. Fintoc publica cobertura de 12 meses de historia, pero esa fila de su página tiene un error de formato.
+  \item \textbf{Requisitos y costo de la API de Banco de Chile} para el contrato Banconexión 2.0 actual.
+  \item \textbf{Si BaseAPI Node entrega el RCV} y qué permisos mínimos necesita el usuario autorizado en el SII.
+  \item \textbf{Cuánto se paga hoy a TryLuca y Chipax} (plan, empresas y cuentas adicionales). Es la cifra contra la que se mide el ahorro y puede ser mayor que la de las tablas, porque hoy se pagan dos servicios.
+  \item \textbf{Cuántas empresas (RUT) y cuentas} hay que conectar, y \textbf{cada cuánto} se concilia. Cambian los planes que aplican y el beneficio de automatizar.
+\end{enumerate}
+
+% ------------------------------------------------------------------
+\section{Riesgos y normativa}
+
+\begin{itemize}
+  \item \textbf{Entrega de claves.} Los agregadores y los intermediarios del SII funcionan con credenciales del usuario. Se mitiga con un usuario bancario de solo consulta (sin firma ni transferencias) y con un usuario autorizado dedicado en el SII.
+  \item \textbf{Ley 21.719 de datos personales}, vigente desde el 1 de diciembre de 2026. Las cartolas y los documentos incluyen datos de personas naturales. Exige medidas de seguridad, mínimo de datos, registro de accesos y contratos con los proveedores que traten esos datos.
+  \item \textbf{Términos de uso.} Se descartó cualquier mecanismo que evada controles del SII o de los bancos. Toda automatización va por APIs oficiales o por intermediarios que asumen ese riesgo.
+  \item \textbf{Dependencia de proveedores pequeños.} Ninguno de los intermediarios del SII es oficial.
+\end{itemize}
+
+% ------------------------------------------------------------------
+\section{Recomendación y próximos pasos}
+
+\begin{enumerate}
+  \item \textbf{No construir nada todavía.} Pedir las cotizaciones de los puntos 1 a 3 de la sección 5 y activar la prueba de 30 días de BaseAPI Node.
+  \item \textbf{Aprovechar la operación en paralelo que ya existe.} Mientras se cotiza, medir cuánto concilia el sistema propio frente a TryLuca y Chipax con los mismos datos. Si el resultado es equivalente, se puede dar de baja uno de los dos servicios sin esperar ninguna automatización, solo subiendo los archivos como hoy.
+  \item \textbf{Decidir con números.} La regla propuesta:
+  \begin{itemize}
+    \item Si las conexiones bancarias cuestan menos de unos \$40.000 al mes, la opción B ahorra una suma que justifica el trabajo adicional.
+    \item Si cuestan más de unos \$80.000 al mes, o la conciliación es mensual, elegir C (mantener los servicios) o A (prescindir de ellos con carga manual).
+    \item Entre ambos valores, la diferencia es chica y pesa más la comodidad de que otro se haga cargo de la mantención.
+  \end{itemize}
+\end{enumerate}
+
+% ------------------------------------------------------------------
+\clearpage
+\section*{Fuentes}
+\footnotesize
+\begin{itemize}[itemsep=0.1em]
+  \item SII, web service de aceptación y reclamo de DTE: \url{https://www.sii.cl/factura_electronica/Webservice_Registro_Reclamo_DTE_V1.2.pdf}
+  \item SII, ¿Qué es el RCV?: \url{https://www.sii.cl/preguntas_frecuentes/factura_electronica/001_003_6971.htm}
+  \item devlas-cl/dte-sii (reCAPTCHA en el detalle del RCV): \url{https://github.com/devlas-cl/dte-sii}
+  \item BaseAPI, RCV y precios: \url{https://baseapi.cl/servicios/rcv} y \url{https://baseapi.cl/precios}
+  \item Banco de Chile, API Store: \url{https://apistore.bancochile.cl/banco-chile/sandbox/forum/2}
+  \item Fintoc, cobertura de movimientos: \url{https://docs.fintoc.com/docs/movements/overview-data-aggregation/products-and-institutions-movements}
+  \item Boufin, documentación de la API: \url{https://docs.boufin.com/api/}
+  \item TryLuca, planes: \url{https://tryluca.cl/planes}
+  \item Clay, precios: \url{https://www.clay.cl/precios}
+  \item Chipax, precios: \url{https://chipax.com/precios}
+  \item CMF, modificación de la NCG 514 (1 de junio de 2026): \url{https://www.cmfchile.cl/portal/prensa/625/w4-article-110881.html}
+  \item Fiskil, calendario de Open Finance por mes: \url{https://blog.fiskil.com/es/guia-open-finance-chile-ley-21521-ncg-514}
+  \item Valor de la UF: \url{https://www.rankia.cl/blog/sii/7541791-valor-uf-hoy-6-noviembre-2026-41-279-51}
+\end{itemize}
+\vspace{0.3em}
+{\color{gris}Los precios provienen de las páginas públicas de cada proveedor al 10 de noviembre de 2026 y pueden cambiar. El detalle técnico está en \texttt{INVESTIGACION\_INGESTA\_AUTOMATICA.md}.}
+
+\end{document}

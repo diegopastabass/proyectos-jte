@@ -144,6 +144,84 @@ describe('Banco de Chile (texto)', () => {
     expect(c).toMatchObject({ saldoInicial: 0, saldoFinal: 0 });
   });
 
+  it('reordena una cartola con los días del más nuevo al más antiguo pero cada día hacia abajo', async () => {
+    // Lo que pasa si el banco ordena solo por fecha: invertir todo el archivo desordenaría cada día.
+    const porFecha = [FILAS[4], FILAS[2], FILAS[3], FILAS[0], FILAS[1]];
+    const c = await cartola('c.xls', buffer(texto(porFecha)));
+    expect(c.movimientos.map((m) => m.glosa)).toEqual(
+      FILAS.map((f) => f.split(';')[1].trim()),
+    );
+    expect(c.movimientos.map((m) => m.orden)).toEqual([1, 2, 3, 4, 5]);
+    expect(c).toMatchObject({ saldoInicial: 0, saldoFinal: 0 });
+    expect(c.advertencias.join()).toMatch(/otro orden/);
+  });
+
+  it('reordena un día cuyas filas vienen mezcladas, y sigue rechazando un saldo que no cuadra', async () => {
+    const mezclada = [FILAS[1], FILAS[0], FILAS[3], FILAS[2], FILAS[4]];
+    const c = await cartola('c.xls', buffer(texto(mezclada)));
+    expect(c.movimientos.map((m) => m.monto)).toEqual([
+      -500000, -3800, 103800, 357000, 43000,
+    ]);
+
+    const editada = [...mezclada];
+    editada[3] = fila(
+      '02/10/2026',
+      'TRANSFERENCIA DESDE LINEA DE CREDI',
+      0,
+      103801,
+      -400000,
+    );
+    await expect(cartola('c.xls', buffer(texto(editada)))).rejects.toThrow(
+      /saldo no cuadra/,
+    );
+  });
+
+  it('reordena cuando el saldo vuelve al mismo valor dentro del primer día', async () => {
+    // El primer día pasa por $0 a mitad de día: la primera fila no se deduce solo mirando los saldos.
+    const dia1 = [
+      fila('01/10/2026', 'PAGO:UNO', 100, 0, -100),
+      fila('01/10/2026', 'PAGO:DOS', 0, 100, 0),
+      fila('01/10/2026', 'PAGO:TRES', 50, 0, -50),
+    ];
+    const dia2 = fila('02/10/2026', 'PAGO:CUATRO', 0, 50, 0);
+    const c = await cartola('c.xls', buffer(texto([dia2, ...dia1])));
+    expect(c.movimientos.map((m) => m.glosa)).toEqual([
+      'PAGO:UNO',
+      'PAGO:DOS',
+      'PAGO:TRES',
+      'PAGO:CUATRO',
+    ]);
+    expect(c).toMatchObject({ saldoInicial: 0, saldoFinal: 0 });
+  });
+
+  it('reordena cuando el día en curso viene en otro sentido y los días anteriores se compensan solos', async () => {
+    // Días de más nuevo a más antiguo (cada uno también), salvo hoy, que viene de arriba hacia abajo.
+    // Los días 01 y 02 parten y terminan en $0: elegir mal la primera fila rompería el día siguiente.
+    const d1 = [
+      fila('01/10/2026', 'PAGO:UNO', 100, 0, -100),
+      fila('01/10/2026', 'PAGO:DOS', 0, 100, 0),
+    ];
+    const d2 = [
+      fila('02/10/2026', 'PAGO:TRES', 30, 0, -30),
+      fila('02/10/2026', 'PAGO:CUATRO', 0, 30, 0),
+    ];
+    const hoy = [
+      fila('03/10/2026', 'PAGO:CINCO', 500, 0, -500),
+      fila('03/10/2026', 'PAGO:SEIS', 20, 0, -520),
+    ];
+    const archivo = [...hoy, ...[...d2].reverse(), ...[...d1].reverse()];
+    const c = await cartola('c.xls', buffer(texto(archivo)));
+    expect(c.movimientos.map((m) => m.glosa)).toEqual([
+      'PAGO:UNO',
+      'PAGO:DOS',
+      'PAGO:TRES',
+      'PAGO:CUATRO',
+      'PAGO:CINCO',
+      'PAGO:SEIS',
+    ]);
+    expect(c).toMatchObject({ saldoInicial: 0, saldoFinal: -520 });
+  });
+
   it('rechaza un cargo y un abono en la misma fila', async () => {
     const mal = [fila('01/10/2026', 'RARO', 100, 100, 0)];
     await expect(cartola('c.xls', buffer(texto(mal)))).rejects.toThrow(

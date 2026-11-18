@@ -1,23 +1,10 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Body,
-  Param,
-  ParseIntPipe,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { MetricsService } from '../services/metrics.service';
-import { CreateMetricDto } from '../models/dto/create-metric.dto';
+import { DateRangeDto, MesesDto } from '../models/dto/date-range.dto';
 
 @Controller('')
 export class MetricsController {
   constructor(private readonly metricsService: MetricsService) {}
-
-  @Post()
-  async create(@Body() dto: CreateMetricDto) {
-    return this.metricsService.createMetric(dto);
-  }
 
   @Get('latest')
   async latestAllNames() {
@@ -27,17 +14,23 @@ export class MetricsController {
   @Get('totalizador/:name')
   async getDailyTotalizer(
     @Param('name') name: string,
-    @Query('start') start: string,
-    @Query('end') end: string,
+    @Query() { start, end }: DateRangeDto,
   ) {
     return this.metricsService.getDailyTotalizer(name, start, end);
+  }
+
+  @Get('totalizador-mes/:name')
+  async getMonthlyTotalizer(
+    @Param('name') name: string,
+    @Query() { meses }: MesesDto,
+  ) {
+    return this.metricsService.getMonthlyTotalizer(name, meses);
   }
 
   @Get('caudal/:name')
   async getFlowRate(
     @Param('name') name: string,
-    @Query('start') start?: string,
-    @Query('end') end?: string,
+    @Query() { start, end }: DateRangeDto,
   ) {
     return this.metricsService.getFlowRate(name, start, end);
   }
@@ -45,9 +38,16 @@ export class MetricsController {
   @Get('totalizador-hora/:name')
   async getHourlyTotalizer(
     @Param('name') name: string,
-    @Query('start') start?: string,
-    @Query('end') end?: string,
+    @Query() { start, end }: DateRangeDto,
   ) {
     return this.metricsService.getHourlyTotalizer(name, start, end);
+  }
+
+  @Get('consumo-hora/:name')
+  async getHourlyVolumeFromFlow(
+    @Param('name') name: string,
+    @Query() { start, end }: DateRangeDto,
+  ) {
+    return this.metricsService.getHourlyVolumeFromFlow(name, start, end);
   }
 }

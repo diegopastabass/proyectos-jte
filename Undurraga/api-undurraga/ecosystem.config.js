@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'api-undurraga',
-      script: 'dist/src/main.js',
+      script: 'dist/main.js',
       instances: 2,
       autorestart: true,
       watch: false,

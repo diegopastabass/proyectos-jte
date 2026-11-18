@@ -12,7 +12,7 @@ import {
   type LectorCartola,
   type MovimientoLeido,
 } from './lector.types';
-import { validarSaldos } from './saldo.util';
+import { ordenarPorSaldo, validarSaldos } from './saldo.util';
 
 /**
  * "Cartola emitida" de la cuenta corriente de Banco de Chile (portal empresas).
@@ -153,18 +153,41 @@ export class BancoChileLector implements LectorCartola {
     }
 
     // Cartolas ordenadas del más nuevo al más antiguo: se dan vuelta para encadenar los saldos.
+    let ordenados = movimientos;
     if (movimientos[0].fecha > movimientos[movimientos.length - 1].fecha) {
-      movimientos.reverse();
-      movimientos.forEach((m, i) => (m.orden = i + 1));
+      ordenados = [...movimientos].reverse();
+      ordenados.forEach((m, i) => (m.orden = i + 1));
     }
 
     // Sin saldo inicial/final en el archivo: se deducen del saldo corrido (y se valida toda la cadena).
-    const primero = movimientos[0];
-    const ultimo = movimientos[movimientos.length - 1];
-    const saldoInicial =
-      primero.saldo !== null ? primero.saldo - primero.monto : null;
-    const saldoFinal = ultimo.saldo;
-    validarSaldos(movimientos, saldoInicial, saldoFinal);
+    const encadenar = (lista: MovimientoLeido[]) => {
+      const primero = lista[0];
+      const saldoInicial =
+        primero.saldo !== null ? primero.saldo - primero.monto : null;
+      const saldoFinal = lista[lista.length - 1].saldo;
+      validarSaldos(lista, saldoInicial, saldoFinal);
+      return { saldoInicial, saldoFinal };
+    };
+    let cadena: ReturnType<typeof encadenar>;
+    try {
+      cadena = encadenar(ordenados);
+    } catch (error) {
+      // El orden dentro de un mismo día puede venir distinto al del saldo (típico cuando el banco
+      // ordena solo por fecha): se reconstruye con el saldo corrido, que valida al peso igual.
+      const porSaldo = ordenarPorSaldo(movimientos);
+      if (!porSaldo) throw error;
+      try {
+        cadena = encadenar(porSaldo);
+      } catch {
+        throw error;
+      }
+      ordenados = porSaldo;
+      advertencias.push(
+        'El banco entregó los movimientos de un mismo día en otro orden: se reordenaron según el saldo corrido',
+      );
+    }
+    const { saldoInicial, saldoFinal } = cadena;
+    movimientos.splice(0, movimientos.length, ...ordenados);
 
     const fechas = movimientos.map((m) => m.fecha).sort();
     return {

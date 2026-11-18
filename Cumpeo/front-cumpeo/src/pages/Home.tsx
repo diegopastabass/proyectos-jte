@@ -7,12 +7,13 @@ import "../index.css";
 import Loading from "./Loading";
 import ToggleCardButton from "../components/ToggelCardButton";
 import GraphCard from "../components/GraphCard";
-import Error from "./Error";
+import ErrorPage from "./Error";
 import ScadaDiagram from "../components/ScadaDiagram";
 import ExportModal from "../components/ExportModal";
 import lgoJte from "../assets/logoJte.png";
 import { fetchWithCache } from "../components/fetchWithcache";
 import DataArrivalIndicator from "../components/DataArrivalIndicator";
+import MonthlySummary from "../components/MonthlySummary";
 
 interface Metric {
   value: number;
@@ -33,6 +34,33 @@ interface Datos {
 
 const BASE_URL = "https://app.jteanalytics.cl/cumpeo";
 
+/** Fecha de hoy (YYYY-MM-DD) en Chile; se recalcula en cada ciclo para no quedar pegada al día de carga. */
+const chileDate = () =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Santiago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
+const getJson = async <T,>(url: string): Promise<T> => {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status} en ${url}`);
+  return (await res.json()) as T;
+};
+
+const getMetrics = async (url: string): Promise<Metric[]> => {
+  const json = await getJson<unknown>(url);
+  if (!Array.isArray(json)) throw new Error(`Respuesta inválida en ${url}`);
+  return json as Metric[];
+};
+
+/** Valor escalado para mostrar en pantalla; "—" si el dato no existe. */
+const scaled = (value: number | undefined, divisor: number, digits: number) =>
+  value === undefined || !Number.isFinite(value)
+    ? "—"
+    : (value / divisor).toFixed(digits);
+
 /** Returns the most recent timestamp from all metrics in a snapshot */
 function getLatestTime(snapshot: MetricSnapshot | undefined): string | undefined {
   if (!snapshot) return undefined;
@@ -45,6 +73,7 @@ function getLatestTime(snapshot: MetricSnapshot | undefined): string | undefined
 
 function App() {
   const [loading, setLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
   const [data, setData] = useState<Datos | null>(null);
 
   const [nivelEstanque, setNivelEstanque] = useState<Metric[]>([]);
@@ -65,40 +94,34 @@ function App() {
     const handleResize = () => setIsLargeScreen(window.innerWidth >= 992);
     window.addEventListener("resize", handleResize);
 
-    const formatter = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "America/Santiago",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    });
-
-    const now = new Date();
-    const date = formatter.format(now);
-
     const fetchData = async () => {
-      try {
-        const [snapshotRes, nivelRes, caudalPozo1Res, caudalPozo2Res] =
-          await Promise.all([
-            fetch(`${BASE_URL}/snapshot`),
-            fetch(`${BASE_URL}/nivel?start=${date}&end=${date}`),
-            fetch(`${BASE_URL}/caudal-pozo1?start=${date}&end=${date}`),
-            fetch(`${BASE_URL}/caudal-pozo2?start=${date}&end=${date}`),
-          ]);
+      const date = chileDate();
+      const [snapshot, nivel, caudal1, caudal2, tot, hor, hor2] =
+        await Promise.allSettled([
+          getJson<Datos>(`${BASE_URL}/snapshot`),
+          getMetrics(`${BASE_URL}/nivel?start=${date}&end=${date}`),
+          getMetrics(`${BASE_URL}/caudal-pozo1?start=${date}&end=${date}`),
+          getMetrics(`${BASE_URL}/caudal-pozo2?start=${date}&end=${date}`),
+          fetchWithCache("totalizador", date),
+          fetchWithCache("horometro", date),
+          fetchWithCache("horometro-pozo2", date),
+        ]);
 
-        const snapshotData: Datos = await snapshotRes.json();
+      // Cada serie se actualiza por separado: una falla no borra el resto.
+      if (snapshot.status === "fulfilled") setData(snapshot.value);
+      if (nivel.status === "fulfilled") setNivelEstanque(nivel.value);
+      if (caudal1.status === "fulfilled") setCaudalPozo1(caudal1.value);
+      if (caudal2.status === "fulfilled") setCaudalPozo2(caudal2.value);
+      if (tot.status === "fulfilled") setTotalizador(tot.value);
+      if (hor.status === "fulfilled") setHorometro(hor.value);
+      if (hor2.status === "fulfilled") setHorometroPozo2(hor2.value);
 
-        setData(snapshotData);
-        setNivelEstanque(await nivelRes.json());
-        setCaudalPozo1(await caudalPozo1Res.json());
-        setCaudalPozo2(await caudalPozo2Res.json());
-        setTotalizador(await fetchWithCache("totalizador", date));
-        setHorometro(await fetchWithCache("horometro", date));
-        setHorometroPozo2(await fetchWithCache("horometro-pozo2", date));
-      } catch (error) {
-        console.error("Error al cargar datos:", error);
-      } finally {
-        setLoading(false);
-      }
+      const results = [snapshot, nivel, caudal1, caudal2, tot, hor, hor2];
+      results.forEach((r) => {
+        if (r.status === "rejected") console.error("Error al cargar datos:", r.reason);
+      });
+      setHasError(results.some((r) => r.status === "rejected"));
+      setLoading(false);
     };
 
     fetchData();
@@ -111,7 +134,7 @@ function App() {
   }, []);
 
   if (loading) return <Loading />;
-  if (!data) return <Error />;
+  if (!data) return <ErrorPage />;
 
   // Obtener la fecha más reciente de todos los grupos para el indicador
   const allMetrics = [
@@ -141,8 +164,20 @@ function App() {
   const latestTotalizador =
     totalizador.length > 0 ? totalizador[totalizador.length - 1].value : 0;
 
+  const connectionBanner = hasError ? (
+    <div
+      className="alert alert-warning py-1 px-3 mx-auto mb-2 text-center"
+      style={{ width: "98%", fontSize: "0.85rem" }}
+      role="status"
+    >
+      <i className="bi bi-exclamation-triangle me-2" />
+      No se pudo actualizar parte de los datos. Se muestra la última información disponible
+      y se reintentará automáticamente.
+    </div>
+  ) : null;
+
   /** --- VISTA DESKTOP --- **/
-  const DesktopView = () => (
+  const renderDesktop = () => (
     <div className="container-fluid min-vh-100 p-0 d-flex flex-column align-items-center">
       <div className="mb-3 w-100" style={{ maxWidth: "5000px" }}>
         <Navbar text={cleanDate}>
@@ -151,6 +186,7 @@ function App() {
             onClick={() => setIsOpenExport(true)}
           ></button>
         </Navbar>
+        {connectionBanner}
       </div>
 
       <div
@@ -162,6 +198,7 @@ function App() {
             <ScadaDiagram
               data={data}
               horometro={horometro}
+              horometroPozo2={horometroPozo2}
               totalizador={totalizador}
             />
           </div>
@@ -225,6 +262,13 @@ function App() {
             />
           </div>
         </div>
+
+        {/* Misma estructura que la fila de gráficos diarios para alinear anchos */}
+        <div className="w-100 row g-2 p-0 order-4 justify-content-center mt-1">
+          <div className="col-12">
+            <MonthlySummary baseUrl={BASE_URL} />
+          </div>
+        </div>
       </div>
 
       <footer className="mt-4 w-75 d-flex flex-wrap justify-content-between align-items-center py-3 px-4 border-top">
@@ -235,7 +279,7 @@ function App() {
   );
 
   /** --- VISTA MÓVIL --- **/
-  const MobileView = () => (
+  const renderMobile = () => (
     <div className="container-fluid min-vh-100 p-0 d-flex flex-column align-items-center">
       <div className="mb-3 w-100">
         <Navbar text={cleanDate}>
@@ -244,6 +288,7 @@ function App() {
             onClick={() => setIsOpenExport(true)}
           ></button>
         </Navbar>
+        {connectionBanner}
       </div>
 
       <div className="w-100 px-2">
@@ -301,7 +346,7 @@ function App() {
               title="San Enrique 3"
               text1={[
                 "Presión",
-                `${(data.pozo1?.presion?.value / 10).toFixed(1) ?? "—"} bar`,
+                `${scaled(data.pozo1?.presion?.value, 10, 1)} bar`,
               ]}
               text2={[
                 "Horómetro Hoy",
@@ -348,7 +393,7 @@ function App() {
               title="San Enrique 1"
               text1={[
                 "Caudal",
-                `${(data.pozo2?.caudal_pozos?.value / 100).toFixed(2) ?? "—"} l/s`,
+                `${scaled(data.pozo2?.caudal_pozos?.value, 100, 2)} l/s`,
               ]}
               text2={[
                 "Horómetro Hoy",
@@ -386,6 +431,11 @@ function App() {
           />
         </div>
 
+        {/* Resumen mensual */}
+        <div className="mb-2">
+          <MonthlySummary baseUrl={BASE_URL} />
+        </div>
+
         {/* Estado */}
         <div className="mb-2">
           <State title="Estado Tablero - San Enrique 3">
@@ -393,7 +443,7 @@ function App() {
               automatico={data.pozo1?.automatico?.value?.toString() ?? "0"}
               bomba={data.pozo1?.bomba?.value?.toString() ?? "0"}
               falla={data.pozo1?.falla?.value?.toString() ?? "0"}
-              falla_asimetria={data.pozo1?.asimetria.value?.toString()}
+              falla_asimetria={data.pozo1?.asimetria?.value?.toString()}
               presion={data.pozo1?.presion?.value ?? 0}
               horometro_diario={latestHorometro}
               horometro_total={data.pozo1?.horometro?.value ?? 0}
@@ -418,7 +468,7 @@ function App() {
 
   return (
     <>
-      {isLargeScreen ? <DesktopView /> : <MobileView />}
+      {isLargeScreen ? renderDesktop() : renderMobile()}
       <ExportModal show={isOpenExport} onClose={() => setIsOpenExport(false)} />
     </>
   );

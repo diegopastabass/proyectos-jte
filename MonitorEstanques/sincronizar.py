@@ -40,6 +40,8 @@ DESTINOS = {
     "Araucarias": "connectionService.py",
     "Tambo": "tankService.py",
     "Balsas": "tankService.py",
+    "Montes": "monitorMontes.py",
+    "Undurraga": "monitorUndurraga.py",
 }
 
 

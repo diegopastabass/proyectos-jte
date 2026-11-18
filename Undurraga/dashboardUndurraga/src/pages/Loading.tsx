@@ -18,7 +18,7 @@ const Loading = () => {
         height={30}
       />
       <footer className="d-flex flex-wrap justify-content-between align-items-center py-3 px-4 border-top">
-        <p className="mb-0 text-body-secondary">&copy; 2025 JTE Analytics.</p>
+        <p className="mb-0 text-body-secondary">&copy; {new Date().getFullYear()} JTE Analytics.</p>
       </footer>
     </div>
   );

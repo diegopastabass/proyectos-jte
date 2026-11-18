@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
+import { ComprobantesModule } from './comprobantes/comprobantes.module';
 import { ConciliacionModule } from './conciliacion/conciliacion.module';
 import { DatabaseConfig } from './config/database.config';
 import { DatabaseModule } from './config/database.module';
@@ -11,6 +12,8 @@ import { ENTIDADES } from './entities';
 import { ImportacionModule } from './importacion/importacion.module';
 import { MotorModule } from './motor/motor.module';
 import { MovimientosModule } from './movimientos/movimientos.module';
+import { ProyectosModule } from './proyectos/proyectos.module';
+import { ReportesModule } from './reportes/reportes.module';
 
 @Module({
   imports: [
@@ -28,6 +31,9 @@ import { MovimientosModule } from './movimientos/movimientos.module';
     DocumentosModule,
     ConciliacionModule,
     MotorModule,
+    ComprobantesModule,
+    ProyectosModule,
+    ReportesModule,
   ],
 })
 export class AppModule {}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import api, { mensajeError } from "../api";
 import { Alerta, BadgeDocumento, Cargando, Encabezado, Modal, Paginacion, Vacio } from "../components/comunes";
+import SelectorProyecto from "../components/SelectorProyecto";
 import { fecha, pesos, tipoDte } from "../formato";
 import { useEmpresa, useSesion } from "../sesion";
 import type { Direccion, Documento, DocumentoDetalle, EstadoDocumento, Pagina } from "../types";
@@ -248,6 +249,10 @@ function DocumentoModal({ id, onCerrar, onCambio }: { id: number; onCerrar: () =
               <div className="text-muted">IVA</div>
               {pesos(d.montoIva)}
             </div>
+          </div>
+
+          <div className="mb-3">
+            <SelectorProyecto tipo="documento" id={d.id} proyectoId={d.proyectoId} onCambio={recargar} />
           </div>
 
           {d.estado === "excluido" && (

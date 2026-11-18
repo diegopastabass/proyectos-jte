@@ -58,6 +58,7 @@ export const CATEGORIAS_INICIALES: Pick<Categoria, 'nombre' | 'tipo'>[] = [
   { nombre: 'Comisiones y gastos bancarios', tipo: 'gasto' },
   { nombre: 'Impuestos (F29, F22)', tipo: 'impuesto' },
   { nombre: 'Combustible y peajes', tipo: 'gasto' },
+  { nombre: 'Alimentación y representación', tipo: 'gasto' },
   { nombre: 'Gastos sin documento', tipo: 'gasto' },
   { nombre: 'Ingresos sin documento', tipo: 'ingreso' },
 ];

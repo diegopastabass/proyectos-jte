@@ -27,7 +27,7 @@ from logging.handlers import RotatingFileHandler
 import requests
 from dotenv import load_dotenv
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ENV_PATH = os.path.join(BASE_DIR, ".env")
@@ -156,6 +156,8 @@ def cargar_configuracion():
             "modo": conexion.get("modo", "equipo"),
             "nombre": conexion.get("nombre", "Equipo"),
             "ignorar": set(conexion.get("ignorar_sensores", [])),
+            # Opcional, modo "sensor": nombre visible por sensor en los avisos
+            "nombres": conexion.get("nombres", {}),
         }
 
     return {
@@ -640,7 +642,8 @@ def ejecutar_ciclo(cfg, estado, notif):
         if tiempos is not None:
             if conexion["modo"] == "sensor":
                 for sensor, t in sorted(tiempos.items()):
-                    evaluar_desconexion(f"sensor:{sensor}", f"Sensor: {sensor}", t, cfg, estado, eventos)
+                    nombre = conexion["nombres"].get(sensor, f"Sensor: {sensor}")
+                    evaluar_desconexion(f"sensor:{sensor}", nombre, t, cfg, estado, eventos)
             else:
                 ultimo = max(tiempos.values()) if tiempos else None
                 evaluar_desconexion("equipo", f"Equipo: {conexion['nombre']}", ultimo, cfg, estado, eventos)

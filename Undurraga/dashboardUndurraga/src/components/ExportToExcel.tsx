@@ -1,188 +1,261 @@
 // src/components/ExportToExcel.tsx
-import { useState, type ChangeEvent } from "react";
-import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
-import { Button, Form, Row, Col, Spinner } from "react-bootstrap";
+import { useState } from "react";
+import { Alert, Button, ButtonGroup, Col, Form, Row, Spinner } from "react-bootstrap";
+import { LINEAS, LINEAS_CAUDAL, ORDEN_LINEAS, type LineaId } from "../config";
+import { conRango, getDiario, getSerie } from "../lib/api";
+import { diaChile, horaChile, hoyChile, listarDias, sumarDias } from "../lib/fechas";
+import type { Punto } from "./types";
 
-export interface Metric {
-  value: number;
-  time: string;
+type TipoReporte = "diario" | "hora" | "caudal";
+type Reporte = "todo" | `${LineaId}_${TipoReporte}`;
+
+const TIPOS: Record<TipoReporte, string> = {
+  diario: "Consumo diario",
+  hora: "Consumo por hora",
+  caudal: "Caudal (lecturas)",
+};
+
+type Fila = (string | number | null)[];
+
+interface Hoja {
+  nombre: string;
+  titulo: string;
+  columnas: string[];
+  filas: Fila[];
+  anchos: number[];
 }
 
-type ExportOption = "totalizador-1" | "totalizador-2" | "totalizador-piscina";
+const fechaDe = (p: Punto) => diaChile(p.time);
 
-const EXPORT_LABELS: Record<ExportOption, string> = {
-  "totalizador-1": "Totalizador 1",
-  "totalizador-2": "Totalizador 2",
-  "totalizador-piscina": "Totalizador Piscina",
-};
+async function hojaDe(linea: LineaId, tipo: TipoReporte, start: string, end: string): Promise<Hoja> {
+  const { nombre, caudal, totalizador } = LINEAS[linea];
+  const titulo = `${nombre} · ${TIPOS[tipo]}`;
+  if (tipo === "diario") {
+    const datos = await getDiario(totalizador, start, end);
+    return {
+      nombre: `Diario ${nombre}`,
+      titulo,
+      columnas: ["Fecha", "Consumo (m³)"],
+      filas: datos.map((p) => [p.time, p.value]),
+      anchos: [12, 14],
+    };
+  }
+  if (tipo === "hora") {
+    const datos = await getSerie(conRango(`totalizador-hora/${totalizador}`, start, end));
+    return {
+      nombre: `Hora ${nombre}`,
+      titulo: `${titulo} (totalizador)`,
+      columnas: ["Fecha", "Hora", "Consumo (m³)"],
+      filas: datos.map((p) => [fechaDe(p), horaChile(p.time), p.value]),
+      anchos: [12, 8, 14],
+    };
+  }
+  if (!caudal) throw new Error(`${nombre} no tiene sensor de caudal.`);
+  const datos = await getSerie(conRango(`caudal/${caudal}`, start, end));
+  return {
+    nombre: `Caudal ${nombre}`,
+    titulo,
+    columnas: ["Fecha", "Hora", "Caudal (m³/h)"],
+    filas: datos.map((p) => [fechaDe(p), horaChile(p.time), p.value]),
+    anchos: [12, 8, 14],
+  };
+}
+
+/** Consumo diario de todas las líneas lado a lado (sin cálculos entre ellas). */
+async function hojaResumen(start: string, end: string): Promise<Hoja> {
+  const series = await Promise.all(
+    ORDEN_LINEAS.map((id) => getDiario(LINEAS[id].totalizador, start, end)),
+  );
+  const mapas = series.map((serie) => new Map(serie.map((p) => [p.time, p.value])));
+  return {
+    nombre: "Resumen diario",
+    titulo: "Consumo diario",
+    columnas: ["Fecha", ...ORDEN_LINEAS.map((id) => `${LINEAS[id].nombre} (m³)`)],
+    filas: listarDias(start, end)
+      .filter((d) => mapas.some((m) => m.has(d)))
+      .map((d) => [d, ...mapas.map((m) => m.get(d) ?? null)]),
+    anchos: [12, ...ORDEN_LINEAS.map(() => 16)],
+  };
+}
+
+async function descargarLibro(hojas: Hoja[], start: string, end: string, archivo: string) {
+  const { default: ExcelJS } = await import("exceljs");
+  const libro = new ExcelJS.Workbook();
+  libro.creator = "JTE Analytics";
+
+  for (const hoja of hojas) {
+    const ws = libro.addWorksheet(hoja.nombre);
+    ws.addRow([hoja.titulo]).font = { bold: true, size: 13 };
+    ws.addRow([`Undurraga · del ${start} al ${end} (hora Chile)`]).font = { italic: true };
+    ws.addRow([]);
+    ws.addRow(hoja.columnas).font = { bold: true };
+    ws.addRows(hoja.filas);
+    ws.columns = hoja.anchos.map((width) => ({ width }));
+    ws.views = [{ state: "frozen", ySplit: 4 }];
+  }
+
+  const buffer = await libro.xlsx.writeBuffer();
+  const url = URL.createObjectURL(
+    new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    }),
+  );
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = archivo;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+const ATAJOS: { etiqueta: string; rango: (hoy: string) => [string, string] }[] = [
+  { etiqueta: "Hoy", rango: (hoy) => [hoy, hoy] },
+  { etiqueta: "7 días", rango: (hoy) => [sumarDias(hoy, -6), hoy] },
+  { etiqueta: "Mes actual", rango: (hoy) => [`${hoy.slice(0, 7)}-01`, hoy] },
+  {
+    etiqueta: "Mes anterior",
+    rango: (hoy) => {
+      const fin = sumarDias(`${hoy.slice(0, 7)}-01`, -1);
+      return [`${fin.slice(0, 7)}-01`, fin];
+    },
+  },
+];
+
+/** La piscina no tiene sensor de caudal. */
+const tiposDe = (id: LineaId) =>
+  (Object.keys(TIPOS) as TipoReporte[]).filter((t) => t !== "caudal" || LINEAS[id].caudal);
 
 interface ExportToExcelProps {
   onClose?: () => void;
 }
 
 export default function ExportToExcel({ onClose }: ExportToExcelProps) {
-  const [selectedOption, setSelectedOption] =
-    useState<ExportOption>("totalizador-1");
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
+  const hoy = hoyChile();
+  const [reporte, setReporte] = useState<Reporte>("todo");
+  const [startDate, setStartDate] = useState(sumarDias(hoy, -6));
+  const [endDate, setEndDate] = useState(hoy);
+  const [loading, setLoading] = useState(false);
+  const [mensaje, setMensaje] = useState<{ tipo: "danger" | "info"; texto: string } | null>(null);
 
-  const fetchMetrics = async (
-    option: ExportOption,
-    start: string,
-    end: string
-  ): Promise<Metric[]> => {
-    const url = `https://app.jteanalytics.cl/undurraga/${option}?startDate=${start}&endDate=${end}`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Error al obtener datos desde ${url}`);
-    }
-    const data: unknown = await response.json();
-
-    if (!Array.isArray(data)) {
-      throw new Error("El servidor no devolvió un arreglo válido.");
-    }
-
-    const isMetricArray = (arr: unknown[]): arr is Metric[] =>
-      arr.every(
-        (item) =>
-          typeof item === "object" &&
-          item !== null &&
-          "time" in item &&
-          "value" in item &&
-          typeof (item as Metric).time === "string" &&
-          typeof (item as Metric).value === "number"
-      );
-
-    if (!isMetricArray(data)) {
-      throw new Error("Los datos no tienen el formato esperado de Metric[].");
-    }
-
-    return data;
-  };
-
-  const handleExport = async (): Promise<void> => {
+  const handleExport = async () => {
     if (!startDate || !endDate) {
-      alert("Por favor selecciona ambas fechas antes de exportar.");
+      setMensaje({ tipo: "danger", texto: "Selecciona ambas fechas." });
+      return;
+    }
+    if (startDate > endDate) {
+      setMensaje({ tipo: "danger", texto: "La fecha de inicio debe ser anterior o igual a la de fin." });
       return;
     }
 
+    setMensaje(null);
     setLoading(true);
     try {
-      const data = await fetchMetrics(selectedOption, startDate, endDate);
+      let hojas: Hoja[];
+      if (reporte === "todo") {
+        hojas = [
+          await hojaResumen(startDate, endDate),
+          ...(await Promise.all([
+            ...ORDEN_LINEAS.map((id) => hojaDe(id, "hora", startDate, endDate)),
+            ...LINEAS_CAUDAL.map((id) => hojaDe(id, "caudal", startDate, endDate)),
+          ])),
+        ];
+      } else {
+        const [linea, tipo] = reporte.split("_") as [LineaId, TipoReporte];
+        hojas = [await hojaDe(linea, tipo, startDate, endDate)];
+      }
 
-      if (data.length === 0) {
-        alert("No se encontraron datos para el rango seleccionado.");
+      if (hojas.every((h) => h.filas.length === 0)) {
+        setMensaje({ tipo: "info", texto: "No hay datos para el rango seleccionado." });
         return;
       }
-
-      const worksheetData: (string | number)[][] = [
-        [EXPORT_LABELS[selectedOption]],
-        ["Fecha", "Valor", "Unidad"],
-        ...data.map((item) => {
-          const date = new Date(item.time);
-          const formattedDate = date.toISOString().split("T")[0];
-          return [formattedDate, item.value, "m³"];
-        }),
-      ];
-
-      const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Datos");
-
-      worksheet["!cols"] = [{ wch: 20 }, { wch: 10 }, { wch: 8 }];
-
-      const excelBuffer = XLSX.write(workbook, {
-        bookType: "xlsx",
-        type: "array",
-      });
-
-      const blob = new Blob([excelBuffer], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
-
-      const filename = `${selectedOption}_${startDate}_a_${endDate}.xlsx`;
-      saveAs(blob, filename);
+      await descargarLibro(hojas, startDate, endDate, `undurraga_${reporte}_${startDate}_${endDate}.xlsx`);
     } catch (error) {
-      if (error instanceof Error) {
-        alert(error.message);
-      } else {
-        alert("Ocurrió un error desconocido al exportar los datos.");
-      }
+      setMensaje({
+        tipo: "danger",
+        texto: error instanceof Error ? error.message : "Ocurrió un error al exportar los datos.",
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSelectChange = (e: ChangeEvent<HTMLSelectElement>): void => {
-    setSelectedOption(e.target.value as ExportOption);
-  };
-
-  const handleStartDateChange = (e: ChangeEvent<HTMLInputElement>): void => {
-    setStartDate(e.target.value);
-  };
-
-  const handleEndDateChange = (e: ChangeEvent<HTMLInputElement>): void => {
-    setEndDate(e.target.value);
-  };
-
   return (
-    <div className="p-3">
-      <Form>
-        <Form.Group as={Row} className="mb-3" controlId="selectorTotalizador">
-          <Form.Label column sm="4">
-            Seleccionar totalizador:
-          </Form.Label>
-          <Col sm="8">
-            <Form.Select value={selectedOption} onChange={handleSelectChange}>
-              <option value="totalizador-1">Totalizador 1</option>
-              <option value="totalizador-2">Totalizador 2</option>
-              <option value="totalizador-piscina">Totalizador Piscina</option>
-            </Form.Select>
-          </Col>
-        </Form.Group>
+    <Form onSubmit={(e) => e.preventDefault()}>
+      <Form.Group className="mb-3" controlId="selectorReporte">
+        <Form.Label>Reporte</Form.Label>
+        <Form.Select value={reporte} onChange={(e) => setReporte(e.target.value as Reporte)}>
+          <option value="todo">Todo (resumen diario, consumo por hora y caudal)</option>
+          {ORDEN_LINEAS.map((id) => (
+            <optgroup key={id} label={LINEAS[id].nombre}>
+              {tiposDe(id).map((tipo) => (
+                <option key={tipo} value={`${id}_${tipo}`}>
+                  {LINEAS[id].nombre} · {TIPOS[tipo]}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </Form.Select>
+      </Form.Group>
 
-        <Row className="mb-3">
-          <Col>
-            <Form.Label>Fecha inicio:</Form.Label>
-            <Form.Control
-              type="date"
-              value={startDate}
-              onChange={handleStartDateChange}
-            />
-          </Col>
-          <Col>
-            <Form.Label>Fecha fin:</Form.Label>
-            <Form.Control
-              type="date"
-              value={endDate}
-              onChange={handleEndDateChange}
-            />
-          </Col>
-        </Row>
-
-        <div className="d-flex justify-content-end mt-4">
+      <ButtonGroup size="sm" className="mb-3 flex-wrap" aria-label="Rangos rápidos">
+        {ATAJOS.map(({ etiqueta, rango }) => (
           <Button
-            variant="secondary"
-            className="me-2"
-            onClick={onClose}
-            disabled={loading}
+            key={etiqueta}
+            variant="outline-secondary"
+            onClick={() => {
+              const [s, e] = rango(hoy);
+              setStartDate(s);
+              setEndDate(e);
+            }}
           >
-            Cancelar
+            {etiqueta}
           </Button>
-          <Button variant="success" onClick={handleExport} disabled={loading}>
-            {loading ? (
-              <>
-                <Spinner animation="border" size="sm" className="me-2" />{" "}
-                Exportando...
-              </>
-            ) : (
-              "Exportar a Excel"
-            )}
-          </Button>
-        </div>
-      </Form>
-    </div>
+        ))}
+      </ButtonGroup>
+
+      <Row className="mb-3">
+        <Col>
+          <Form.Label htmlFor="exportInicio">Desde</Form.Label>
+          <Form.Control
+            id="exportInicio"
+            type="date"
+            value={startDate}
+            max={hoy}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
+        </Col>
+        <Col>
+          <Form.Label htmlFor="exportFin">Hasta</Form.Label>
+          <Form.Control
+            id="exportFin"
+            type="date"
+            value={endDate}
+            max={hoy}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
+        </Col>
+      </Row>
+
+      {mensaje && (
+        <Alert variant={mensaje.tipo} className="py-2">
+          {mensaje.texto}
+        </Alert>
+      )}
+
+      <div className="d-flex justify-content-end gap-2 mt-4">
+        <Button variant="secondary" onClick={onClose} disabled={loading}>
+          Cancelar
+        </Button>
+        <Button variant="success" onClick={handleExport} disabled={loading}>
+          {loading ? (
+            <>
+              <Spinner animation="border" size="sm" className="me-2" />
+              Exportando...
+            </>
+          ) : (
+            "Exportar a Excel"
+          )}
+        </Button>
+      </div>
+    </Form>
   );
 }

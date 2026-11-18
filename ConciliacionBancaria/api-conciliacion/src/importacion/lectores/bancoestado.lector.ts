@@ -6,7 +6,7 @@ import {
   parsearMonto,
 } from '../../common/texto';
 import { filas, ValorCelda } from './excel.util';
-import { validarSaldos } from './saldo.util';
+import { ordenarPorSaldo, validarSaldos } from './saldo.util';
 import {
   ArchivoEntrada,
   CartolaLeida,
@@ -125,7 +125,22 @@ export class BancoEstadoLector implements LectorCartola {
       }
     });
 
-    validarSaldos(movimientos, saldoInicial, saldoFinal);
+    try {
+      validarSaldos(movimientos, saldoInicial, saldoFinal);
+    } catch (error) {
+      // Si el banco ordenó distinto dentro de un mismo día, el saldo corrido permite reconstruir el orden.
+      const porSaldo = ordenarPorSaldo(movimientos, saldoInicial);
+      if (!porSaldo) throw error;
+      try {
+        validarSaldos(porSaldo, saldoInicial, saldoFinal);
+      } catch {
+        throw error;
+      }
+      movimientos.splice(0, movimientos.length, ...porSaldo);
+      advertencias.push(
+        'El banco entregó los movimientos en otro orden: se reordenaron según el saldo corrido',
+      );
+    }
     if (nMovimientos && Number(nMovimientos) !== movimientos.length) {
       advertencias.push(
         `El resumen informa ${nMovimientos} movimientos y se leyeron ${movimientos.length}`,

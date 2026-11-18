@@ -9,6 +9,7 @@ API de conciliación bancaria: importa cartolas de BancoEstado y de Banco de Chi
    createdb conciliacion
    psql -d conciliacion -v ON_ERROR_STOP=1 -f db/001_esquema.sql
    psql -d conciliacion -v ON_ERROR_STOP=1 -f db/002_motor.sql
+   psql -d conciliacion -v ON_ERROR_STOP=1 -f db/003_proyectos_comprobantes.sql
    ```
 2. Copiar `env.example` a `.env` y completarlo. `JWT_SECRET` es obligatorio: la API no arranca sin él.
 3. `npm install`
@@ -60,6 +61,27 @@ Todas las rutas exigen `Authorization: Bearer <token>`, salvo el login. Las ruta
 | POST | `/empresas/:id/sugerencias/:sid/rechazar` | operador | no se vuelve a proponer para ese movimiento |
 | GET/POST | `/empresas/:id/reglas` | lector / operador | `{nombre, prioridad?, condicion, accion}` |
 | PATCH/DELETE | `/empresas/:id/reglas/:rid` | operador | modificar / eliminar |
+| POST | `/empresas/:id/movimientos/:mid/comprobantes` | operador | multipart: `archivo` (foto o PDF) + `tipo montoTotal montoIva? fecha? folio? rutEmisor? razonSocial? descripcion? categoriaId?`. Con `categoriaId` además concilia el movimiento (consolidar con la boleta) |
+| GET | `/empresas/:id/comprobantes/:kid/archivo` | lector | la imagen o PDF |
+| DELETE | `/empresas/:id/comprobantes/:kid` | operador | lo quita del movimiento (no borra el archivo ni deshace la conciliación) |
+| GET/POST | `/empresas/:id/proyectos` | lector / operador | proyectos con su balance (`desde hasta incluirInactivos`) / crear |
+| GET/PATCH | `/empresas/:id/proyectos/:pid` | lector / operador | balance, composición, movimientos y documentos / editar o cerrar (`activo`) |
+| POST | `/empresas/:id/proyectos/asignar` | operador | `{proyectoId \| null, movimientoIds?, documentoIds?}`; las facturas conciliadas con un movimiento se van con él |
+| GET | `/empresas/:id/reportes/categorias` | lector | gastos e ingresos por categoría y mes (`desde hasta cuentaId proyectoId`) |
+| GET | `/empresas/:id/reportes/contrapartes` | lector | pagado y cobrado con factura por RUT |
+
+`GET /movimientos` también filtra por `categoriaId proyectoId sinProyecto conComprobante`, y `GET /documentos` por `proyectoId sinProyecto`.
+
+## Boletas (comprobantes)
+
+La foto se toma con la cámara del celular o se elige del dispositivo; el front la achica a 2000 px (JPG) antes de subirla. La API valida el tipo por el contenido del archivo (JPG, PNG, WebP, HEIC o PDF, hasta 10 MB) y la guarda en `COMPROBANTES_DIR` como `<uuid>.<ext>`. En la tabla `comprobante` solo quedan ese id (`archivo_id`) y la ruta completa (`archivo_ruta`), más los datos de la boleta (total, IVA, folio, emisor). En el VPS: `COMPROBANTES_DIR=C:\Users\Administrator\Pictures\umploads_consolidacion`.
+
+## Balance de proyectos
+
+- Los **documentos** asignados cuentan por su total e IVA (las notas de crédito restan).
+- Los **movimientos** asignados cuentan solo por la parte que no se concilió con una factura (boletas, peajes, comisiones, lo que falta conciliar): lo pagado con factura ya lo cuenta la factura.
+- **IVA:** débito = IVA de las ventas; crédito = IVA de facturas de compra (y de comprobantes tipo factura). El IVA de boletas no se recupera: se muestra aparte y queda dentro del gasto neto.
+- Resultado = ingresos netos − gastos netos.
 
 Ejemplo de conciliación de un abono que paga dos facturas:
 

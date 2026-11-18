@@ -64,6 +64,8 @@ class FiltroDocumentosDto extends PaginacionDto {
   @IsOptional() @IsDateString() hasta?: string;
   /** Busca en la razón social. */
   @IsOptional() @IsString() q?: string;
+  @IsOptional() @Type(() => Number) @IsInt() proyectoId?: number;
+  @IsOptional() @IsIn(['true', 'false']) sinProyecto?: 'true' | 'false';
 }
 
 class AplicarNotaCreditoDto {
@@ -101,6 +103,9 @@ export class DocumentosService {
     if (f.desde) qb.andWhere('d.fechaEmision >= :desde', { desde: f.desde });
     if (f.hasta) qb.andWhere('d.fechaEmision <= :hasta', { hasta: f.hasta });
     if (f.q) qb.andWhere('d.razonSocial ILIKE :q', { q: `%${f.q}%` });
+    if (f.proyectoId)
+      qb.andWhere('d.proyectoId = :proyectoId', { proyectoId: f.proyectoId });
+    if (f.sinProyecto === 'true') qb.andWhere('d.proyectoId IS NULL');
 
     const [items, total] = await qb
       .orderBy('d.fechaEmision', 'DESC')

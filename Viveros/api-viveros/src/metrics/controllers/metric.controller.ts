@@ -1,8 +1,12 @@
 import { Controller, Post, Body, Get, Query } from '@nestjs/common';
 import { MetricsService } from '../services/metrics.service';
 import { CreateMetricDto } from '../models/dto/create-metric.dto';
-import { BadRequestException } from '@nestjs/common';
+import { DiaDto, RangoAntiguoDto } from '../models/dto/viveros.dto';
 
+/**
+ * Rutas originales. `POST /` (ingesta), `latest` y `min-max` las usan equipos y
+ * monitores: su forma no cambia.
+ */
 @Controller('')
 export class MetricsController {
   constructor(private readonly metricsService: MetricsService) {}
@@ -18,13 +22,10 @@ export class MetricsController {
   }
 
   @Get('summary')
-  async findSummary(
-    @Query('startDate') startDate: string,
-    @Query('endDate') endDate: string,
-  ) {
+  async findSummary(@Query() q: RangoAntiguoDto) {
     return this.metricsService.findMetricsBySensorsAndDateRange(
-      startDate,
-      endDate,
+      q.startDate,
+      q.endDate,
     );
   }
 
@@ -34,26 +35,12 @@ export class MetricsController {
   }
 
   @Get('data')
-  async findData(
-    @Query('startDate') startDate: string,
-    @Query('endDate') endDate: string,
-  ) {
-    return this.metricsService.getViverosDataForExcel(startDate, endDate);
+  async findData(@Query() q: RangoAntiguoDto) {
+    return this.metricsService.getViverosDataForExcel(q.startDate, q.endDate);
   }
 
   @Get('min-max')
-  async getMinMax(@Query('date') date: string) {
-    if (!date) {
-      throw new BadRequestException(
-        'Debe proveer la fecha en formato YYYY-MM-DD',
-      );
-    }
-
-    try {
-      const data = await this.metricsService.getMinMax(date);
-      return data;
-    } catch (error) {
-      throw error;
-    }
+  async getMinMax(@Query() q: DiaDto) {
+    return this.metricsService.getMinMax(q.date);
   }
 }

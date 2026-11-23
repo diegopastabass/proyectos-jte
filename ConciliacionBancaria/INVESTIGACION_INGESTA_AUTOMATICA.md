@@ -2,6 +2,8 @@
 
 Fecha: 2026-11-10. Complementa la **Fase 3** de `PLAN_IMPLEMENTACION.md`.
 
+> **Actualización 2026-11-21:** Emisso (`connect.emisso.ai`) cubre el SII, BancoEstado y Banco de Chile con un solo proveedor y sin que guardemos claves. El plan concreto está en `PLAN_INGESTA_EMISSO.md` y reemplaza la recomendación de la sección 4.
+
 Objetivo: dejar de subir a mano las cartolas (BancoEstado, Banco de Chile) y el RCV (SII), usando canales permitidos por la normativa vigente.
 
 ## Resumen

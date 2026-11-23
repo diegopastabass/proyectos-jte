@@ -1,21 +1,13 @@
-import logoJte from "../assets/logoJte.png";
 import logoWeb from "../assets/logo-web.svg";
 
-const Loading = () => {
-  return (
-    <div className="d-flex flex-column justify-content-center align-items-center vh-100">
-      <div className="spinner-border text-primary" role="status">
-        <span className="visually-hidden">Cargando...</span>
-      </div>
-
-      <p className="mt-3 fs-5 fw-semibold">Cargando...</p>
-      <img className="mb-2" src={logoJte} alt="logo" width={45} height={30} />
-      <img src={logoWeb} alt="logoViveros" width={300} height={300} />
-      <footer className="d-flex flex-wrap justify-content-between align-items-center py-3 px-4 border-top">
-        <p className="mb-0 text-body-secondary">&copy; 2025 JTE Analytics.</p>
-      </footer>
+const Loading = () => (
+  <div className="d-flex flex-column justify-content-center align-items-center vh-100 gap-3">
+    <img src={logoWeb} alt="Viveros El Tambo" width={220} height={105} />
+    <div className="spinner-border text-success" role="status">
+      <span className="visually-hidden">Cargando...</span>
     </div>
-  );
-};
+    <p className="text-body-secondary mb-0">Cargando datos de las cámaras…</p>
+  </div>
+);
 
 export default Loading;

@@ -1,114 +1,235 @@
-body {
-  background-color: #f8f9fa;
-  color: #212529;
-}
-
-.navbar {
-  background-color: #f8f9fa !important;
-  color: #212529 !important;
-  margin-top: 1vh;
-}
-
-.navbar-brand {
-  color: #212529 !important;
-}
-
-.card {
-  background-color: #ffffff;
-  color: #212529;
-  border-color: #dee2e6;
-}
-
-/* Dark theme */
-body.dark-theme {
-  background-color: #121212;
-  color: #f8f9fa;
-}
-
-body.dark-theme .navbar {
-  background-color: #222222 !important;
-  color: #f8f9fa !important;
-}
-
-body.dark-theme .navbar-brand {
-  color: #f8f9fa !important;
-}
-
-body.dark-theme .card {
-  background-color: #383838;
-  color: #f8f9fa;
-  border-color: #333333;
-}
-
-body.dark-theme .alert-success {
-  color: #f8f9fa;
-  background-color: #383838;
-  border-color: #333333;
-}
-
-.translate-transition {
-  transition: transform 0.3s ease-in-out;
+/* Viveros El Tambo · tokens y estilos del dashboard.
+   Colores de estado (verde, ámbar, rojo, gris) solo significan estado; los de zona
+   (frío azul, calor naranja, exterior verde salvia) solo identifican la zona. */
+:root {
+  --fondo: #f3f5f2;
+  --superficie: #ffffff;
+  --borde: #e2e7e0;
+  --texto: #2b2f2c;
+  --marca: #739245;
+  --marca-oscuro: #422918;
+  --sombra: 0 1px 2px rgba(34, 48, 30, 0.06), 0 4px 14px rgba(34, 48, 30, 0.05);
+  --radio: 14px;
 }
 
 html,
 body {
-  height: 100%;
+  min-height: 100%;
   margin: 0;
 }
 
-.toggle-btn {
-  font-size: 0.9rem;
+body {
+  background: var(--fondo);
+  color: var(--texto);
+  font-variant-numeric: tabular-nums;
+}
+
+.min-w-0 {
+  min-width: 0;
+}
+
+.contenedor {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Barra superior ─────────────────────────────────────────── */
+.barra-superior {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--superficie);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+  padding: 10px 16px;
+  border-bottom: 3px solid var(--marca);
+}
+
+.barra-superior h1 {
+  color: var(--marca-oscuro);
+}
+
+/* ── Tarjetas ───────────────────────────────────────────────── */
+.tarjeta {
+  background: var(--superficie);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+  padding: 16px;
+  min-width: 0;
+}
+
+.zona-card {
+  border-top: 4px solid;
+  display: flex;
+  flex-direction: column;
+  scroll-margin-top: 16px;
+}
+
+.valor-grande {
+  font-size: 1.85rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.medida {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.zona-pie {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--borde);
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+
+.aviso-sensor {
+  font-size: 0.78rem;
+  color: #8a5a00;
+  background: #fff3cd;
+  border-radius: 8px;
+  padding: 4px 8px;
+}
+
+/* ── Barra de rango ─────────────────────────────────────────── */
+.rango-bar {
+  margin: 6px 0 2px;
+}
+
+.rango-pista {
+  position: relative;
+  height: 12px;
+  border-radius: 6px;
+  background: #eceeed;
+}
+
+.rango-permitido {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(25, 135, 84, 0.22);
+  border-left: 2px solid rgba(25, 135, 84, 0.7);
+  border-right: 2px solid rgba(25, 135, 84, 0.7);
+}
+
+.rango-hoy {
+  position: absolute;
+  top: 5px;
+  height: 2px;
+  background: #6c757d;
+  border-radius: 1px;
+}
+
+.rango-marcador {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+  transform: translate(-50%, -50%);
+}
+
+/* ── Sparkline ──────────────────────────────────────────────── */
+.sparkline {
   width: 100%;
-  text-align: center;
-  color: #0d6efd;
-  font-weight: 500;
-  margin-top: 10px;
-  border: none;
-  background: transparent;
-  transition: color 0.2s ease, transform 0.2s ease;
+  height: 40px;
+  display: block;
+  margin-top: 6px;
 }
 
-.toggle-btn:hover {
-  color: #0a58ca;
-  transform: translateY(-2px);
+.sparkline-vacio {
+  font-size: 0.75rem;
+  color: #8a8f94;
+  display: flex;
+  align-items: center;
 }
 
-.collapse-card {
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
-  padding: 0 0;
-  transition: max-height 0.4s ease, opacity 0.4s ease, padding 0.3s ease;
+/* ── Evolución ──────────────────────────────────────────────── */
+.nav-zonas .nav-link {
+  font-weight: 600;
+  padding: 4px 14px;
+  border-radius: 999px;
 }
 
-.collapse-card.show {
-  max-height: 600px; /* suficientemente grande para cualquier contenido */
-  opacity: 1;
-  padding: 10px 0;
-  margin-bottom: 15px;
+.nav-zonas .nav-link.active {
+  color: #fff;
 }
 
-.collapse-card.show > .card {
-  animation: slideFadeIn 0.4s ease forwards;
+/* ── Cumplimiento ───────────────────────────────────────────── */
+.indicador {
+  border-left: 4px solid;
+  padding-left: 12px;
+  margin-bottom: 8px;
 }
 
-@keyframes slideFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
+.mapa-calor-contenedor {
+  overflow-x: auto;
+}
+
+.mapa-calor {
+  display: grid;
+  grid-template-columns: 44px repeat(24, minmax(26px, 1fr));
+  gap: 2px;
+  min-width: 700px;
+  font-size: 0.68rem;
+}
+
+.mapa-hora {
+  text-align: left;
+  color: #6c757d;
+}
+
+.mapa-dia {
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+}
+
+.mapa-celda {
+  height: 22px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.leyenda-cuadro {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid;
+}
+
+.punto-zona {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+@media (max-width: 575.98px) {
+  .contenedor {
+    padding: 12px;
+    gap: 12px;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@media (max-width: 768px) {
-  .col-12 {
-    margin-bottom: 20px;
-  }
-
-  .collapse-card.show {
-    max-height: 800px;
+  .valor-grande {
+    font-size: 1.6rem;
   }
 }

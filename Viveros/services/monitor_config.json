@@ -1,0 +1,16 @@
+{
+  "sitio": "Viveros El Tambo",
+  "api_base": "https://app.jteanalytics.cl/viveros",
+  "estanques": [],
+  "conexion": {
+    "endpoint": "/latest",
+    "modo": "sensor",
+    "nombre": "Sensores Viveros",
+    "ignorar_sensores": ["1", "2", "3", "4", "8"],
+    "nombres": {
+      "5": "Cámara de Calor (T y HR, MQTT /CAMARA_VET)",
+      "6": "Cámara de Frío (T y HR, MQTT /CAMARA_VET)",
+      "7": "Exterior (Open-Meteo, brokerViverosTempHumedad.py)"
+    }
+  }
+}

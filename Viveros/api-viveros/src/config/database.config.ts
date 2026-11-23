@@ -9,7 +9,6 @@ export default registerAs('database', () => ({
   database: process.env.DB_NAME,
   autoLoadEntities: true,
   synchronize: false,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  // DB_SSL=false solo para probar contra un PostgreSQL local.
+  ssl: process.env.DB_SSL === 'false' ? false : { rejectUnauthorized: false },
 }));

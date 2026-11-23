@@ -22,13 +22,27 @@ import {
   Importacion,
   Movimiento,
 } from '../entities';
+import { mismaCuenta } from '../ingesta/conectores';
 import { CartolaLeida, ErrorLectura, leerArchivo, RcvLeido } from './lectores';
 
 export interface ResultadoImportacion {
   importacion: Importacion;
   cuentaCreada?: boolean;
   notasCreditoAplicadas?: number;
+  /** Lectura por API que no trajo nada nuevo: no deja una importación vacía. */
+  sinCambios?: boolean;
 }
+
+/** De dónde viene lo que se importa: un archivo subido o una lectura de la API (Emisso). */
+interface Origen {
+  tipo: 'archivo' | 'api';
+  nombre: string;
+  sha256: string;
+  usuarioId: number | null;
+}
+
+export type LecturaApi =
+  { clase: 'cartola'; cartola: CartolaLeida } | { clase: 'rcv'; rcv: RcvLeido };
 
 @Injectable()
 export class ImportacionService {
@@ -71,25 +85,59 @@ export class ImportacionService {
       );
     }
 
+    const origen: Origen = {
+      tipo: 'archivo',
+      nombre: archivo.originalname,
+      sha256,
+      usuarioId,
+    };
     return this.ds.transaction((em) =>
       leido.clase === 'cartola'
-        ? this.guardarCartola(
-            em,
-            empresaId,
-            usuarioId,
-            archivo.originalname,
-            sha256,
-            leido.cartola,
-          )
-        : this.guardarRcv(
-            em,
-            empresaId,
-            usuarioId,
-            archivo.originalname,
-            sha256,
-            leido.rcv,
-          ),
+        ? this.guardarCartola(em, empresaId, origen, leido.cartola)
+        : this.guardarRcv(em, empresaId, origen, leido.rcv),
     );
+  }
+
+  /**
+   * Guarda lo que leyó un conector de la API. `nombre` identifica la lectura en el historial
+   * (ej. "emisso:sii:ventas:2026-11"). Una lectura idéntica a una anterior se salta (null), y
+   * una que no trae nada nuevo no deja rastro: el job lee cada 4 horas.
+   */
+  async importarDesdeApi(
+    empresaId: number,
+    nombre: string,
+    lectura: LecturaApi,
+  ): Promise<ResultadoImportacion | null> {
+    const contenido =
+      lectura.clase === 'cartola' ? lectura.cartola : lectura.rcv;
+    const sha256 = createHash('sha256')
+      .update(`${nombre}|${JSON.stringify(contenido)}`)
+      .digest('hex');
+    const repo = this.ds.getRepository(Importacion);
+    if (await repo.existsBy({ empresaId, archivoSha256: sha256 })) return null;
+
+    const empresa = await this.ds
+      .getRepository(Empresa)
+      .findOneBy({ id: empresaId });
+    if (!empresa) throw new NotFoundException('Empresa no encontrada');
+    if (contenido.rutEmpresa && contenido.rutEmpresa !== empresa.rut) {
+      throw new BadRequestException(
+        `La conexión es de la empresa ${contenido.rutEmpresa} y no de ${empresa.rut} (${empresa.razonSocial})`,
+      );
+    }
+
+    const origen: Origen = { tipo: 'api', nombre, sha256, usuarioId: null };
+    try {
+      return await this.ds.transaction((em) =>
+        lectura.clase === 'cartola'
+          ? this.guardarCartola(em, empresaId, origen, lectura.cartola)
+          : this.guardarRcv(em, empresaId, origen, lectura.rcv),
+      );
+    } catch (e) {
+      // La misma lectura entró en paralelo (job y botón a la vez): ya está guardada.
+      if ((e as { code?: string }).code === '23505') return null;
+      throw e;
+    }
   }
 
   // ------------------------------------------------------------------ Cartolas
@@ -97,19 +145,21 @@ export class ImportacionService {
   private async guardarCartola(
     em: EntityManager,
     empresaId: number,
-    usuarioId: number,
-    nombre: string,
-    sha256: string,
+    origen: Origen,
     cartola: CartolaLeida,
   ): Promise<ResultadoImportacion> {
     const advertencias = [...cartola.advertencias];
+    const { usuarioId } = origen;
 
     // La cuenta se identifica por banco + número del archivo; si no existe se crea.
-    let cuenta = await em.findOneBy(CuentaBancaria, {
-      empresaId,
-      banco: cartola.banco,
-      numero: cartola.numeroCuenta,
-    });
+    let cuenta =
+      origen.tipo === 'api'
+        ? await this.cuentaDeApi(em, empresaId, cartola, advertencias)
+        : await em.findOneBy(CuentaBancaria, {
+            empresaId,
+            banco: cartola.banco,
+            numero: cartola.numeroCuenta,
+          });
     const cuentaCreada = !cuenta;
     if (!cuenta) {
       cuenta = await em.save(
@@ -131,20 +181,29 @@ export class ImportacionService {
       ...(await this.revisarContinuidad(em, cuenta.id, cartola)),
     );
 
+    const movimientos = await this.filtrarPorCorte(
+      em,
+      cuenta,
+      origen,
+      cartola,
+      advertencias,
+    );
+
     const importacion = await em.save(
       em.create(Importacion, {
         empresaId,
         cuentaId: cuenta.id,
         tipo: 'cartola',
         lector: cartola.lector,
-        archivoNombre: nombre,
-        archivoSha256: sha256,
+        archivoNombre: origen.nombre,
+        archivoSha256: origen.sha256,
+        origen: origen.tipo,
         periodoDesde: cartola.desde,
         periodoHasta: cartola.hasta,
         nCartola: cartola.nCartola,
         saldoInicial: cartola.saldoInicial,
         saldoFinal: cartola.saldoFinal,
-        filasLeidas: cartola.movimientos.length,
+        filasLeidas: movimientos.length,
         filasNuevas: 0,
         filasDuplicadas: 0,
         advertencias: [],
@@ -155,7 +214,7 @@ export class ImportacionService {
     // Contrapartes conocidas por RUT (las glosas casi nunca lo traen, pero si viene se usa).
     const ruts = [
       ...new Set(
-        cartola.movimientos
+        movimientos
           .map((m) => m.rutContraparte)
           .filter((r): r is string => !!r),
       ),
@@ -169,7 +228,7 @@ export class ImportacionService {
       for (const f of filas) contrapartePorRut.set(f.rut, f.id);
     }
 
-    const valores = cartola.movimientos.map((m) => {
+    const valores = movimientos.map((m) => {
       const glosaNormalizada = normalizarTexto(m.glosa);
       return {
         empresaId,
@@ -192,17 +251,21 @@ export class ImportacionService {
         montoConciliado: 0,
         estado: 'pendiente' as const,
         nota: null,
+        idExterno: m.idExterno ?? null,
         // El saldo corrido hace única cada fila aunque haya dos pagos iguales el mismo día,
-        // y es el mismo si la fila vuelve a venir en otra cartola que se traslapa.
-        hashDedup: sha([
-          cuenta.id,
-          m.fecha,
-          m.monto,
-          glosaNormalizada,
-          m.nOperacion ?? '',
-          m.saldo ?? '',
-          m.saldo === null ? m.orden : '',
-        ]),
+        // y es el mismo si la fila vuelve a venir en otra cartola que se traslapa. Por la API
+        // manda la clave del conector, que no depende del saldo.
+        hashDedup: m.claveDedup
+          ? sha([cuenta.id, 'api', m.claveDedup])
+          : sha([
+              cuenta.id,
+              m.fecha,
+              m.monto,
+              glosaNormalizada,
+              m.nOperacion ?? '',
+              m.saldo ?? '',
+              m.saldo === null ? m.orden : '',
+            ]),
       };
     });
 
@@ -217,6 +280,10 @@ export class ImportacionService {
           .execute()
       : { raw: [] };
     const nuevas = (insertados.raw as unknown[]).length;
+    if (origen.tipo === 'api' && nuevas === 0) {
+      await em.delete(Importacion, importacion.id);
+      return { importacion, cuentaCreada, sinCambios: true };
+    }
 
     importacion.filasNuevas = nuevas;
     importacion.filasDuplicadas = valores.length - nuevas;
@@ -230,6 +297,7 @@ export class ImportacionService {
       entidad: 'importacion',
       entidadId: importacion.id,
       detalle: {
+        origen: origen.tipo,
         tipo: 'cartola',
         cuentaId: cuenta.id,
         nuevas,
@@ -237,6 +305,75 @@ export class ImportacionService {
       },
     });
     return { importacion, cuentaCreada };
+  }
+
+  /**
+   * Cuenta de una lectura de Emisso. Emisso escribe el número distinto que los archivos (con
+   * código de producto o ceros de relleno), así que se compara por dígitos. Si no calza con
+   * ninguna pero la empresa tiene una sola cuenta de ese banco, se asume esa.
+   */
+  private async cuentaDeApi(
+    em: EntityManager,
+    empresaId: number,
+    cartola: CartolaLeida,
+    advertencias: string[],
+  ): Promise<CuentaBancaria | null> {
+    const delBanco = await em.findBy(CuentaBancaria, {
+      empresaId,
+      banco: cartola.banco,
+    });
+    const iguales = delBanco.filter((c) =>
+      mismaCuenta(c.numero, cartola.numeroCuenta),
+    );
+    if (iguales.length === 1) return iguales[0];
+    const activas = delBanco.filter((c) => c.activa);
+    if (iguales.length === 0 && activas.length === 1) {
+      advertencias.push(
+        `La cuenta ${cartola.numeroCuenta} de Emisso se asoció a la cuenta N° ${activas[0].numero}, la única de ese banco`,
+      );
+      return activas[0];
+    }
+    return null;
+  }
+
+  /**
+   * Un día entra por una sola fuente: antes de `api_desde` por archivo, desde esa fecha por la
+   * API. La primera lectura de la API fija el corte en el día siguiente al último movimiento
+   * que ya tenía la cuenta, para no duplicar lo que se subió a mano.
+   */
+  private async filtrarPorCorte(
+    em: EntityManager,
+    cuenta: CuentaBancaria,
+    origen: Origen,
+    cartola: CartolaLeida,
+    advertencias: string[],
+  ) {
+    if (origen.tipo === 'api' && !cuenta.apiDesde) {
+      const [{ ultima }]: { ultima: string | null }[] = await em.query(
+        `SELECT to_char(max(fecha) + 1, 'YYYY-MM-DD') AS ultima FROM movimiento WHERE cuenta_id = $1`,
+        [cuenta.id],
+      );
+      cuenta.apiDesde = ultima ?? cartola.desde;
+      await em.update(CuentaBancaria, cuenta.id, {
+        apiDesde: cuenta.apiDesde,
+      });
+      advertencias.push(
+        `Desde el ${cuenta.apiDesde} los movimientos de esta cuenta entran por Emisso; lo anterior, por archivo`,
+      );
+    }
+    const corte = cuenta.apiDesde;
+    if (!corte) return cartola.movimientos;
+    const quedan = cartola.movimientos.filter((m) =>
+      origen.tipo === 'api' ? m.fecha >= corte : m.fecha < corte,
+    );
+    const omitidos = cartola.movimientos.length - quedan.length;
+    if (omitidos > 0)
+      advertencias.push(
+        origen.tipo === 'api'
+          ? `${omitidos} movimientos anteriores al ${corte} no se importaron: esos días se cargan por archivo`
+          : `${omitidos} movimientos desde el ${corte} no se importaron: esos días los trae Emisso`,
+      );
+    return quedan;
   }
 
   /** Avisa si falta una cartola entre la última importada y esta (por N° de cartola o por saldo). */
@@ -303,11 +440,10 @@ export class ImportacionService {
   private async guardarRcv(
     em: EntityManager,
     empresaId: number,
-    usuarioId: number,
-    nombre: string,
-    sha256: string,
+    origen: Origen,
     rcv: RcvLeido,
   ): Promise<ResultadoImportacion> {
+    const { usuarioId } = origen;
     const direccion: Direccion =
       rcv.tipo === 'rcv_compra' ? 'recibido' : 'emitido';
 
@@ -317,8 +453,9 @@ export class ImportacionService {
         cuentaId: null,
         tipo: rcv.tipo,
         lector: rcv.lector,
-        archivoNombre: nombre,
-        archivoSha256: sha256,
+        archivoNombre: origen.nombre,
+        archivoSha256: origen.sha256,
+        origen: origen.tipo,
         periodoDesde: rcv.desde,
         periodoHasta: rcv.hasta,
         nCartola: null,
@@ -380,6 +517,10 @@ export class ImportacionService {
       em,
       empresaId,
     );
+    if (origen.tipo === 'api' && nuevas === 0) {
+      await em.delete(Importacion, importacion.id);
+      return { importacion, notasCreditoAplicadas, sinCambios: true };
+    }
 
     importacion.filasNuevas = nuevas;
     importacion.filasDuplicadas = valores.length - nuevas;
@@ -393,6 +534,7 @@ export class ImportacionService {
       entidad: 'importacion',
       entidadId: importacion.id,
       detalle: {
+        origen: origen.tipo,
         tipo: rcv.tipo,
         periodo: rcv.periodo,
         nuevas,

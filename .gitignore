@@ -45,5 +45,8 @@ __pycache__/
 logs_monitor.txt*
 estado_monitor.json
 estado_monitor.json.tmp
+# Monitor de alarmas de Viveros (services/monitorUnificado.py)
+estado_alarmas.json
+estado_alarmas.json.tmp
 logs_provider.txt*
 pendientes_tambo.jsonl

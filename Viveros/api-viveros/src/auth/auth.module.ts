@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
@@ -10,9 +11,13 @@ import { UsersModule } from '../users/users.module';
   imports: [
     UsersModule,
     PassportModule,
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'defaultSecret',
-      signOptions: { expiresIn: '1h' },
+    // Sin JWT_SECRET la API no arranca (la validación de config lo exige).
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: config.getOrThrow<string>('JWT_SECRET'),
+        signOptions: { expiresIn: config.get<string>('JWT_EXPIRES_IN') || '1h' },
+      }),
     }),
   ],
   providers: [AuthService, JwtStrategy],

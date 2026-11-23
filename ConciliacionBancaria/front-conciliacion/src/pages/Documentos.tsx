@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import api, { mensajeError } from "../api";
 import { Alerta, AvisoBusquedaMonto, BadgeDocumento, BotonMonto, Cargando, Encabezado, Modal, Paginacion, Vacio } from "../components/comunes";
 import SelectorProyecto from "../components/SelectorProyecto";
-import { fecha, pesos, resolverBusqueda, tipoDte } from "../formato";
+import { BANCOS, MARGEN_MONTO_CLP, fecha, pesos, porcentaje, resolverBusqueda, tipoDte } from "../formato";
 import { useEmpresa, useSesion } from "../sesion";
-import type { Direccion, Documento, DocumentoDetalle, EstadoDocumento, Pagina } from "../types";
+import type { Direccion, Documento, DocumentoDetalle, EstadoDocumento, MovimientoSugerido, Pagina } from "../types";
 import { useCarga } from "../useCarga";
 
 const ESTADOS: { valor: EstadoDocumento | "con_saldo" | ""; texto: string }[] = [
@@ -184,13 +184,44 @@ function DocumentoModal({ id, onCerrar, onCambio }: { id: number; onCerrar: () =
     conSaldo: "true",
     porPagina: 100,
   });
+  const conSaldo = !!d && d.saldoPendiente > 0 && (d.estado === "pendiente" || d.estado === "parcial");
+  // Movimientos de la cartola con monto a ±MARGEN_MONTO_CLP del saldo, para conciliar desde aquí.
+  const sugeridos = useCarga<MovimientoSugerido[]>(conSaldo ? `${base}/documentos/${id}/movimientos-sugeridos` : null);
   const [destino, setDestino] = useState<number | "">("");
   const [error, setError] = useState("");
+  const [conciliando, setConciliando] = useState<number | null>(null);
 
   const recargar = () => {
     det.recargar();
     destinos.recargar();
+    sugeridos.recargar();
     onCambio();
+  };
+
+  const conciliar = async (m: MovimientoSugerido) => {
+    if (!d) return;
+    setConciliando(m.id);
+    setError("");
+    try {
+      await api.post(`${base}/conciliaciones`, {
+        lineas: [{ movimientoId: m.id, documentoId: d.id, monto: Math.min(m.disponible, d.saldoPendiente) }],
+      });
+      recargar();
+    } catch (e) {
+      setError(mensajeError(e));
+    } finally {
+      setConciliando(null);
+    }
+  };
+
+  const deshacerPago = async (conciliacionId: number) => {
+    if (!confirm("¿Deshacer esta conciliación? Si el movimiento pagaba otros documentos, también se deshacen.")) return;
+    try {
+      await api.delete(`${base}/conciliaciones/${conciliacionId}`);
+      recargar();
+    } catch (e) {
+      setError(mensajeError(e));
+    }
   };
 
   const aplicar = async () => {
@@ -270,15 +301,32 @@ function DocumentoModal({ id, onCerrar, onCambio }: { id: number; onCerrar: () =
           ) : (
             <ul className="list-group mb-3">
               {d.pagos.map((p) => (
-                <li key={p.id} className="list-group-item d-flex justify-content-between">
+                <li key={p.id} className="list-group-item d-flex justify-content-between align-items-center gap-2">
                   <span>
                     {fecha(p.fecha)} · <span className="glosa">{p.glosa}</span>
                     <small className="text-muted ms-2">{p.origen === "manual" ? "manual" : "automática"}</small>
                   </span>
-                  <span className="monto fw-semibold">{pesos(p.montoAplicado)}</span>
+                  <span className="d-flex align-items-center gap-2">
+                    <span className="monto fw-semibold">{pesos(p.montoAplicado)}</span>
+                    {puede("operador") && (
+                      <button className="btn btn-outline-danger btn-sm" onClick={() => deshacerPago(p.conciliacionId)} title="Deshacer">
+                        <i className="bi bi-arrow-counterclockwise" />
+                      </button>
+                    )}
+                  </span>
                 </li>
               ))}
             </ul>
+          )}
+
+          {conSaldo && (
+            <MovimientosSugeridos
+              saldo={d.saldoPendiente}
+              cobra={(d.direccion === "emitido") !== (d.tipoDte === 61)}
+              carga={sugeridos}
+              conciliando={conciliando}
+              onConciliar={puede("operador") ? conciliar : undefined}
+            />
           )}
 
           <h6 className="text-muted">Notas de crédito</h6>
@@ -329,5 +377,76 @@ function DocumentoModal({ id, onCerrar, onCambio }: { id: number; onCerrar: () =
         </>
       )}
     </Modal>
+  );
+}
+
+/** Lista bajo «Pagos»: movimientos de la cartola cuyo monto por conciliar se parece al saldo del documento. */
+function MovimientosSugeridos({
+  saldo,
+  cobra,
+  carga,
+  conciliando,
+  onConciliar,
+}: {
+  saldo: number;
+  /** Se espera un abono (venta) o un cargo (compra). */
+  cobra: boolean;
+  carga: { datos?: MovimientoSugerido[]; error?: string; cargando: boolean };
+  conciliando: number | null;
+  /** Sin él (rol lector) la lista es solo informativa. */
+  onConciliar?: (m: MovimientoSugerido) => void;
+}) {
+  const lista = carga.datos ?? [];
+  return (
+    <div className="mb-3">
+      <h6 className="text-muted mb-1">
+        <i className="bi bi-bullseye me-1" />
+        {cobra ? "Abonos" : "Cargos"} de la cartola con monto similar
+      </h6>
+      <small className="text-muted d-block mb-2">
+        Por conciliar, entre {pesos(Math.max(0, saldo - MARGEN_MONTO_CLP))} y {pesos(saldo + MARGEN_MONTO_CLP)}, del más cercano al saldo al más lejano.
+      </small>
+      <Alerta error={carga.error} />
+      {!carga.datos && !carga.error ? (
+        <div className="text-center py-2">
+          <span className="spinner-border spinner-border-sm text-primary" />
+        </div>
+      ) : lista.length === 0 ? (
+        <p className="text-muted small">No hay movimientos por conciliar con un monto parecido.</p>
+      ) : (
+        <ul className="list-group">
+          {lista.map((m) => (
+            <li key={m.id} className="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2">
+              <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                <div className="glosa text-truncate">{m.glosa}</div>
+                <small className="text-muted">
+                  {fecha(m.fecha)} · {m.cuentaAlias ?? `${BANCOS[m.banco] ?? m.banco} ${m.cuentaNumero.slice(-4)}`}
+                  {m.estado === "parcial" && ` · quedan ${pesos(m.disponible)} de ${pesos(Math.abs(m.monto))}`}
+                </small>
+                <div>
+                  {m.diferencia === 0 ? (
+                    <span className="badge text-bg-success">Monto exacto</span>
+                  ) : (
+                    <span className="badge text-bg-light border" title={m.diferencia > 0 ? "El movimiento quedará parcial por la diferencia" : "El documento quedará con saldo por la diferencia"}>
+                      {m.diferencia > 0 ? "Sobran" : "Faltan"} {pesos(Math.abs(m.diferencia))}
+                    </span>
+                  )}
+                  {m.similitud >= 0.5 && <span className="badge text-bg-light border ms-1">Nombre {porcentaje(m.similitud)}</span>}
+                </div>
+              </div>
+              <div className="d-flex align-items-center gap-2">
+                <span className={`monto fw-semibold ${m.monto > 0 ? "text-success" : "text-danger"}`}>{pesos(m.monto)}</span>
+                {onConciliar && (
+                  <button className="btn btn-success btn-sm text-nowrap" disabled={conciliando !== null} onClick={() => onConciliar(m)}>
+                    {conciliando === m.id ? <span className="spinner-border spinner-border-sm me-1" /> : <i className="bi bi-check2 me-1" />}
+                    Conciliar {pesos(Math.min(m.disponible, saldo))}
+                  </button>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

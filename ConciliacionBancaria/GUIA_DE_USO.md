@@ -105,6 +105,10 @@ En **Movimientos**, haz clic en cualquier fila. Se abre «Conciliar movimiento»
 
 El botón «Conciliar» solo se activa si lo que aplicas no supera el monto disponible. Un abono se aplica a ventas y un cargo a compras.
 
+### Conciliar desde la factura
+
+En **Documentos**, al abrir una factura con saldo aparece «Abonos (o Cargos) de la cartola con monto similar»: los movimientos por conciliar cuyo monto está a $1.000 o menos del saldo, del más cercano al más lejano. Cada uno indica si el monto es exacto o cuánto sobra o falta, y si el nombre de la glosa se parece al del cliente o proveedor. Con «Conciliar» se aplica lo que alcance: si el movimiento es mayor, queda *Parcial* por la diferencia; si es menor, la factura queda con ese saldo. En «Pagos» de la misma ventana, el botón de deshacer revierte la conciliación.
+
 ### Notas de crédito de compras
 
 El SII no informa de qué factura es la nota de crédito de **compras**. En **Documentos → Compras**, abre la nota de crédito y elige a qué factura del mismo proveedor aplicarla.

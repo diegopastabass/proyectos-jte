@@ -71,6 +71,9 @@ export class CuentaBancaria {
   @Column({ type: 'text', nullable: true }) alias: string | null;
   @Column() moneda: string;
   @Column() activa: boolean;
+  /** Desde esta fecha los movimientos entran por la API; antes, por archivo. */
+  @Column({ name: 'api_desde', type: 'date', nullable: true }) apiDesde:
+    string | null;
   @CreateDateColumn({ name: 'creado_en' }) creadoEn: Date;
 }
 
@@ -126,7 +129,10 @@ export class Importacion {
   @Column({ name: 'filas_nuevas' }) filasNuevas: number;
   @Column({ name: 'filas_duplicadas' }) filasDuplicadas: number;
   @Column({ type: 'jsonb' }) advertencias: string[];
-  @Column({ name: 'usuario_id' }) usuarioId: number;
+  @Column({ default: 'archivo' }) origen: 'archivo' | 'api';
+  /** null en las lecturas programadas de la API. */
+  @Column({ name: 'usuario_id', type: 'int', nullable: true }) usuarioId:
+    number | null;
   @CreateDateColumn({ name: 'creado_en' }) creadoEn: Date;
 }
 
@@ -162,6 +168,9 @@ export class Movimiento {
   @Column({ name: 'proyecto_id', type: 'int', nullable: true }) proyectoId:
     number | null;
   @Column({ name: 'hash_dedup', select: false }) hashDedup: string;
+  /** Id del movimiento en el banco, si lo entrega (Banco de Chile por la API). */
+  @Column({ name: 'id_externo', type: 'text', nullable: true }) idExterno:
+    string | null;
   @CreateDateColumn({ name: 'creado_en' }) creadoEn: Date;
 }
 
@@ -348,6 +357,29 @@ export class Comprobante {
   eliminadoPor: number | null;
 }
 
+export type SistemaExterno = 'sii' | 'banco_estado' | 'bch_empresas';
+
+@Entity('conexion_externa')
+export class ConexionExterna {
+  @PrimaryGeneratedColumn() id: number;
+  @Column({ name: 'empresa_id' }) empresaId: number;
+  @Column() proveedor: 'emisso';
+  @Column() sistema: SistemaExterno;
+  @Column({ name: 'connection_id', type: 'text', nullable: true })
+  connectionId: string | null;
+  @Column({ name: 'sesion_id', type: 'text', nullable: true }) sesionId:
+    string | null;
+  @Column() estado: 'pendiente' | 'activa' | 'pausada';
+  @Column({ name: 'empresa_rut', type: 'text', nullable: true }) empresaRut:
+    string | null;
+  @Column({ name: 'ultima_lectura_en', type: 'timestamptz', nullable: true })
+  ultimaLecturaEn: Date | null;
+  @Column({ name: 'ultimo_error', type: 'text', nullable: true }) ultimoError:
+    string | null;
+  @CreateDateColumn({ name: 'creado_en' }) creadoEn: Date;
+  @Column({ name: 'actualizado_en', type: 'timestamptz' }) actualizadoEn: Date;
+}
+
 export const ENTIDADES = [
   Usuario,
   Empresa,
@@ -364,4 +396,5 @@ export const ENTIDADES = [
   Sugerencia,
   Proyecto,
   Comprobante,
+  ConexionExterna,
 ];

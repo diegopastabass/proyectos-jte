@@ -174,7 +174,7 @@ export class MotorService {
    */
   async ejecutar(
     empresaId: number,
-    usuarioId: number,
+    usuarioId: number | null,
     dto: EjecutarMotorDto,
   ): Promise<ResumenMotor> {
     const entrada = await this.cargarEntrada(empresaId, dto);
@@ -244,7 +244,7 @@ export class MotorService {
   private async aplicar(
     em: EntityManager,
     empresaId: number,
-    usuarioId: number,
+    usuarioId: number | null,
     p: Propuesta,
   ) {
     if (p.ignorar) {
@@ -272,7 +272,7 @@ export class MotorService {
   private async ignorarMovimiento(
     em: EntityManager,
     empresaId: number,
-    usuarioId: number,
+    usuarioId: number | null,
     movimientoId: number,
     motivo: string,
   ) {
@@ -751,5 +751,6 @@ export class MotorController {
   imports: [ConciliacionModule],
   controllers: [MotorController],
   providers: [MotorService],
+  exports: [MotorService],
 })
 export class MotorModule {}

@@ -78,6 +78,10 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_log82_abiertos
 
 -- =====================================================================
 -- PASO 3: CORREGIR verificar_salto_totalizador (57)
+-- REEMPLAZADO por el PASO 1 de 003_fix_insert_parc57.sql: esta versión deja
+-- pasar una lectura errónea (~1.100 millones) si llega después de una hora sin
+-- datos. Aplicar la de 003, no esta.
+--
 -- Aplicar SOLO si 1a dice que mt_value es character varying y 1b confirma
 -- que el totalizador no se está guardando.
 --

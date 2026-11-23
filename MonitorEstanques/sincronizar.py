@@ -42,6 +42,7 @@ DESTINOS = {
     "Balsas": "tankService.py",
     "Montes": "monitorMontes.py",
     "Undurraga": "monitorUndurraga.py",
+    "Viveros/services": "monitorConexionViveros.py",
 }
 
 

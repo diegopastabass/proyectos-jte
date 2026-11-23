@@ -31,11 +31,13 @@ import {
 import {
   actualizarDevolviendo,
   auditar,
+  consultar,
   recalcular,
 } from '../common/auditoria';
 import { montoDeBusqueda, porCercaniaDeMonto } from '../common/monto-busqueda';
 import { Pagina, PaginacionDto } from '../common/paginacion';
 import { normalizarRut } from '../common/rut';
+import { IndiceNombres } from '../motor/similitud';
 import { type Direccion, Documento, type EstadoDocumento } from '../entities';
 
 export const NOMBRES_DTE: Record<number, string> = {
@@ -70,6 +72,23 @@ class FiltroDocumentosDto extends PaginacionDto {
   @IsOptional() @IsString() q?: string;
   @IsOptional() @Type(() => Number) @IsInt() proyectoId?: number;
   @IsOptional() @IsIn(['true', 'false']) sinProyecto?: 'true' | 'false';
+}
+
+export interface MovimientoSugerido {
+  id: number;
+  fecha: string;
+  glosa: string;
+  monto: number;
+  /** Lo que le queda al movimiento por conciliar (valor absoluto). */
+  disponible: number;
+  estado: string;
+  banco: string;
+  cuentaNumero: string;
+  cuentaAlias: string | null;
+  /** disponible − saldo del documento: positivo sobra en el movimiento, negativo falta. */
+  diferencia: number;
+  /** Parecido entre la glosa del movimiento y la razón social (0..1). */
+  similitud: number;
 }
 
 class AplicarNotaCreditoDto {
@@ -161,6 +180,67 @@ export class DocumentosService {
       pagos,
       notasCredito,
     };
+  }
+
+  /**
+   * Movimientos de la cartola por conciliar cuyo monto disponible queda a ±MARGEN_MONTO_CLP del
+   * saldo del documento, con el signo que le corresponde: una venta se cobra con un abono y una
+   * compra se paga con un cargo (al revés en las notas de crédito). Del más al menos cercano;
+   * a igual distancia, primero el de nombre más parecido y luego el de fecha más próxima.
+   */
+  async movimientosSugeridos(
+    empresaId: number,
+    id: number,
+  ): Promise<MovimientoSugerido[]> {
+    const doc = await this.ds
+      .getRepository(Documento)
+      .findOneBy({ id, empresaId });
+    if (!doc) throw new NotFoundException('Documento no encontrado');
+    if (
+      doc.saldoPendiente <= 0 ||
+      !['pendiente', 'parcial'].includes(doc.estado)
+    )
+      return [];
+    const cobra = (doc.direccion === 'emitido') !== (doc.tipoDte === 61);
+    const disponible = 'ABS(m.monto) - m.monto_conciliado';
+    const { donde, distancia } = porCercaniaDeMonto(
+      `(${disponible})`,
+      '$3::bigint',
+    );
+
+    const filas = await consultar<
+      Omit<MovimientoSugerido, 'diferencia' | 'similitud'> & {
+        contraparteTexto: string | null;
+      }
+    >(
+      this.ds,
+      `SELECT m.id::float8 AS id, to_char(m.fecha, 'YYYY-MM-DD') AS fecha, m.glosa,
+              m.monto::float8 AS monto, (${disponible})::float8 AS disponible, m.estado,
+              m.contraparte_texto AS "contraparteTexto",
+              c.banco, c.numero AS "cuentaNumero", c.alias AS "cuentaAlias"
+         FROM movimiento m
+         JOIN cuenta_bancaria c ON c.id = m.cuenta_id
+        WHERE m.empresa_id = $1 AND m.estado IN ('pendiente', 'parcial')
+          AND (m.monto > 0) = $2 AND ${donde}
+        ORDER BY ${distancia}, ABS(m.fecha - $4::date), m.id
+        LIMIT 50`,
+      [empresaId, cobra, doc.saldoPendiente, doc.fechaEmision],
+    );
+
+    const indice = new IndiceNombres([{ id: doc.id, nombre: doc.razonSocial }]);
+    return filas
+      .map(({ contraparteTexto, ...m }) => ({
+        ...m,
+        diferencia: m.disponible - doc.saldoPendiente,
+        similitud:
+          indice.buscar(contraparteTexto ?? m.glosa)[0]?.similitud ?? 0,
+      }))
+      .sort(
+        (a, b) =>
+          Math.abs(a.diferencia) - Math.abs(b.diferencia) ||
+          b.similitud - a.similitud,
+      )
+      .slice(0, 20);
   }
 
   /**
@@ -274,6 +354,14 @@ export class DocumentosController {
     @Param('id', ParseIntPipe) id: number,
   ) {
     return this.servicio.detalle(empresaId, id);
+  }
+
+  @Get('documentos/:id/movimientos-sugeridos')
+  movimientosSugeridos(
+    @Param('empresaId', ParseIntPipe) empresaId: number,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.servicio.movimientosSugeridos(empresaId, id);
   }
 
   @Post('documentos/:id/aplicar-nota-credito')

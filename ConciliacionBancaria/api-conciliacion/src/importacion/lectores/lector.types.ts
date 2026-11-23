@@ -21,6 +21,13 @@ export interface MovimientoLeido {
   sucursal: string | null;
   contraparteTexto: string | null;
   rutContraparte: string | null;
+  /** Id del movimiento en el banco (solo por la API, cuando el banco lo entrega). */
+  idExterno?: string | null;
+  /**
+   * Identidad estable que arma el conector de la API. Si viene, reemplaza al hash por saldo de
+   * los archivos: el banco puede recalcular el saldo de un movimiento ya leído.
+   */
+  claveDedup?: string;
 }
 
 export interface CartolaLeida {

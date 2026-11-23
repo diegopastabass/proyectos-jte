@@ -139,6 +139,23 @@ export interface DocumentoDetalle extends Documento {
   }[];
 }
 
+/** Movimiento de la cartola con monto parecido al saldo de un documento (modal del documento). */
+export interface MovimientoSugerido {
+  id: number;
+  fecha: string;
+  glosa: string;
+  monto: number;
+  /** Lo que le queda por conciliar (valor absoluto). */
+  disponible: number;
+  estado: EstadoMovimiento;
+  banco: string;
+  cuentaNumero: string;
+  cuentaAlias: string | null;
+  /** disponible − saldo del documento: positivo sobra en el movimiento, negativo falta. */
+  diferencia: number;
+  similitud: number;
+}
+
 export interface Candidato {
   id: number;
   direccion: Direccion;
@@ -245,6 +262,8 @@ export interface Importacion {
   filasNuevas: number;
   filasDuplicadas: number;
   advertencias: string[];
+  /** 'api': la trajo Emisso solo; 'archivo': se subió a mano. */
+  origen: "archivo" | "api";
   creadoEn: string;
 }
 
@@ -382,4 +401,50 @@ export interface ReporteContraparte {
   cobrado: number;
   documentos: number;
   movimientos: number;
+}
+
+export type SistemaExterno = "sii" | "banco_estado" | "bch_empresas";
+
+/** Una fuente automática (SII o banco) conectada a través de Emisso. */
+export interface ConexionExterna {
+  sistema: SistemaExterno;
+  nombre: string;
+  estado: "sin_conectar" | "pendiente" | "activa" | "pausada";
+  connectionId: string | null;
+  empresaRut: string | null;
+  ultimaLecturaEn: string | null;
+  ultimoError: string | null;
+  /** Estado en vivo en Emisso; null si no está conectada o Emisso no respondió. */
+  emisso: {
+    estado: string;
+    credencial: "linked" | "invalid" | "revoked" | "ausente";
+    cadencia: string | null;
+    cadenciaEstado: string | null;
+    datosListos: boolean;
+    atenciones: { codigo: string; que: string; hacer: string }[];
+    trabajos: { id: string; estado: string; periodo: string; actualizadoEn: string }[];
+    uso: { llamadas: number; limite: number; seRenueva: string } | null;
+  } | null;
+}
+
+export interface EstadoConexiones {
+  configurado: boolean;
+  /** El front tiene un origen https registrado: la página de Emisso se puede incrustar. */
+  embebible: boolean;
+  errorEmisso: string | null;
+  conexiones: ConexionExterna[];
+}
+
+export interface EnlaceConexion {
+  url: string;
+  /** Origen de la página de Emisso: el único del que se aceptan mensajes del iframe. */
+  origen: string;
+  embebible: boolean;
+  expiraEn: string;
+  reconectar: boolean;
+}
+
+export interface ResultadoLectura {
+  resultados: { sistema: SistemaExterno; importaciones: number; nuevas: number; advertencias: string[]; error: string | null }[];
+  nuevas: number;
 }

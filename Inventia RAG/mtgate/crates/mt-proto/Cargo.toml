@@ -1,0 +1,9 @@
+[package]
+name = "mt-proto"
+version = "0.1.0"
+description = "Protocolo MT de Inventia (UDP 7110): cabecera, confirmaciones, Modbus RTU y mensajes espontáneos"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]

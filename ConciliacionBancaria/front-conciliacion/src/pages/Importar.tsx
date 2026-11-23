@@ -161,6 +161,7 @@ export default function Importar() {
                     {i.nCartola !== null && <small className="text-muted"> N° {i.nCartola}</small>}
                   </td>
                   <td className="text-truncate" style={{ maxWidth: 200 }} title={i.archivoNombre}>
+                    {i.origen === "api" && <span className="badge text-bg-light border me-1">Emisso</span>}
                     {i.archivoNombre}
                     {i.advertencias.length > 0 && (
                       <i className="bi bi-exclamation-triangle text-warning ms-2" title={i.advertencias.join("\n")} />

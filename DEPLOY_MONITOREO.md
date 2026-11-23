@@ -130,6 +130,10 @@ En estos sitios ya no se necesitan `mysql-connector-python` ni `psycopg2`.
   - Pasos comunes. Vigila `/undurraga/snapshot` en modo `sensor`: caudales 1 y 2 (uno por equipo) y la piscina; ignora los totalizadores 3 y 4 y el sensor 6 (prueba).
   - ⚠️ Al 2026-11-18 los equipos 1 y 2 llevan **329 días** y la piscina **176 días** sin datos: el aviso llega apenas se despliegue.
   - El `.env` local (`Undurraga/.env`) ya tiene `API_URL`, `API_TOKEN` y `API_TO_ADMIN`; hay que replicarlo en el servidor.
+- [ ] **Viveros**: `Viveros/services/monitorConexionViveros.py` + `Viveros/services/monitor_config.json` (agregado 2026-11-18)
+  - Pasos comunes, en `C:\AutomatizationServices\Viveros\` (comparte el `.env` con `brokerViverosTempHumedad.py` y `monitorUnificado.py`). Vigila `/viveros/latest` en modo `sensor`: T de calor (5), T de frío (6) y exterior (7); ignora las humedades (llegan en el mismo mensaje) y los estados 1 y 2 (sin datos desde el 2026-07-31, pendiente de confirmar con el cliente).
+  - El `.env` local (`Viveros/services/.env`) ya tiene `API_TO_ADMIN`; hay que agregarlo en el servidor.
+  - Convive con `monitorUnificado.py` v2.0.0 (alarmas de rango con estado, sensor sin variación). Ese monitor ya no avisa caídas de la API ni datos viejos: lo hace este. **Detener y borrar** del servidor `monitorTemperatura.py`, `monitorHumedad.py` y `monitorTemperaturaAmbiental.py` si siguen corriendo.
 
 ## Fase 3: servicios corregidos sin migrar
 

@@ -1,0 +1,6 @@
+# Configuración real con credenciales y logs pesados del MTDP
+INVENTIA/MTopc2/sample.xml
+INVENTIA/MTopc2/*.log
+INVENTIA/MTopc2/mtlib.lic
+# Material de ingeniería inversa (pseudocódigo de binarios propietarios)
+re-work/

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Encabezado } from "../components/comunes";
 import Categorias from "../components/config/Categorias";
+import Conexiones from "../components/config/Conexiones";
 import Contrapartes from "../components/config/Contrapartes";
 import Cuentas from "../components/config/Cuentas";
 import Reglas from "../components/config/Reglas";
@@ -12,6 +13,7 @@ const PESTANAS = [
   { id: "reglas", texto: "Reglas", icono: "bi-signpost-split" },
   { id: "categorias", texto: "Categorías", icono: "bi-tags" },
   { id: "cuentas", texto: "Cuentas", icono: "bi-bank" },
+  { id: "conexiones", texto: "Conexiones", icono: "bi-plug" },
   { id: "usuarios", texto: "Usuarios", icono: "bi-person-gear", admin: true },
 ] as const;
 
@@ -36,6 +38,7 @@ export default function Configuracion() {
       {pestana === "reglas" && <Reglas />}
       {pestana === "categorias" && <Categorias />}
       {pestana === "cuentas" && <Cuentas />}
+      {pestana === "conexiones" && <Conexiones />}
       {pestana === "usuarios" && <Usuarios />}
     </div>
   );

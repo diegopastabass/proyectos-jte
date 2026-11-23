@@ -3,12 +3,14 @@ module.exports = {
     {
       name: 'api-viveros',
       script: 'dist/main.js',
-      instances: 2,
+      // Una sola instancia: el buffer del POST y la caché de resúmenes viven en memoria.
+      instances: 1,
       autorestart: true,
       watch: false,
       env: {
         NODE_ENV: 'production',
         PORT: 3005,
+        TZ: 'America/Santiago',
       },
     },
   ],

@@ -10,6 +10,8 @@ export class Metric {
   @PrimaryGeneratedColumn()
   id: number;
 
+  // En producción la columna es numérica: las consultas pasan el id como parámetro
+  // sin tipo (ver lib/consultas.ts). synchronize está desactivado.
   @Column({ type: 'varchar', length: 255 })
   sensor_id: string;
 

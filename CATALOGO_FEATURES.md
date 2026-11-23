@@ -1,6 +1,6 @@
 # Catálogo de features para dashboards de monitoreo
 
-Versión: 2026-11-18 (revisión completa del repo, cliente por cliente) · Referencias: Viña Montes (`Montes/`), Undurraga (`Undurraga/`), SSR Las Balsas (`Balsas/`), Cumpeo (`Cumpeo/`) y Conciliación Bancaria (`ConciliacionBancaria/`).
+Versión: 2026-11-18b (revisión completa del repo; actualización visual de Viveros) · Referencias: Viña Montes (`Montes/`), Undurraga (`Undurraga/`), SSR Las Balsas (`Balsas/`), Cumpeo (`Cumpeo/`) y Conciliación Bancaria (`ConciliacionBancaria/`).
 
 Este documento describe features ya implementadas y probadas que se pueden llevar a otros clientes, y las convenciones que mantienen el repo coherente. Está escrito para que una persona o un LLM pueda:
 
@@ -9,6 +9,8 @@ Este documento describe features ya implementadas y probadas que se pueden lleva
 3. implementar cada feature siguiendo su ficha (§4–§6, §8–§9), que es autocontenida;
 4. crear un cliente nuevo o modernizar uno existente con la plantilla actual (§10) o, si no es de monitoreo, con las convenciones de apps de negocio (§11);
 5. saber qué está roto o pendiente antes de tocar un cliente (§13).
+
+La skill `catalogo-features-monitoreo` (`~/.agents/skills/catalogo-features-monitoreo/`) carga este documento como su única fuente: lo que se corrija o agregue aquí lo usa también la skill, sin tocarla. Si cambia la numeración de las secciones, revisa la tabla de secciones de su `SKILL.md`.
 
 ---
 
@@ -43,7 +45,7 @@ Familias de proyectos (inventario completo en §12):
 | **Pozos con reporte DGA** | Auquinco, California, Carracedo, Encinos (Araucarias tiene el módulo sin uso) | Script diario que envía freático, caudal y totalizador a la DGA y guarda el resultado en `<cliente>_reports` (F5, §9) |
 | **Caudal y totalizadores sin estanques** | Montes, Undurraga | Rutas por sensor (`caudal/:sensor`, `totalizador-hora/:sensor`…), consumo diario cacheado, exportador `exceljs` (F1). Ver §4 y §7 |
 | **Pozos simples (sin SCADA)** | Amigos, Miraflores, Araucarias, Carracedo, Encinos | Dashboard de tarjetas y `TimeSeriesChart`; tablas sin prefijo `ssr_` (`araucarias`, `carracedo`, `encinos`, `ssr_amigos`, `pozo_miraflores`); sin monitor salvo Araucarias |
-| **Agro** | Zagal (parcelas 18, 57 y 82), Viveros, Olivar Bajo | Riego por sectores con mapa Leaflet y triggers SQL (Zagal); temperatura, humedad y VPD (Viveros); API con `POST` de ingesta (Olivar, Viveros) |
+| **Agro** | Zagal (parcelas 18, 57 y 82), Viveros, Olivar Bajo | Riego por sectores con mapa Leaflet y triggers SQL (Zagal); temperatura, humedad y VPD con estado por zona, cumplimiento e informe PDF (Viveros, ver §7); API con `POST` de ingesta (Olivar; Viveros lo mantiene, pero hoy ingiere por MQTT) |
 | **Apps de terreno y negocio** | Mantenimiento, RanguilMediciones, ZunigaMediciones, DemoMediciones, CheckListVehiculos, Cotizaciones, Maval, MavalECommerce, ReconocimientoVehiculos, ConciliacionBancaria | Login JWT, formularios con fotos, PDFs generados en el navegador. Convenciones en §11 |
 | **Portal** | `jte/JTEFront` | Página de entrada con enlaces a los dashboards |
 
@@ -53,7 +55,7 @@ Familias de proyectos (inventario completo en §12):
 |-------|--------------------|-------|
 | API | `<Cliente>/api-<cliente>/` | NestJS 11 + TypeORM + PostgreSQL en AWS RDS. Amigos y Miraflores tienen además una versión MySQL antigua (`api-<cliente>` frente a `api-<cliente>-pg`); Trinidad lee también la MySQL de Marchigüe con `mysql2` |
 | Dashboard | `<Cliente>/front-<cliente>/` (nombre de los proyectos nuevos), `<Cliente>/Dashboard<Cliente>React/` o `<Cliente>/dashboard-<cliente>/` (antiguos) | React 19 + Vite + TypeScript + Bootstrap 5 + bootstrap-icons + Chart.js (`react-chartjs-2`) |
-| Ingesta | Script Python MQTT → BD (`Tambo/providerTambo.py` es la referencia, §10.4), un equipo en terreno que hace `POST` a la API (Undurraga, Olivar, Viveros) o un colector fuera del repo (la mayoría de los SSR) | Python 3, `paho-mqtt`, `psycopg2` |
+| Ingesta | Script Python MQTT → BD (`Tambo/providerTambo.py` es la referencia, §10.4), un equipo en terreno que hace `POST` a la API (Undurraga, Olivar) o un colector fuera del repo (la mayoría de los SSR) | Python 3, `paho-mqtt`, `psycopg2` |
 | Alertas | `<Cliente>/<script>.py` + `monitor_config.json` (monitor unificado, F3) | Python 3, `requests`, `python-dotenv` |
 | Reporte DGA | `<Cliente>/<cliente>Reports.py` + módulo `reports` de la API (F5) | Python 3, `schedule`, `requests` |
 
@@ -149,6 +151,7 @@ Aplican a cualquier feature. Cada una salió de un problema real.
 15. **Puertos únicos y registrados.** Antes de asignar un puerto, revisa §12: hoy hay choques reales. Usa el siguiente libre (el último asignado es 3042) y anótalo en §12 y en el nginx.
 16. **Secretos sin valor por defecto.** `JWT_SECRET` con `config.getOrThrow` (la API no arranca sin él), CORS restringido con `CORS_ORIGINS` y `synchronize: false`. Varias apps firman tokens con `'secreto_super_seguro'` o `'defaultSecret'` si falta la variable (§13).
 17. **Código muerto fuera.** Componentes sin importar (`LoginModal`, `BurgerMenu`, `DropdownCard*`, `pages/Chart.tsx`, `CaudalChart`), copias de componentes en la raíz del cliente (`Ranguil/Pipe.tsx`) y `.zip` de la API versionados confunden la siguiente revisión. Si se deja, que sea con un motivo escrito.
+18. **Valores 6553,x o 65535 son negativos mal leídos.** Un entero con signo de 16 bits leído sin signo convierte −1 en 65535 (6553,5 con escala ×10). En Viveros la T de la cámara de frío "saltaba" a 6553,5 al bajar de 0 °C (serie 0,2 → 0,1 → 0,0 → 6553,5). Corrígelo al leer (`valor − 6553,6`) en vez de descartarlo, o mejor en la ingesta.
 
 ---
 
@@ -364,7 +367,7 @@ Estado al 2026-11-18: 25 sitios registrados en `sincronizar.py` y todas las copi
 - **estanques + conexión:** Balsas (`/equipos`, por sensor), Boldos (por sensor, umbral 10 min), Ranguil (equipo completo), Tambo (3 estanques, por sensor);
 - **solo conexión:** Araucarias (equipo), Montes (`/latest`, por sensor), Undurraga (por sensor).
 
-**Sin monitor:** Amigos, Carracedo, Encinos, Miraflores, Quillay, Trinidad, Zagal, Guindo y Llaveria (estos dos necesitan una API nueva: hoy leen MySQL directo). Viveros y Olivar Bajo tienen sus propios monitores en `services/`. Zuñiga mantiene además `healthCheckService.py` (latido "todo OK" a las 00:00 y 12:00 al grupo del cliente).
+**Sin monitor:** Amigos, Carracedo, Encinos, Miraflores, Quillay, Trinidad, Zagal, Guindo y Llaveria (estos dos necesitan una API nueva: hoy leen MySQL directo). Olivar Bajo tiene su propio monitor en `services/`. **Viveros** (2026-11-18) usa F3 en modo conexión por sensor (`Viveros/services/monitorConexionViveros.py`) y además `monitorUnificado.py` para las alarmas de rango. Zuñiga mantiene además `healthCheckService.py` (latido "todo OK" a las 00:00 y 12:00 al grupo del cliente).
 
 ### 6.3 Requisitos
 
@@ -489,6 +492,18 @@ Implementadas en otros clientes (rutas relativas a la carpeta del dashboard o de
 | Horómetro desde la corriente | Minutos por día con la bomba en marcha (`I1 > 1 A`) cuando el tablero no reporta horómetro ni señal de bomba. Cada muestra vale hasta la siguiente, con tope de 5 min, y los tramos que cruzan medianoche se reparten. Compañía hace lo mismo con la señal `bomba` (0/1) | `getHorometro` en `Balsas/api-balsas/src/metrics/metrics.service.ts`; Compañía en `api-compania` (agrupa días en UTC: ver §13) | Corriente por fase o estado de bomba |
 | Series por recurso independientes | Cada serie se pide por separado con `Promise.allSettled`: si una falla, las demás se actualizan y se conserva el último valor bueno de la que falló. El día "hoy" se recalcula en cada ciclo porque la pantalla queda abierta pasada la medianoche | `Balsas/front-balsas/src/pages/Home.tsx` | — |
 | Gráfico de varias series | Tensiones y corrientes por fase en un solo gráfico | `MultiLineGraphCard.tsx` (Balsas, Cuevas) | `voltaje`, `corriente` |
+
+Implementadas en Viveros (2026-11-18), pensadas para variables con **rango permitido** (temperatura, humedad, VPD; sirven también para nivel o presión). Rutas relativas a `Viveros/viverosDashboard/src/` y `Viveros/api-viveros/src/metrics/`:
+
+| Feature | Qué hace | Archivos de referencia | Requiere en la API |
+|---------|----------|------------------------|--------------------|
+| Rangos en un solo lugar | Tabla `viveros_umbrales (zona, variable, min, max, alerta)` con `GET /config` (público) y `PATCH /config` (rol 0). La leen el dashboard, el informe y el monitor de alarmas; el panel de administración la edita. Sin la tabla, la API usa valores por defecto del código | `viveros.config.ts`, `services/umbrales.service.ts`, `sql/001_viveros_umbrales.sql`, `components/AdminModal.tsx` | Migración SQL |
+| ~~Barra de estado por zona~~ | Se quitó en Viveros (2026-11-19): repetía lo que ya muestra el encabezado de cada tarjeta (estado y "hace X min"). No la lleves a otros clientes salvo que lo pidan | — | — |
+| Tarjeta con barra de rango | Valor grande coloreado por estado, *bullet chart* (rango permitido, mín./máx. de hoy, valor actual), sparkline de 24 h con el rango sombreado, "fuera de rango hoy", aviso de sensor sin variación | `components/ZonaCard.tsx`, `RangoBar.tsx`, `Sparkline.tsx` | `GET /estado`, `GET /serie?horas=24` |
+| Serie con rango | Eje de tiempo lineal con marcas en hora Chile (`ejeTiempo`), franja del rango (`pluginBandas`), línea en rojo donde sale del rango (`segment.borderColor`) y cortes en los huecos. Gráficos apilados (T, HR, VPD) en vez de doble eje | `components/SerieChart.tsx`, `components/Evolucion.tsx`, `lib/charts.ts` | `GET /serie?zona&start&end` |
+| Cumplimiento | % del tiempo en rango por día (barras apiladas: en rango, cerca, fuera, sin datos), mapa de calor día × hora y episodios fuera de rango. El tiempo se integra con la duración real entre lecturas (tope configurable) | `components/Cumplimiento.tsx`, `MapaCalor.tsx`, `Episodios.tsx`; API `lib/analisis.ts` (`resumirDias`, `detectarEpisodios`, con tests) | `GET /resumen-diario`, `GET /horario`, `GET /episodios` |
+| Informe PDF | Tiempo en rango por cámara y por día (mapa de calor), estadísticas, episodios y observaciones automáticas (sensor sin variación, horas sin datos). **pdfmake 0.3 ya no exporta `PdfPrinter`** (es una instancia con `setFonts` y `createPdf(doc).getBuffer()`). `lib/pdf.ts` funciona con la 0.2 y la 0.3 y carga pdfmake recién al generar: si se configura al importar el módulo, cualquier diferencia de versión tumba la API entera (Viveros dio 502, visto como CORS). No uses `setLocalAccessPolicy(() => false)`: bloquea también las fuentes estándar y el error termina el proceso | `lib/pdf.ts`, `services/reports.service.ts`, `components/InformeModal.tsx` | `GET /reports/weekly?start&end` |
+| Monitor de alarmas con estado | Aviso al salir del rango, recordatorio cada N horas, aviso al volver (con histéresis), sensor sin variación al grupo admin. Lee los rangos de `GET /config` | `Viveros/services/monitorUnificado.py` | `GET /config`, `GET /latest` |
 
 ---
 
@@ -658,7 +673,7 @@ No son de monitoreo, pero comparten stack (NestJS + TypeORM + PostgreSQL, React 
 - **PDF en el navegador** con `@react-pdf/renderer` (Mantenimiento, Mediciones, CheckList, Cotizaciones). Generarlo al hacer clic, no al renderizar listas (CheckList B11).
 - **`multipart/form-data`:** no fijes `Content-Type` a mano en axios, o el `FormData` se envía como JSON y las fotos se pierden (CheckList B1).
 - **Montos en pesos** como `bigint` con un *transformer* a `number`. **RUT** validado con dígito verificador (`common/rut.ts`).
-- **Buscar por monto:** si el buscador recibe un monto con `$` o `CLP` (`5500CLP`, `$5.500`) la API devuelve lo que esté a ±1.000 pesos, del más al menos cercano (`common/monto-busqueda.ts`; en movimientos y candidatos compara el valor absoluto). Sin marcador, un número sigue siendo folio o texto de la glosa. Aplica a Movimientos, Documentos, «Agregar al proyecto» y los candidatos del modal de conciliar.
+- **Buscar por monto:** si el buscador recibe un monto con `$` o `CLP` (`5500CLP`, `$5.500`) la API devuelve lo que esté a ±1.000 pesos, del más al menos cercano (`common/monto-busqueda.ts`; en movimientos y candidatos compara el valor absoluto). Sin marcador, un número sigue siendo folio o texto de la glosa. Aplica a Movimientos, Documentos, «Agregar al proyecto» y los candidatos del modal de conciliar. El modal de un documento con saldo usa el mismo margen al revés: lista los movimientos por conciliar con el signo que corresponde y disponible a ±1.000 del saldo, y los concilia con un clic (`GET documentos/:id/movimientos-sugeridos`).
 - **Tests** de la lógica pura (lectores de archivos, motor) con archivos sintéticos; los datos reales no van a git (`.gitignore` de la carpeta). Script `probar-lectores` para diagnosticar un archivo sin tocar la BD.
 
 ---
@@ -703,7 +718,7 @@ Estado al 2026-11-18. "Puerto" es el de `ecosystem.config.js` o, si no tiene, el
 | Trinidad | `api-trinidad` (3038; `main.ts` dice 3000) | `ssr_trinidad` + MySQL `apr_marchigue` | `front-trinidad` | sprites | — | Sirve también el nivel de Marchigüe |
 | Undurraga | `api-undurraga` (3002) | `undurraga_metrics` | `dashboardUndurraga` | — | conexión (sensor) | Referencia F1 y §7; ingesta por `POST`; `PLAN_MEJORAS.md` |
 | Villa Carmen | `api-villacarmen` (3030) | `ssr_villa_carmen` | `front-villacarmen` | sprites | 1 estanque | Sin `ecosystem.config.js` |
-| Viveros | `api-viveros` (3005) | `viveros_tambo` | `viverosDashboard` | — | `services/monitorUnificado.py` y otros | VPD; `env-manager` edita umbrales del monitor en `C:\AutomatizationServices\Viveros\env.txt`; reporte semanal |
+| Viveros | `api-viveros` (3005) | `viveros_tambo` (`sensor_id` **integer**, aunque la entidad diga varchar) + `viveros_umbrales` | `viverosDashboard` | — | conexión (sensor, F3) + alarmas de rango (`monitorUnificado.py` v2) | Temperatura, humedad y VPD por zona; ingesta por MQTT (`brokerViverosTempHumedad.py`, topic `/CAMARA_VET`) y exterior desde Open-Meteo; el `POST /` sigue en la API. Rangos en `viveros_umbrales` (`GET/PATCH /config`). Referencia de §7 (estado, cumplimiento, informe PDF). `PLAN_MEJORAS.md` |
 | Zagal | `api-zagal-pg` (3003) | `parc_18_zagal`, `parc_57_zagal`, `parc_82_zagal` | `Zagal/18`, `57`, `82` (mismo código, cambia `config.ts`) | — (mapa Leaflet + KML) | — | Riego por sectores con triggers (`sql/002_triggers_riego.sql`); `QueryCache`; `ApiZagal` es la versión MySQL anterior |
 | Zuñiga | `api-zuniga` (3000) | `ssr_zuniga` | `DashboardZunigaReact` | CSS (referencia de la skill) | 1 estanque | `healthCheckService.py`; `DOCUMENTACION.md` |
 
@@ -741,7 +756,7 @@ Encontrados al revisar el repo; **ninguno está corregido**. Se basan en el cód
    - `DemoMediciones/api-demomediciones/ecosystem.config.js` usa el puerto 3017 y el nombre pm2 `api-ranguilmediciones`, los mismos de RanguilMediciones: arrancarla con ese archivo reemplaza o choca con la otra;
    - `ZunigaMediciones/api-zunigamediciones/ecosystem.config.js` también usa 3017 (su `main.ts` dice 3027);
    - ReconocimientoVehiculos y MavalECommerce usan 3000, el de Zuñiga.
-6. **Secretos con valor por defecto:** Mantenimiento, las tres Mediciones, Cotizaciones y Maval firman los JWT con `'secreto_super_seguro'` si falta `JWT_SECRET`; ReconocimientoVehiculos con `'secretKey'`; Viveros y MavalECommerce con `'defaultSecret'`. CheckListVehiculos tiene `synchronize: true` en producción y devuelve `password_hash` en `GET /checklists` (B2).
+6. **Secretos con valor por defecto:** Mantenimiento, las tres Mediciones, Cotizaciones y Maval firman los JWT con `'secreto_super_seguro'` si falta `JWT_SECRET`; ReconocimientoVehiculos con `'secretKey'`; MavalECommerce con `'defaultSecret'` (Viveros corregido en el repo el 2026-11-18, falta desplegar). CheckListVehiculos tiene `synchronize: true` en producción y devuelve `password_hash` en `GET /checklists` (B2).
 
 ### 13.2 Media
 
@@ -751,6 +766,7 @@ Encontrados al revisar el repo; **ninguno está corregido**. Se basan en el cód
 10. **`Montes/nginx.conf` desactualizado** (llega a 3020). Conviene versionar el nginx real del servidor o, al menos, mantener §12 al día.
 11. **Exportador antiguo** (`xlsx@0.18.5` + `file-saver`) en todos los dashboards salvo Montes y Undurraga: librería abandonada y fechas en UTC. Migrar con F1 cuando se toque cada cliente.
 12. **Cumpeo tiene cambios sin commit** (API, SCADA, resumen mensual): confirmar que lo desplegado coincide con el repo.
+- **Viveros**: corregido en el repo el 2026-11-18, **falta desplegar** (orden en `Viveros/PLAN_MEJORAS.md` §9). Lo que había: `/users/*` sin guard (`@Roles` sin `@UseGuards`) y `/auth/register` abierto; el indicador de última actualización falla desde que `/latest` incluye `vpd_*` (muestra "Desconocida"); el LED de estado compara `"1.00" === 1` y siempre está rojo; `monitorUnificado.py` repite la alerta en cada ciclo, no avisa la recuperación ni detecta desconexión; la HR de la cámara de calor lleva una semana fija en 99,9 %.
 
 ### 13.3 Baja
 

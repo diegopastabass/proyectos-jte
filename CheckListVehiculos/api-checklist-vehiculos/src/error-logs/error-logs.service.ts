@@ -12,7 +12,7 @@ export class ErrorLogsService {
     private readonly errorLogRepository: Repository<ErrorLog>,
   ) {}
 
-  async createErrorLog(userId: string | undefined, error: string, timestamp?: Date) {
+  async createErrorLog(userId: string | undefined, error: string, timestamp?: string) {
     try {
       const log = this.errorLogRepository.create({
         user_id: userId,

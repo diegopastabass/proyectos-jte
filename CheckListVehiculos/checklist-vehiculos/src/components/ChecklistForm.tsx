@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Vehicle, ChecklistItem, ViewState } from '../types';
 import PhotoCaptureModal from './PhotoCaptureModal';
 import api from '../api';
+import { saveDraft, loadDraft, clearDraft } from '../utils/draftStore';
+
+// Un salto de odómetro mayor a esto pide confirmación (posible error de tipeo)
+const KM_JUMP_CONFIRM = 2000;
 
 interface ChecklistFormProps {
   vehicle: Vehicle | null;
@@ -40,11 +44,49 @@ const ChecklistForm: React.FC<ChecklistFormProps> =({ vehicle, setViewState, add
   const [mandatoryPhotos, setMandatoryPhotos] = useState<{ frontal: string; trasera: string; lateral_izquierdo: string; lateral_derecho: string }>({ frontal: '', trasera: '', lateral_izquierdo: '', lateral_derecho: '' });
   const [interiorPhotos, setInteriorPhotos] = useState<{ interior_1: string; interior_2: string }>({ interior_1: '', interior_2: '' });
 
+  const [uploadPct, setUploadPct] = useState<number | null>(null);
+  const draftReady = useRef(false);
+
+  // Sin vehículo (pestaña recargada sin datos): volver al inicio con aviso en vez de perder el trabajo en silencio
+  useEffect(() => {
+    if (!vehicle) {
+      addToast('Seleccione un vehículo para iniciar el checklist', 'warning');
+      setViewState('home');
+    }
+  }, []);
+
+  // Restaurar borrador (incluidas fotos) si la pestaña se recargó a mitad del checklist
+  useEffect(() => {
+    if (!vehicle) return;
+    loadDraft<any>(vehicle.id).then((d) => {
+      if (d) {
+        setVisualChecks(d.visualChecks ?? initChecks(VISUAL_CONFIG));
+        setMechanicalChecks(d.mechanicalChecks ?? initChecks(MECHANICAL_CONFIG));
+        setKmActual(d.kmActual ?? '');
+        setObsGeneral(d.obsGeneral ?? '');
+        setMandatoryPhotos(d.mandatoryPhotos ?? { frontal: '', trasera: '', lateral_izquierdo: '', lateral_derecho: '' });
+        setInteriorPhotos(d.interiorPhotos ?? { interior_1: '', interior_2: '' });
+        addToast('Se recuperó su checklist en progreso', 'info');
+      }
+      draftReady.current = true;
+    });
+  }, []);
+
+  // Guardar borrador (con pausa para no escribir en cada tecla)
+  useEffect(() => {
+    if (!vehicle || !draftReady.current) return;
+    const t = setTimeout(() => {
+      saveDraft(vehicle.id, { visualChecks, mechanicalChecks, kmActual, obsGeneral, mandatoryPhotos, interiorPhotos });
+    }, 800);
+    return () => clearTimeout(t);
+  }, [visualChecks, mechanicalChecks, kmActual, obsGeneral, mandatoryPhotos, interiorPhotos]);
+
   const hasIssues = Object.values(visualChecks).some(c => !c.isGood) || Object.values(mechanicalChecks).some(c => !c.isGood);
 
   const handleCheck = (section: 'visual'|'mechanical', id: string, isGood: boolean) => {
     const setter = section === 'visual' ? setVisualChecks : setMechanicalChecks;
-    setter(prev => ({ ...prev, [id]: { ...prev[id], isGood } }));
+    // Un ítem OK no lleva foto: si se corrige de MALO a OK, se descarta la foto
+    setter(prev => ({ ...prev, [id]: { ...prev[id], isGood, ...(isGood ? { photo: '' } : {}) } }));
   };
 
   const handleObs = (section: 'visual'|'mechanical', id: string, observation: string) => {
@@ -86,33 +128,8 @@ const ChecklistForm: React.FC<ChecklistFormProps> =({ vehicle, setViewState, add
     let n = bstr.length;
     const u8arr = new Uint8Array(n);
     while (n--) u8arr[n] = bstr.charCodeAt(n);
+    if (u8arr.length === 0) throw new Error(INVALID_PHOTO_MSG);
     return new Blob([u8arr], { type: mime });
-  };
-
-  const compressImage = (dataUrl: string, maxWidth = 1024, quality = 0.6): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onerror = () => reject(new Error(INVALID_PHOTO_MSG));
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        if (!width || !height) {
-          reject(new Error(INVALID_PHOTO_MSG));
-          return;
-        }
-        if (width > maxWidth) {
-          height = Math.round((height * maxWidth) / width);
-          width = maxWidth;
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d')!;
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-      img.src = dataUrl;
-    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -123,6 +140,23 @@ const ChecklistForm: React.FC<ChecklistFormProps> =({ vehicle, setViewState, add
     if (kmActual === '' || kmActual === 0) {
       setKmTouched(true);
       addToast('Debe ingresar el kilometraje actual del vehículo', 'warning');
+      return;
+    }
+
+    // Cada ítem MALO necesita observación
+    const missingObs = [...Object.values(visualChecks), ...Object.values(mechanicalChecks)]
+      .filter(c => !c.isGood && !(c.observation || '').trim());
+    if (missingObs.length > 0) {
+      addToast(`Falta la observación en: ${missingObs.map(c => c.label).join(', ')}`, 'warning');
+      return;
+    }
+
+    if (Number(kmActual) < (vehicle.kilometraje || 0)) {
+      addToast(`El kilometraje no puede ser menor al último registrado (${(vehicle.kilometraje || 0).toLocaleString()} km)`, 'warning');
+      return;
+    }
+    const jump = Number(kmActual) - (vehicle.kilometraje || 0);
+    if (jump > KM_JUMP_CONFIRM && !window.confirm(`El kilometraje aumentó ${jump.toLocaleString()} km desde el último registro. ¿Es correcto?`)) {
       return;
     }
 
@@ -147,35 +181,10 @@ const ChecklistForm: React.FC<ChecklistFormProps> =({ vehicle, setViewState, add
     setSubmitting(true);
     let uploadedFileCount = 0;
     try {
-      // Comprimir todas las fotos antes de enviar
-      const compressPhoto = async (dataUrl: string): Promise<string> => {
-        if (dataUrl && dataUrl.startsWith('data:')) {
-          return await compressImage(dataUrl, 1024, 0.6);
-        }
-        return dataUrl;
-      };
-
-      // Comprimir fotos de checks
+      // Las fotos ya se comprimen al capturarlas (PhotoCaptureModal)
       const allChecks = { ...visualChecks, ...mechanicalChecks };
-      for (const [key, check] of Object.entries(allChecks)) {
-        if (check.photo && check.photo.startsWith('data:')) {
-          allChecks[key] = { ...check, photo: await compressPhoto(check.photo) };
-        }
-      }
-
-      // Comprimir fotos exteriores
-      const compressedMandatory = {
-        frontal: await compressPhoto(mandatoryPhotos.frontal),
-        trasera: await compressPhoto(mandatoryPhotos.trasera),
-        lateral_izquierdo: await compressPhoto(mandatoryPhotos.lateral_izquierdo),
-        lateral_derecho: await compressPhoto(mandatoryPhotos.lateral_derecho),
-      };
-
-      // Comprimir fotos interiores
-      const compressedInterior = {
-        interior_1: await compressPhoto(interiorPhotos.interior_1),
-        interior_2: await compressPhoto(interiorPhotos.interior_2),
-      };
+      const compressedMandatory = mandatoryPhotos;
+      const compressedInterior = interiorPhotos;
 
       // Limpiar fotos base64 del JSON para no exceder el límite de tamaño de campo
       // Las fotos ya viajan como archivos binarios en el FormData
@@ -183,7 +192,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> =({ vehicle, setViewState, add
         const cleaned: Record<string, any> = {};
         for (const [key, check] of Object.entries(checks)) {
           const { photo, ...rest } = check;
-          cleaned[key] = { ...rest, hasPhoto: !!photo };
+          cleaned[key] = { ...rest, hasPhoto: !check.isGood && !!photo };
         }
         return cleaned;
       };
@@ -202,7 +211,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> =({ vehicle, setViewState, add
 
       // Convert compressed check photos to files and append
       Object.entries(allChecks).forEach(([key, check]) => {
-        if (check.photo && check.photo.startsWith('data:')) {
+        if (!check.isGood && check.photo && check.photo.startsWith('data:')) {
           const blob = dataURLtoBlob(check.photo);
           formData.append('files', blob, `${key}.jpg`);
         }
@@ -238,9 +247,15 @@ const ChecklistForm: React.FC<ChecklistFormProps> =({ vehicle, setViewState, add
 
       // No pasar Content-Type manual: el navegador genera el boundary automáticamente
       // Timeout de 120s para subidas con muchas fotos en conexiones lentas
+      setUploadPct(0);
       await api.post('/checklists', formData, {
         timeout: 120000,
+        onUploadProgress: (ev) => {
+          if (ev.total) setUploadPct(Math.round((ev.loaded / ev.total) * 100));
+        },
       });
+      draftReady.current = false;
+      await clearDraft(vehicle.id);
 
       addToast('Checklist guardado exitosamente', 'success');
       setViewState('home');
@@ -253,7 +268,11 @@ const ChecklistForm: React.FC<ChecklistFormProps> =({ vehicle, setViewState, add
       } else if (!error?.response) {
         msg = 'No se pudo conectar con el servidor. Verifique su conexión a internet e intente nuevamente.';
       } else {
-        msg = error?.response?.data?.message || 'Error al guardar checklist.';
+        const st = error?.response?.status;
+        const m = error?.response?.data?.message;
+        msg = st === 413 ? 'Las fotos pesan demasiado para el servidor (413). Avise al administrador.'
+          : st === 401 ? 'Su sesión venció. Inicie sesión de nuevo; su checklist quedó guardado como borrador.'
+          : (Array.isArray(m) ? m.join('. ') : m) || 'Error al guardar checklist.';
       }
       addToast(typeof msg === 'string' ? msg : JSON.stringify(msg), 'error');
       
@@ -271,6 +290,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> =({ vehicle, setViewState, add
       });
     } finally {
       setSubmitting(false);
+      setUploadPct(null);
     }
   };
 
@@ -478,7 +498,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> =({ vehicle, setViewState, add
 
         <button type="submit" className="btn btn-primary w-100 py-3 fw-bold fs-5 shadow-lg mb-4" disabled={submitting}>
           {submitting ? (
-            <><span className="spinner-border spinner-border-sm me-2"></span> Guardando...</>
+            <><span className="spinner-border spinner-border-sm me-2"></span> {uploadPct !== null ? `Subiendo fotos… ${uploadPct}%` : 'Guardando...'}</>
           ) : (
             <><i className="bi bi-save me-2"></i> Guardar Checklist</>
           )}

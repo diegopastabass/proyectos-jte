@@ -25,6 +25,6 @@ export class ChecklistImage {
   @Column({ type: 'varchar', length: 100 })
   check_item: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 }

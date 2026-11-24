@@ -1,15 +1,50 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ViewState } from '../types';
-import { format } from 'date-fns';
-import { PDFDownloadLink } from '@react-pdf/renderer';
-import { ReportDocument } from './PDFChecklistReport';
+import api from '../api';
+import Loading from './Loading';
+import { formatDateTime, formatForFilename } from '../utils/dates';
+import { photoUrl } from '../utils/urls';
 
 interface ChecklistDetailProps {
   setViewState: (view: ViewState) => void;
   checklist: any;
+  onLoaded?: (checklist: any) => void;
 }
 
-const ChecklistDetail: React.FC<ChecklistDetailProps> = ({ setViewState, checklist }) => {
+const ChecklistDetail: React.FC<ChecklistDetailProps> = ({ setViewState, checklist, onLoaded }) => {
+  const [loading, setLoading] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
+
+  // Tras recargar la pestaña el checklist en memoria se pierde: se vuelve a pedir por id
+  useEffect(() => {
+    if (checklist) return;
+    let id: string | null = null;
+    try { id = sessionStorage.getItem('selected_checklist_id'); } catch { /* sin storage */ }
+    if (!id) return;
+    setLoading(true);
+    api.get(`/checklists/${id}`)
+      .then((r) => onLoaded?.(r.data))
+      .catch(() => undefined)
+      .finally(() => setLoading(false));
+  }, [checklist]);
+
+  const exportPdf = async () => {
+    setPdfBusy(true);
+    try {
+      const [{ pdf }, { saveAs }, { ReportDocument }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('file-saver'),
+        import('./PDFChecklistReport'),
+      ]);
+      const blob = await pdf(<ReportDocument data={checklist} />).toBlob();
+      saveAs(blob, `checklist_${checklist.vehicle?.patente || 'vehiculo'}_${formatForFilename(checklist.created_at)}.pdf`);
+    } finally {
+      setPdfBusy(false);
+    }
+  };
+
+  if (loading) return <Loading />;
+
   if (!checklist) {
     return (
       <div className="container-fluid py-4 fade-in">
@@ -21,13 +56,7 @@ const ChecklistDetail: React.FC<ChecklistDetailProps> = ({ setViewState, checkli
     );
   }
 
-  const formatDate = (dateStr: string) => {
-    try {
-      return format(new Date(dateStr), 'dd/MM/yyyy HH:mm');
-    } catch {
-      return dateStr;
-    }
-  };
+  const formatDate = formatDateTime;
 
   const renderCheckItems = (title: string, checks: Record<string, any>) => {
     if (!checks || typeof checks !== 'object') return null;
@@ -66,13 +95,9 @@ const ChecklistDetail: React.FC<ChecklistDetailProps> = ({ setViewState, checkli
         <button className="btn btn-link text-secondary text-decoration-none p-0" onClick={() => setViewState('checklist-list')}>
           <i className="bi bi-arrow-left me-1"></i> Volver
         </button>
-        <PDFDownloadLink 
-          document={<ReportDocument data={checklist} />} 
-          fileName={`checklist_${checklist.vehicle?.patente || 'vehiculo'}_${formatDate(checklist.created_at).replace('/', '')}.pdf`}
-          className="btn btn-outline-danger"
-        >
-          <i className="bi bi-file-pdf me-1"></i> Exportar PDF
-        </PDFDownloadLink>
+        <button className="btn btn-outline-danger" onClick={exportPdf} disabled={pdfBusy}>
+          <i className="bi bi-file-pdf me-1"></i> {pdfBusy ? 'Generando…' : 'Exportar PDF'}
+        </button>
       </div>
 
       <div className="glass-card p-4">
@@ -131,7 +156,8 @@ const ChecklistDetail: React.FC<ChecklistDetailProps> = ({ setViewState, checkli
               {checklist.images.map((img: any, idx: number) => (
                 <div key={idx} className="col-6 col-md-3">
                   <img
-                    src={`${import.meta.env.VITE_API_URL || 'https://app.jteanalytics.cl/checklist-vehiculos/'}/uploads/${img.image_path}`}
+                    src={photoUrl(img.image_path)}
+                    loading="lazy"
                     alt={img.description || `Foto ${idx + 1}`}
                     className="img-fluid rounded border border-secondary"
                     style={{ maxHeight: '200px', objectFit: 'cover', width: '100%' }}

@@ -1,22 +1,27 @@
-import { IsString, IsInt, IsBoolean, IsOptional, IsObject } from 'class-validator';
+import { IsBoolean, IsInt, IsObject, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
 
 export class CreateChecklistDto {
-  @IsString()
+  @IsUUID()
   vehicle_id: string;
 
   @IsInt()
+  @Min(0)
+  @Max(2_000_000)
   kilometraje_actual: number;
 
   @IsObject()
-  visual_checks: any;
+  visual_checks: Record<string, any>;
 
   @IsObject()
-  mechanical_checks: any;
+  mechanical_checks: Record<string, any>;
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   observaciones_generales?: string;
 
+  // Informativo: el servidor lo recalcula a partir de los ítems
+  @IsOptional()
   @IsBoolean()
-  has_issues: boolean;
+  has_issues?: boolean;
 }

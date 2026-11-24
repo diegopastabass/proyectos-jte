@@ -32,9 +32,11 @@ import {
   type LecturaApi,
 } from '../importacion/importacion.service';
 import { MotorModule, MotorService } from '../motor/motor.module';
+import { normalizarRut } from '../common/rut';
 import {
   cartolasDesdeBancoChile,
   cartolasDesdeBancoEstado,
+  conexionDeEmpresa,
   type DocumentoRcvEmisso,
   type MovimientoBancoChile,
   type MovimientoBancoEstado,
@@ -42,7 +44,12 @@ import {
   rcvDesdeEmisso,
   type SincronizacionRcv,
 } from './conectores';
-import { EmissoClient, ErrorEmisso } from './emisso.client';
+import {
+  EmissoClient,
+  ErrorEmisso,
+  origenesPermitidos,
+  type SesionConexion,
+} from './emisso.client';
 
 /** Lo que se pide a Emisso al conectar cada fuente. */
 const SISTEMAS: Record<
@@ -103,14 +110,19 @@ export class IngestaService {
     private readonly motor: MotorService,
     config: ConfigService,
   ) {
-    this.origenes = (
-      config.get<string>('EMISSO_ORIGENES') ||
-      config.get<string>('CORS_ORIGINS') ||
-      ''
-    )
-      .split(',')
-      .map((o) => o.trim())
-      .filter((o) => o.startsWith('https://'));
+    const variable = config.get<string>('EMISSO_ORIGENES')
+      ? 'EMISSO_ORIGENES'
+      : 'CORS_ORIGINS';
+    const { origenes, descartados } = origenesPermitidos(
+      config.get<string>(variable),
+    );
+    this.origenes = origenes;
+    // Desde CORS_ORIGINS es normal que sobren (http de desarrollo): solo se avisa en la propia.
+    if (descartados.length && variable === 'EMISSO_ORIGENES')
+      this.logger.warn(
+        `EMISSO_ORIGENES: se ignoran ${descartados.join(', ')} ` +
+          '(Emisso acepta hasta 5 orígenes https, sin ruta ni comodines)',
+      );
   }
 
   /** Las tres fuentes de la empresa, con lo guardado aquí y el estado en vivo de Emisso. */
@@ -238,8 +250,10 @@ export class IngestaService {
   }
 
   /**
-   * Comprueba en Emisso que el enlace se completó y guarda la conexión. No se confía en lo que
+   * Comprueba en Emisso que la fuente quedó conectada y guarda la conexión. No se confía en lo que
    * diga el navegador: se busca la sesión emitida y se valida que el RUT sea el de la empresa.
+   * Si esa sesión no se consumió (la clave se entregó en otro enlace o directo en el panel de
+   * Emisso), se adopta la conexión de Emisso de esta fuente cuyo RUT es el de la empresa.
    */
   async confirmar(
     empresaId: number,
@@ -248,31 +262,61 @@ export class IngestaService {
   ) {
     const empresa = await this.empresa(empresaId);
     const repo = this.ds.getRepository(ConexionExterna);
-    const fila = await repo.findOneBy({ empresaId, sistema });
-    if (!fila?.sesionId)
-      throw new BadRequestException('Primero genere el enlace de conexión');
+    const previa = await repo.findOneBy({ empresaId, sistema });
 
-    const sesiones = await this.llamar('conexiones:read', () =>
-      this.emisso.listarSesiones(),
-    );
-    const sesion = sesiones.find((s) => s.id === fila.sesionId);
-    const connectionId =
+    let sesion: SesionConexion | undefined;
+    if (previa?.sesionId) {
+      const sesiones = await this.llamar('conexiones:read', () =>
+        this.emisso.listarSesiones(),
+      );
+      sesion = sesiones.find((s) => s.id === previa.sesionId);
+    }
+    const desdeSesion =
       sesion?.status === 'consumed'
         ? (sesion.resulting_connection_id ?? sesion.connection_id)
         : null;
-    if (!connectionId)
-      throw new BadRequestException(
-        sesion?.status === 'expired' || sesion?.status === 'revoked'
-          ? 'El enlace venció: genere uno nuevo'
-          : 'Emisso todavía no recibe la clave. Complete el formulario y vuelva a intentar.',
-      );
 
-    const conexion = (
-      await this.llamar('conexiones:read', () => this.emisso.listarConexiones())
-    ).find((c) => c.id === connectionId);
-    const rut = conexion?.empresa_rut ?? null;
-    if (rut && rut !== empresa.rut) {
-      fila.ultimoError = `La clave entregada es de la empresa ${rut}, no de ${empresa.rut}`;
+    const conexiones = await this.llamar('conexiones:read', () =>
+      this.emisso.listarConexiones(),
+    );
+    let conexion = desdeSesion
+      ? conexiones.find((c) => c.id === desdeSesion)
+      : undefined;
+    if (!desdeSesion) {
+      const ocupadas = new Set(
+        (await repo.find())
+          .filter((f) => f.connectionId && f.id !== previa?.id)
+          .map((f) => f.connectionId as string),
+      );
+      conexion =
+        conexionDeEmpresa(conexiones, sistema, empresa.rut, ocupadas) ??
+        undefined;
+      if (!conexion)
+        throw new BadRequestException(
+          !previa?.sesionId
+            ? 'Primero genere el enlace de conexión'
+            : sesion?.status === 'expired' || sesion?.status === 'revoked'
+              ? 'El enlace venció: genere uno nuevo'
+              : 'Emisso todavía no recibe la clave. Complete el formulario y vuelva a intentar.',
+        );
+    }
+    const connectionId = (desdeSesion ?? conexion?.id) as string;
+
+    const fila =
+      previa ??
+      repo.create({
+        empresaId,
+        sistema,
+        proveedor: 'emisso',
+        estado: 'pendiente',
+        actualizadoEn: new Date(),
+      });
+    const rut = conexion?.empresa_rut
+      ? (normalizarRut(conexion.empresa_rut) ?? conexion.empresa_rut)
+      : null;
+    const rutEmpresa = normalizarRut(empresa.rut) ?? empresa.rut;
+    if (rut && rut !== rutEmpresa) {
+      fila.ultimoError = `La clave entregada es de la empresa ${rut}, no de ${rutEmpresa}`;
       fila.actualizadoEn = new Date();
       await repo.save(fila);
       throw new BadRequestException(fila.ultimoError);
@@ -295,7 +339,7 @@ export class IngestaService {
       accion: 'conexion.confirmar',
       entidad: 'conexion_externa',
       entidadId: fila.id,
-      detalle: { sistema, connectionId },
+      detalle: { sistema, connectionId, adoptada: !desdeSesion },
     });
     return fila;
   }

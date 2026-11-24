@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Logger, ParseUUIDPipe } from '@nestjs/common';
 import { VehiclesService } from './vehicles.service';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
@@ -36,7 +36,7 @@ export class VehiclesController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
     try {
       return await this.vehiclesService.findOne(id);
     } catch (error) {
@@ -48,7 +48,7 @@ export class VehiclesController {
   @UseGuards(RolesGuard)
   @Roles(true)
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateVehicleDto: UpdateVehicleDto) {
+  async update(@Param('id', ParseUUIDPipe) id: string, @Body() updateVehicleDto: UpdateVehicleDto) {
     try {
       return await this.vehiclesService.update(id, updateVehicleDto);
     } catch (error) {
@@ -60,7 +60,7 @@ export class VehiclesController {
   @UseGuards(RolesGuard)
   @Roles(true)
   @Patch(':id/reset-mantencion')
-  async resetMantencion(@Param('id') id: string) {
+  async resetMantencion(@Param('id', ParseUUIDPipe) id: string) {
     try {
       return await this.vehiclesService.resetMantencion(id);
     } catch (error) {
@@ -72,7 +72,7 @@ export class VehiclesController {
   @UseGuards(RolesGuard)
   @Roles(true)
   @Delete(':id')
-  async remove(@Param('id') id: string) {
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
     try {
       return await this.vehiclesService.remove(id);
     } catch (error) {

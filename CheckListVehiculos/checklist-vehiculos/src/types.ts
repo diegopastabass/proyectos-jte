@@ -40,6 +40,17 @@ export interface Checklist {
   observaciones_generales?: string;
 }
 
+export interface Paginated<T> {
+  items: T[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+// Mantención cada 10.000 km; avisa desde los 8.000
+export const MAINT_INTERVAL_KM = 10000;
+export const MAINT_WARNING_KM = 8000;
+
 export type ViewState =
   | "login"
   | "register"

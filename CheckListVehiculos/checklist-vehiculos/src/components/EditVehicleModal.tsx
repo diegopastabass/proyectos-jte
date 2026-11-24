@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Vehicle } from "../types";
+import { Vehicle, MAINT_INTERVAL_KM } from "../types";
 
 interface EditVehicleModalProps {
   show: boolean;
   vehicle: Vehicle | null;
   onClose: () => void;
-  onSave: (vehicle: Partial<Vehicle>) => void;
+  onSave: (vehicle: Partial<Vehicle>) => Promise<unknown> | void;
 }
 
 const EditVehicleModal: React.FC<EditVehicleModalProps> = ({
@@ -18,7 +18,6 @@ const EditVehicleModal: React.FC<EditVehicleModalProps> = ({
 
   useEffect(() => {
     if (vehicle) {
-      console.log("Vehicle data received in modal:", vehicle);
       setFormData(vehicle);
     } else {
       setFormData({
@@ -53,14 +52,17 @@ const EditVehicleModal: React.FC<EditVehicleModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Remove empty string values for optional fields so they don't fail backend validation
-    const cleanedData: Partial<Vehicle> = {};
+    const dateKeys = ["fecha_venc_revision_tecnica", "fecha_venc_circulacion", "fecha_prox_mantencion"];
+    const cleanedData: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(formData)) {
-      if (value !== "" && value !== null && value !== undefined) {
-        (cleanedData as any)[key] = value;
+      if (dateKeys.includes(key)) {
+        // Fecha vacía = borrar la fecha (el servidor la guarda como null)
+        cleanedData[key] = value ? value : null;
+      } else if (value !== "" && value !== null && value !== undefined) {
+        cleanedData[key] = value;
       }
     }
-    onSave(cleanedData);
+    onSave(cleanedData as Partial<Vehicle>);
   };
 
   return (
@@ -163,7 +165,7 @@ const EditVehicleModal: React.FC<EditVehicleModalProps> = ({
                     type="text"
                     className="form-control bg-light"
                     readOnly
-                    value={`${(10000 - ((formData.kilometraje ?? 0) - (formData.km_ultima_mantencion ?? 0))).toLocaleString()} km`}
+                    value={`${(MAINT_INTERVAL_KM - ((formData.kilometraje ?? 0) - (formData.km_ultima_mantencion ?? 0))).toLocaleString()} km`}
                   />
                 </div>
               </div>

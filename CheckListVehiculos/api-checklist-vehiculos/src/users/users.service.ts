@@ -17,6 +17,7 @@ export class UsersService {
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     try {
+      createUserDto.email = createUserDto.email.trim().toLowerCase();
       const existing = await this.usersRepository.findOne({ where: { email: createUserDto.email } });
       if (existing) {
         throw new ConflictException('Email already in use');
@@ -33,7 +34,9 @@ export class UsersService {
         is_admin: false,
       });
 
-      return await this.usersRepository.save(user);
+      const saved = await this.usersRepository.save(user);
+      delete (saved as Partial<User>).password_hash;
+      return saved;
     } catch (error) {
       this.logger.error(`Error in create: ${error.message}`, error.stack);
       throw error;
@@ -62,7 +65,12 @@ export class UsersService {
 
   async findByEmail(email: string): Promise<User> {
     try {
-      return await this.usersRepository.findOne({ where: { email } });
+      // password_hash tiene select:false; solo el login lo necesita
+      return await this.usersRepository
+        .createQueryBuilder('user')
+        .addSelect('user.password_hash')
+        .where('LOWER(user.email) = LOWER(:email)', { email: email.trim() })
+        .getOne();
     } catch (error) {
       this.logger.error(`Error in findByEmail: ${error.message}`, error.stack);
       throw error;
@@ -79,11 +87,17 @@ export class UsersService {
       }
       
       if (updateUserDto.name !== undefined) user.name = updateUserDto.name;
-      if (updateUserDto.email !== undefined) user.email = updateUserDto.email;
+      if (updateUserDto.email !== undefined && updateUserDto.email !== user.email) {
+        const taken = await this.usersRepository.findOne({ where: { email: updateUserDto.email } });
+        if (taken && taken.id !== id) throw new ConflictException('Email already in use');
+        user.email = updateUserDto.email;
+      }
       if (updateUserDto.is_active !== undefined) user.is_active = updateUserDto.is_active;
       if (updateUserDto.is_admin !== undefined) user.is_admin = updateUserDto.is_admin;
       
-      return await this.usersRepository.save(user);
+      const saved = await this.usersRepository.save(user);
+      delete (saved as Partial<User>).password_hash;
+      return saved;
     } catch (error) {
       this.logger.error(`Error in update: ${error.message}`, error.stack);
       throw error;

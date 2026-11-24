@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Logger, Request, ParseUUIDPipe, ForbiddenException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -12,6 +12,8 @@ export class UsersController {
 
   constructor(private readonly usersService: UsersService) {}
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(true) // el registro público es /auth/register; esta ruta es para administradores
   @Post()
   async create(@Body() createUserDto: CreateUserDto) {
     try {
@@ -36,8 +38,11 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  async findOne(@Param('id') id: string) {
+  async findOne(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     try {
+      if (!req.user.is_admin && req.user.userId !== id) {
+        throw new ForbiddenException('No autorizado');
+      }
       return await this.usersService.findOne(id);
     } catch (error) {
       this.logger.error(`Error finding user ${id}: ${error.message}`, error.stack);
@@ -48,7 +53,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(true) // require admin
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+  async update(@Param('id', ParseUUIDPipe) id: string, @Body() updateUserDto: UpdateUserDto) {
     try {
       return await this.usersService.update(id, updateUserDto);
     } catch (error) {
@@ -60,7 +65,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(true) // require admin
   @Delete(':id')
-  async remove(@Param('id') id: string) {
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
     try {
       return await this.usersService.remove(id);
     } catch (error) {

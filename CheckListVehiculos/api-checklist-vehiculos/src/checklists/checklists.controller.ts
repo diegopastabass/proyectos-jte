@@ -1,10 +1,25 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Request, UseInterceptors, UploadedFiles, BadRequestException, Delete, Logger } from '@nestjs/common';
-import { ChecklistsService } from './checklists.service';
-import { CreateChecklistDto } from './dto/create-checklist.dto';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import {
+  Controller, Get, Post, Body, Param, Query, UseGuards, Request, UseInterceptors, UploadedFiles,
+  BadRequestException, Delete, Logger, ParseIntPipe,
+} from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { randomUUID } from 'crypto';
+import { unlink } from 'fs/promises';
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
+import { ChecklistsService } from './checklists.service';
+import { CreateChecklistDto } from './dto/create-checklist.dto';
+import { QueryChecklistsDto } from './dto/query-checklists.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+
+const ALLOWED_MIME: Record<string, string> = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+};
 
 @UseGuards(JwtAuthGuard)
 @Controller('checklists')
@@ -14,65 +29,61 @@ export class ChecklistsController {
   constructor(private readonly checklistsService: ChecklistsService) {}
 
   @Post()
-  @UseInterceptors(FilesInterceptor('files', 30, {
+  @UseInterceptors(FilesInterceptor('files', 26, {
     storage: diskStorage({
       destination: './uploads',
-      filename: (req, file, callback) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        const ext = extname(file.originalname);
-        callback(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
-      },
+      // El nombre y la extensión los decide el servidor, nunca el cliente
+      filename: (_req, file, callback) => callback(null, `${randomUUID()}${ALLOWED_MIME[file.mimetype] ?? '.jpg'}`),
     }),
+    fileFilter: (_req, file, callback) => {
+      if (ALLOWED_MIME[file.mimetype]) return callback(null, true);
+      callback(new BadRequestException('Solo se permiten imágenes JPG, PNG o WebP'), false);
+    },
     limits: {
-      fieldSize: 10 * 1024 * 1024, // 10MB para campos de texto (JSON data)
-      fileSize: 5 * 1024 * 1024,   // 5MB máximo por archivo individual
+      fieldSize: 1 * 1024 * 1024, // el campo "data" es solo texto
+      fileSize: 5 * 1024 * 1024,
     },
   }))
-  async create(@Request() req, @Body('data') data: string, @UploadedFiles() files: Express.Multer.File[]) {
+  async create(@Request() req, @Body('data') data: string, @UploadedFiles() files: Express.Multer.File[] = []) {
     try {
       if (!data) {
         throw new BadRequestException('Checklist data is required');
       }
-      let createChecklistDto: CreateChecklistDto;
+      let json: unknown;
       try {
-        createChecklistDto = JSON.parse(data);
-      } catch (e) {
+        json = JSON.parse(data);
+      } catch {
         throw new BadRequestException('Invalid JSON data');
       }
-      return await this.checklistsService.create(req.user.userId, createChecklistDto, files);
+      // ValidationPipe no actúa sobre un JSON dentro de un campo multipart: se valida aquí
+      const dto = plainToInstance(CreateChecklistDto, json);
+      const errors = await validate(dto, { whitelist: true, forbidUnknownValues: true });
+      if (errors.length) {
+        throw new BadRequestException(errors.flatMap(e => Object.values(e.constraints ?? {})));
+      }
+      return await this.checklistsService.create(req.user.userId, dto, files);
     } catch (error) {
+      // Si algo falla, las fotos ya escritas por Multer no deben quedar huérfanas
+      await Promise.all((files ?? []).map(f => unlink(f.path).catch(() => undefined)));
       this.logger.error(`Error creating checklist: ${error.message}`, error.stack);
       throw error;
     }
   }
 
   @Get()
-  async findAll(@Request() req) {
-    try {
-      return await this.checklistsService.findAll(req.user);
-    } catch (error) {
-      this.logger.error(`Error finding all checklists: ${error.message}`, error.stack);
-      throw error;
-    }
+  async findAll(@Request() req, @Query() query: QueryChecklistsDto) {
+    return this.checklistsService.findAll(req.user, query);
   }
 
   @Get(':id')
-  async findOne(@Request() req, @Param('id') id: string) {
-    try {
-      return await this.checklistsService.findOne(id, req.user);
-    } catch (error) {
-      this.logger.error(`Error finding checklist ${id}: ${error.message}`, error.stack);
-      throw error;
-    }
+  async findOne(@Request() req, @Param('id', ParseIntPipe) id: number) {
+    return this.checklistsService.findOne(String(id), req.user);
   }
 
+  @UseGuards(RolesGuard)
+  @Roles(true) // los checklists son registro de auditoría: solo un administrador los elimina
   @Delete(':id')
-  async remove(@Request() req, @Param('id') id: string) {
-    try {
-      return await this.checklistsService.remove(id, req.user);
-    } catch (error) {
-      this.logger.error(`Error removing checklist ${id}: ${error.message}`, error.stack);
-      throw error;
-    }
+  async remove(@Request() req, @Param('id', ParseIntPipe) id: number) {
+    return this.checklistsService.remove(String(id), req.user);
   }
 }

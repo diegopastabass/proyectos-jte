@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import * as bcrypt from 'bcrypt';
+import { ROL_PENDIENTE } from '../auth/roles';
 
 @Injectable()
 export class UsersService {
@@ -22,7 +23,7 @@ export class UsersService {
       username,
       email,
       password_hash,
-      role: role ?? '1',
+      role: role ?? ROL_PENDIENTE,
     });
 
     return await this.repo.save(user);

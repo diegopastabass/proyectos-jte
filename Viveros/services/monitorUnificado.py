@@ -89,6 +89,7 @@ RESPALDO_ENV = {
     ("calor", "hr"): ("HUM_CAM_CALOR", None, "MONITOR_HUM_CAM_CALOR", 80.0, None),
     ("exterior", "t"): (None, "TEMP_AMB", "MONITOR_TEMP_AMB", None, 23.0),
     ("exterior", "hr"): ("HUM_AMB", None, "MONITOR_HUM_AMB", 40.0, None),
+    ("exterior", "vpd"): (None, "VPD_AMB", "MONITOR_VPD_AMB", None, 2.0),
 }
 
 
@@ -270,7 +271,7 @@ def lectura(datos, zona, var):
     return valor, info["time"]
 
 
-def mensaje_alarma(tipo, zona, var, valor, u, minmax, desde=None):
+def mensaje_alarma(tipo, zona, var, valor, u, minmax, desde=None, condiciones=None):
     unidad, dec = UNIDAD[var], DECIMALES[var]
     nombre = f"{NOMBRE_VARIABLE[var]} {ZONAS[zona]['nombre']}"
     if tipo == "alerta":
@@ -291,6 +292,9 @@ def mensaje_alarma(tipo, zona, var, valor, u, minmax, desde=None):
             f"Valor actual: {numero(valor, dec)} {unidad}",
         ]
     lineas.append(f"Rango permitido: {texto_rango(u, var)}")
+    if condiciones:  # VPD: la T y la HR con que se calculó
+        cond = " · ".join(f"{NOMBRE_VARIABLE[v]}: {numero(x, DECIMALES[v])} {UNIDAD[v]}" for v, x in condiciones.items())
+        lineas.append(f"Condiciones: {cond}")
     lo, hi = VALIDOS[var]
     if minmax and var != "vpd" and lo <= minmax["min"] <= hi and lo <= minmax["max"] <= hi:
         lineas.append(f"Hoy: mínimo {numero(minmax['min'], dec)} {unidad} · máximo {numero(minmax['max'], dec)} {unidad}")
@@ -320,20 +324,24 @@ def evaluar_alarmas(datos, minmax, umbrales, estado, envio, p):
                 continue
             sensor_mm = (minmax or {}).get(ZONAS[zona][var]) if var != "vpd" else None
 
+            condiciones = None
+            if var == "vpd":
+                condiciones = {v: lectura(datos, zona, v)[0] for v in ("t", "hr")}
+                condiciones = {v: x for v, x in condiciones.items() if x is not None}
             fuera = clasificar(valor, u) != "ok"
             if not previo and fuera:
-                if envio.enviar(mensaje_alarma("alerta", zona, var, valor, u, sensor_mm)):
+                if envio.enviar(mensaje_alarma("alerta", zona, var, valor, u, sensor_mm, condiciones=condiciones)):
                     t = ahora().isoformat()
                     estado["alarmas"][clave] = {"desde": t, "ultimo_aviso": t}
                 logger.warning(f"🚨 {clave}: {valor} fuera de {texto_rango(u, var)}")
             elif previo and fuera:
                 ultimo = parse_iso(previo["ultimo_aviso"])
                 if (ahora() - ultimo).total_seconds() >= p["repetir_h"] * 3600:
-                    if envio.enviar(mensaje_alarma("recordatorio", zona, var, valor, u, sensor_mm, parse_iso(previo["desde"]))):
+                    if envio.enviar(mensaje_alarma("recordatorio", zona, var, valor, u, sensor_mm, parse_iso(previo["desde"]), condiciones)):
                         previo["ultimo_aviso"] = ahora().isoformat()
                 logger.info(f"{clave}: sigue fuera ({valor}).")
             elif previo and recuperado(valor, u, var):
-                if envio.enviar(mensaje_alarma("normalizado", zona, var, valor, u, sensor_mm, parse_iso(previo["desde"]))):
+                if envio.enviar(mensaje_alarma("normalizado", zona, var, valor, u, sensor_mm, parse_iso(previo["desde"]), condiciones)):
                     estado["alarmas"].pop(clave, None)
                 logger.info(f"✅ {clave}: normalizado ({valor}).")
             else:

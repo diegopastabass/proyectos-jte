@@ -31,5 +31,10 @@ INSERT INTO viveros_umbrales (zona, variable, min, max, alerta) VALUES
     ('calor',    'vpd', 0.8,  1.2,  false),
     ('exterior', 't',   NULL, 23,   false),
     ('exterior', 'hr',  40,   NULL, false),
-    ('exterior', 'vpd', 0.8,  1.2,  false)
+    ('exterior', 'vpd', NULL, 2,    true)
 ON CONFLICT (zona, variable) DO NOTHING;
+
+-- VPD ambiental (exterior): normal bajo 2 kPa; sobre eso avisa por WhatsApp con la T y HR del momento.
+-- El INSERT anterior no pisa filas existentes, por eso se actualiza aparte.
+UPDATE viveros_umbrales SET min = NULL, max = 2, alerta = true, actualizado = CURRENT_TIMESTAMP
+ WHERE zona = 'exterior' AND variable = 'vpd';

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Image, PDFViewer } from '@react-pdf/renderer';
-import { format } from 'date-fns';
+import { formatDateTime } from '../utils/dates';
+import { photoUrl } from '../utils/urls';
 import logo from '../assets/logoJte.png';
 
 const COLORS = {
@@ -45,16 +46,7 @@ const styles = StyleSheet.create({
   footer: { position: 'absolute', bottom: 30, left: 30, right: 30, textAlign: 'center', fontSize: 8, color: 'grey' }
 });
 
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return '-';
-  try {
-    return format(new Date(dateStr), 'dd/MM/yyyy HH:mm');
-  } catch {
-    return dateStr;
-  }
-};
-
-const BASE_IMAGE_URL = import.meta.env.VITE_API_URL || 'https://app.jteanalytics.cl/checklist-vehiculos/';
+const formatDate = formatDateTime;
 
 export const ReportDocument = ({ data }: { data: any }) => {
   const getChecksArray = (checksObj: any, typeName: string) => {
@@ -127,7 +119,7 @@ export const ReportDocument = ({ data }: { data: any }) => {
             <View style={styles.photoGrid}>
               {data.images.map((img: any, idx: number) => (
                 <View key={idx} style={styles.photoCard} wrap={false}>
-                  <Image src={`${BASE_IMAGE_URL.replace(/\/$/, '')}/uploads/${img.image_path}`} style={styles.image} />
+                  <Image src={photoUrl(img.image_path)} style={styles.image} />
                   <Text style={styles.photoLabel}>{img.description || `Foto ${idx + 1}`}</Text>
                 </View>
               ))}

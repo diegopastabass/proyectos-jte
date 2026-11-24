@@ -406,3 +406,40 @@ function glosa(texto: string | null): string {
 function vacioANull(texto: string | null): string | null {
   return texto?.trim() || null;
 }
+
+// ------------------------------------------------------------ Conexiones
+
+/** Lo que se usa de una conexión de `GET /v1/connections`. */
+export interface ConexionCandidata {
+  id: string;
+  connector: string;
+  display_name: string | null;
+  empresa_rut: string | null;
+}
+
+/**
+ * Conexión ya creada en Emisso para esta fuente y esta empresa, aunque no venga del enlace de la
+ * app (por ejemplo, creada a mano en el panel de connect.emisso.ai). Se reconoce por el conector y
+ * el RUT; si Emisso no informa RUT, por el nombre que pone la app (`<rut> <razón social>`).
+ * `ocupadas` son las conexiones ya asociadas a otra empresa: nunca se adoptan.
+ */
+export function conexionDeEmpresa<T extends ConexionCandidata>(
+  conexiones: T[],
+  conector: string,
+  rutEmpresa: string,
+  ocupadas: ReadonlySet<string> = new Set(),
+): T | null {
+  const rut = normalizarRut(rutEmpresa) ?? rutEmpresa;
+  const delConector = conexiones.filter(
+    (c) => c.connector === conector && !ocupadas.has(c.id),
+  );
+  return (
+    delConector.find((c) => normalizarRut(c.empresa_rut) === rut) ??
+    delConector.find(
+      (c) =>
+        !c.empresa_rut &&
+        normalizarRut(c.display_name?.split(/\s+/)[0] ?? null) === rut,
+    ) ??
+    null
+  );
+}

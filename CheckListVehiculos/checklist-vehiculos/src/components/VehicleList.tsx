@@ -90,10 +90,17 @@ const VehicleList: React.FC<VehicleListProps> = ({
         setVehicles([...vehicles, res.data as Vehicle]);
         addToast("Vehículo creado", "success");
       }
-    } catch (error) {
-      addToast("Error al guardar vehículo", "error");
-    } finally {
       setShowEditModal(false);
+    } catch (error: any) {
+      // El modal queda abierto para no perder lo escrito
+      const msg = error?.response?.data?.message;
+      const text = Array.isArray(msg) ? msg.join(". ") : msg;
+      addToast(
+        error?.response?.status === 409
+          ? "Ya existe un vehículo con esa patente"
+          : text || "Error al guardar vehículo",
+        "error",
+      );
     }
   };
 

@@ -16,7 +16,7 @@ export class User {
   @Column({ unique: true })
   email: string;
 
-  @Column({ type: 'char', length: 1, default: '1' })
+  @Column({ type: 'varchar', length: 4, default: '1000' })
   role: string;
 
   @Column()

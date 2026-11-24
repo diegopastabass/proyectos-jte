@@ -53,6 +53,37 @@ export interface ConexionEmisso {
 }
 
 /**
+ * Deja la lista de orígenes como la exige Emisso en `allowed_origins`: hasta 5 orígenes https
+ * exactos, sin ruta, sin barra final y sin comodines. Corrige lo que se arregla solo
+ * ("https://app.cl/" o "https://app.cl/login" → "https://app.cl") y descarta el resto
+ * (http, comodines, texto que no es URL), informándolo en `descartados`.
+ */
+export function origenesPermitidos(texto: string | null | undefined): {
+  origenes: string[];
+  descartados: string[];
+} {
+  const origenes: string[] = [];
+  const descartados: string[] = [];
+  for (const crudo of (texto ?? '').split(/[,\s]+/)) {
+    const valor = crudo.trim().replace(/^["']|["']$/g, '');
+    if (!valor) continue;
+    let origen: string | null = null;
+    try {
+      const url = new URL(valor);
+      if (url.protocol === 'https:' && !valor.includes('*'))
+        origen = url.origin;
+    } catch {
+      // No es URL: se descarta.
+    }
+    if (!origen) descartados.push(valor);
+    else if (origenes.includes(origen)) continue;
+    else if (origenes.length >= 5) descartados.push(valor);
+    else origenes.push(origen);
+  }
+  return { origenes, descartados };
+}
+
+/**
  * Cliente mínimo de la API REST de Emisso (https://connect.emisso.ai/docs/operar/api-control).
  * Toda respuesta viene como `{ data }` y todo error como `{ error: { code, message } }`.
  */

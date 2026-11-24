@@ -1,8 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { RegisterDto } from './dto/register.dto';
+import { ROL_PENDIENTE } from './roles';
 
 @Injectable()
 export class AuthService {
@@ -13,7 +14,11 @@ export class AuthService {
 
   async register(registerDto: RegisterDto) {
     const { username, email, password } = registerDto;
-    return this.usersService.create({ username, email, password, role: '1' });
+    if (await this.usersService.findByEmail(email)) {
+      throw new ConflictException('Ya existe un usuario con ese correo');
+    }
+    // El rol nunca viene del cliente: todo registro nuevo queda pendiente de aprobación.
+    await this.usersService.create({ username, email, password, role: ROL_PENDIENTE });
   }
 
   async validateUser(email: string, pass: string) {
@@ -28,6 +33,9 @@ export class AuthService {
   }
 
   async login(user: any) {
+    if (user.role === ROL_PENDIENTE) {
+      throw new ForbiddenException('Tu cuenta aún no está habilitada. Un administrador debe aprobarla.');
+    }
     const payload = { sub: user.id, email: user.email, role: user.role };
     return {
       access_token: this.jwtService.sign(payload),

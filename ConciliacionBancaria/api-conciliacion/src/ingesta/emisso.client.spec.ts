@@ -1,5 +1,5 @@
 import { ConfigService } from '@nestjs/config';
-import { EmissoClient, ErrorEmisso } from './emisso.client';
+import { EmissoClient, ErrorEmisso, origenesPermitidos } from './emisso.client';
 
 type Respuesta = {
   status: number;
@@ -144,5 +144,33 @@ describe('EmissoClient', () => {
       code: 'no_configurado',
     });
     expect(espia).not.toHaveBeenCalled();
+  });
+});
+
+describe('origenesPermitidos', () => {
+  it('quita barra final y ruta, y no repite', () => {
+    expect(
+      origenesPermitidos(
+        'https://app.jteanalytics.cl/, https://app.jteanalytics.cl/conciliacion',
+      ),
+    ).toEqual({ origenes: ['https://app.jteanalytics.cl'], descartados: [] });
+  });
+
+  it('descarta http, comodines y texto que no es URL', () => {
+    expect(
+      origenesPermitidos('http://localhost:5173,https://*.jte.cl,app.cl'),
+    ).toEqual({
+      origenes: [],
+      descartados: ['http://localhost:5173', 'https://*.jte.cl', 'app.cl'],
+    });
+  });
+
+  it('acepta comillas y espacios, y corta en 5', () => {
+    const r = origenesPermitidos(
+      '"https://a.cl" https://b.cl,https://c.cl,https://d.cl,https://e.cl,https://f.cl',
+    );
+    expect(r.origenes).toHaveLength(5);
+    expect(r.origenes[0]).toBe('https://a.cl');
+    expect(r.descartados).toEqual(['https://f.cl']);
   });
 });

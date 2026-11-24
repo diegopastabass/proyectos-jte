@@ -111,5 +111,5 @@ export const UMBRALES_DEFECTO: Umbral[] = [
   { zona: 'calor', variable: 'vpd', min: 0.8, max: 1.2, alerta: false },
   { zona: 'exterior', variable: 't', min: null, max: 23, alerta: false },
   { zona: 'exterior', variable: 'hr', min: 40, max: null, alerta: false },
-  { zona: 'exterior', variable: 'vpd', min: 0.8, max: 1.2, alerta: false },
+  { zona: 'exterior', variable: 'vpd', min: null, max: 2, alerta: true },
 ];

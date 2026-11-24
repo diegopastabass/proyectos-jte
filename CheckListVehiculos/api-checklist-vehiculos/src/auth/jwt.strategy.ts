@@ -22,6 +22,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!user || !user.is_active) {
       throw new UnauthorizedException('User is not active or deleted');
     }
-    return { userId: payload.sub, email: payload.email, is_admin: payload.is_admin };
+    // El rol se toma de la BD, no del token: quitar el rol a alguien surte efecto de inmediato
+    return { userId: user.id, email: user.email, is_admin: user.is_admin };
   }
 }

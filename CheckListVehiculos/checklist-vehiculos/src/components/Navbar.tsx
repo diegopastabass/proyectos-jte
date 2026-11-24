@@ -35,7 +35,7 @@ const Navbar: React.FC<NavbarProps> = ({
           </span>
         </a>
 
-        {user.role === "admin" && (
+        {(
           <ul className="navbar-nav flex-row gap-3">
             <li className="nav-item">
               <a
@@ -58,7 +58,7 @@ const Navbar: React.FC<NavbarProps> = ({
                   setViewState("checklist-list");
                 }}
               >
-                Checklists
+                {user.role === "admin" ? "Checklists" : "Mis checklists"}
               </a>
             </li>
           </ul>

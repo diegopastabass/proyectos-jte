@@ -5,6 +5,7 @@
 import {
   cartolasDesdeBancoChile,
   cartolasDesdeBancoEstado,
+  conexionDeEmpresa,
   type DocumentoRcvEmisso,
   mismaCuenta,
   montoConSigno,
@@ -335,5 +336,41 @@ describe('periodosALeer', () => {
       '2026-10',
       '2026-11',
     ]);
+  });
+});
+
+describe('conexionDeEmpresa', () => {
+  const con = (
+    id: string,
+    connector: string,
+    empresa_rut: string | null,
+    display_name: string | null = null,
+  ) => ({ id, connector, empresa_rut, display_name });
+
+  it('adopta la conexión del conector con el RUT de la empresa, con o sin puntos', () => {
+    const lista = [
+      con('a', 'banco_estado', '76.907.914-9'),
+      con('b', 'sii', '11.111.111-1'),
+      con('c', 'sii', '76.907.914-9'),
+    ];
+    expect(conexionDeEmpresa(lista, 'sii', '76907914-9')?.id).toBe('c');
+  });
+
+  it('sin RUT en Emisso, reconoce el nombre que pone la app', () => {
+    const lista = [con('a', 'bch_empresas', null, '76907914-9 Agrícola SpA')];
+    expect(conexionDeEmpresa(lista, 'bch_empresas', '76.907.914-9')?.id).toBe(
+      'a',
+    );
+  });
+
+  it('no adopta conexiones de otra empresa ni ya asociadas', () => {
+    const lista = [
+      con('a', 'sii', '11.111.111-1'),
+      con('b', 'sii', '76.907.914-9'),
+    ];
+    expect(
+      conexionDeEmpresa(lista, 'sii', '76907914-9', new Set(['b'])),
+    ).toBeNull();
+    expect(conexionDeEmpresa(lista, 'banco_estado', '76907914-9')).toBeNull();
   });
 });

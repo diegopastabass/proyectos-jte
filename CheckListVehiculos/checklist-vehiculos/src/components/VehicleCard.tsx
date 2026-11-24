@@ -1,5 +1,5 @@
 import React from "react";
-import { Vehicle } from "../types";
+import { Vehicle, MAINT_INTERVAL_KM, MAINT_WARNING_KM } from "../types";
 import AlertBadge from "./AlertBadge";
 import { differenceInDays, parseISO } from "date-fns";
 import SwipeableItem from "./SwipeableItem";
@@ -29,10 +29,12 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
     return null;
   };
 
+  const kmDesdeMantencion = (vehicle.kilometraje ?? 0) - (vehicle.km_ultima_mantencion ?? 0);
+
   const getMaintenanceAlert = () => {
-    const kmDesdeMantencion = vehicle.km_ultima_mantencion;
-    if (kmDesdeMantencion >= 10000) return "danger";
-    if (kmDesdeMantencion >= 8000) return "warning";
+    // Km recorridos desde la última mantención (no el odómetro de ese día)
+    if (kmDesdeMantencion >= MAINT_INTERVAL_KM) return "danger";
+    if (kmDesdeMantencion >= MAINT_WARNING_KM) return "warning";
     return null;
   };
 
@@ -78,7 +80,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
           )}
           {maintType && (
             <AlertBadge
-              label={`KM para la próxima mantención (${(10000 - ((vehicle.kilometraje ?? 0) - (vehicle.km_ultima_mantencion ?? 0))).toLocaleString()} km)`}
+              label={`KM para la próxima mantención (${(MAINT_INTERVAL_KM - kmDesdeMantencion).toLocaleString()} km)`}
               type={maintType as any}
             />
           )}
